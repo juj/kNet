@@ -1,0 +1,150 @@
+/* Copyright 2010 Jukka Jylänki
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+#pragma once
+
+/** @file NetworkServer.h
+	@brief The NetworkServer class. The main class for hosting a KristalliNet server. */
+
+#include <list>
+
+#include "SharedPtr.h"
+
+#include "Socket.h"
+#include "MessageConnection.h"
+#include "Datagram.h"
+#include "INetworkServerListener.h"
+#include "Lockable.h"
+
+namespace kNet
+{
+
+class Network;
+
+/// Manages all low-level networking required in maintaining a network server and keeps
+/// track of all currently established connections.
+/// NetworkServer has the 
+class NetworkServer : public RefCountable
+{
+	/// Private ctor - NetworkServer instances are created by the Network class.
+	NetworkServer(Network *owner, std::vector<Socket *> listenSockets);
+
+	/// We store possibly multiple listening sockets so that the server
+	/// can listen on several sockets (UDP or TCP) at once, making it
+	/// possible for clients to bypass firewalls and/or mix UDP and TCP use.
+	std::vector<Socket *> listenSockets;
+
+	typedef std::map<EndPoint, Ptr(MessageConnection)> ConnectionMap;
+
+	/// The list of active client connections.
+	Lockable<ConnectionMap> clients;
+
+	Network *owner;
+
+	/// If true, new connection attempts are processed. Otherwise, just discard all connection packets.
+	bool acceptNewConnections;
+
+	INetworkServerListener *networkServerListener;
+
+	void RegisterServerListener(INetworkServerListener *listener);
+
+	/// Stops listening for new connections, but all already established connections are maintained.
+	/// \todo As a limitation of this library, you cannot reopen the sockets after closing them.
+	/// You must create a new NetworkServer instance to do that, but this means you'll lose the old active connections.
+	void CloseListenSockets();
+
+	Socket *AcceptConnections(Socket *listenSocket);
+
+	struct ConnectionAttemptDescriptor
+	{
+		Socket *listenSocket;
+		EndPoint peer;
+		Datagram data;
+	};
+
+	WaitFreeQueue<ConnectionAttemptDescriptor> udpConnectionAttempts;
+
+	/// Called from the network worker thread.
+	void EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
+
+	bool ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
+
+	friend class Network;
+
+public:
+	/// When destroyed, the NetworkServer closes all the server connections it has.
+	~NetworkServer();
+
+	/// Enters a stand-alone processing loop that manages incoming connections until server is shut down.
+	void RunModalServer();
+
+	/// Enables or disables whether new connection attempts are allowed.
+	void SetAcceptNewConnections(bool acceptNewConnections);
+
+	/// Enables or disables whether rejected connection attempts are messages back to the client (UDP only).
+	/// i.e. whether to message "Connection rejected" back to the peer.
+	void SetStealthMode(bool stealthModeEnabled);
+
+	/// If the server is running in UDP mode, the listenSocket is the socket that receives all application data.
+	/// This function pulls all new data from the socket and sends it to MessageConnection instances for deserialization and processing.
+	void ReadUDPSocketData(Socket *listenSocket);
+
+	/// Handles all new connection attempts and pulls in new messages from all existing connections.
+	void ProcessMessages();
+
+	/// Broadcasts the given message to all currently active connections, except for the single 'exclude' connection.
+	/// If exclude is 0, all clients will receive the message.
+	/// @param msg The message to send.
+	/// @param exclude The network connection to exclude from the recipient list. All other clients connected to this
+	/// server will get the message. This parameter is useful when you are implementing a server that relays messages
+	/// between clients and want to avoid "echoing" the original message back to the client who sent it.
+	void BroadcastMessage(const NetworkMessage &msg, MessageConnection *exclude = 0);
+
+	/// Creates a NetworkMessage structure with the given data and broadcasts it to all currently active connections,
+	/// except to the given excluded connection.
+	void BroadcastMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, 
+	                      unsigned long contentID, const char *data, size_t numBytes,
+	                      MessageConnection *exclude = 0);
+
+	/// Sends the given message to the given destination.
+	void SendMessage(const NetworkMessage &msg, MessageConnection &destination);
+
+	/// Starts a benign disconnection procedure for all clients (write-closes each connection).
+	/// Also calls SetAcceptNewConnections(false), since this function is intended to be used when the server is going down.
+	/// It can take an indefinite time for the connections to bidirectionally close, since it is up to the individual
+	/// clients to write-close their end of the connections. This function returns immediately.
+	void DisconnectAllClients();
+		
+	/// Forcibly closes down the server. Calls SetAcceptNewConnections(false) so that no new connections are accepted.
+	/// @param disconnectWaitMilliseconds If >0, this function calls DisconnectAllClients() and waits for the given amount
+	///         of time until calling Close() on each client connection. If 0, MessageConnection::Close(0) will be immediately
+	///         called on each client. In that case, this function returns immediately and all active clients will be left
+	///         to time out at their end. Calling this function does not guarantee that all outbound data will be received
+	///         by the peers.
+	void Close(int disconnectWaitMilliseconds);
+	
+	/// Forcibly erases the given connection from the active connection list. The client will be left to time out.
+	void ConnectionClosed(MessageConnection *connection);
+
+	/// Returns all the sockets this server is listening on.
+	std::vector<Socket *> &ListenSockets() { return listenSockets; }
+
+	/// Returns all the currently tracked connections.
+	ConnectionMap GetConnections()
+	{ 
+		Lockable<ConnectionMap>::LockType lock = clients.Acquire();
+		return *lock;
+	}
+};
+
+} // ~kNet
