@@ -96,7 +96,7 @@ void NetworkWorkerThread::MainLoop()
 	assert(!falseEvent.IsNull());
 	assert(falseEvent.Test() == false);
 
-	LOGNET1("NetworkWorkerThread running main loop.");
+	LOGNET("NetworkWorkerThread running main loop.");
 
 	while(!workThread.ShouldQuit())
 	{

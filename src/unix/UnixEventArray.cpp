@@ -88,7 +88,7 @@ int EventArray::Wait(int msecs)
 	int ret = select(nfds, &readfds, &writefds, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
-		LOGNET1("EventArray::Wait: select() failed on an eventfd!");
+		LOGNET("EventArray::Wait: select() failed on an eventfd!");
 		return WaitFailed;
 	}
 
@@ -101,7 +101,7 @@ int EventArray::Wait(int msecs)
 			return i;
 		}
 
-	LOGNET1("EventArray::Wait error! No events were set, but select() returned a positive value!");
+	LOGNET("EventArray::Wait error! No events were set, but select() returned a positive value!");
 	return WaitFailed;
 }
 

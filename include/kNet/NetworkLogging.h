@@ -58,21 +58,13 @@ void SetLogFile(const char *filename);
 } // ~kNet
 
 /// Prints out a variadic message to the log channel User.
-#define LOGUSER(msg, ...) kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, __VA_ARGS__)
-/// Prints out a message to the log channel User.
-#define LOGUSER1(msg) kNet::TimeOutputDebugString(LogUser, __FILE__, __LINE__, msg)
+#define LOGUSER(msg, ...) kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 /// Prints out a variadic message to the log channel Info.
-#define LOGNET(msg, ...) kNet::TimeOutputDebugStringVariadic(LogInfo, __FILE__, __LINE__, msg, __VA_ARGS__)
-/// Prints out a variadic message to the log channel Info.
-#define LOGNET1(msg) kNet::TimeOutputDebugString(LogInfo, __FILE__, __LINE__, msg)
+#define LOGNET(msg, ...) kNet::TimeOutputDebugStringVariadic(LogInfo, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 /// Prints out a variadic message to the log channel Verbose.
-#define LOGNETVERBOSE(msg, ...) kNet::TimeOutputDebugStringVariadic(LogVerbose, __FILE__, __LINE__, msg, __VA_ARGS__)
-/// Prints out a variadic message to the log channel Verbose.
-#define LOGNETVERBOSE1(msg) kNet::TimeOutputDebugString(LogVerbose, __FILE__, __LINE__, msg)
+#define LOGNETVERBOSE(msg, ...) kNet::TimeOutputDebugStringVariadic(LogVerbose, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 
-/// Prints out a variadic message to the log channel Verbose.
-#define LOG(channel, msg, ...) kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, __VA_ARGS__)
-/// Prints out a variadic message to the log channel Verbose.
-#define LOG1(channel, msg) kNet::TimeOutputDebugString(channel, __FILE__, __LINE__, msg)
+/// Prints out a variadic message to the given log channel.
+#define LOG(channel, msg, ...) kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__)

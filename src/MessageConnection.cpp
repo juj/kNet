@@ -156,7 +156,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 {
 	if (!socket)
 	{
-		LOG1(LogVerbose, "MessageConnection::Close() called on a connection with null socket!");
+		LOG(LogVerbose, "MessageConnection::Close() called on a connection with null socket!");
 		return;
 	}
 
@@ -230,7 +230,7 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 {
 	if (!socket)
 	{
-		LOG1(LogError, "MessageConnection::Close() called on a connection with null socket!");
+		LOG(LogError, "MessageConnection::Close() called on a connection with null socket!");
 		return;
 	}
 	LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
@@ -413,7 +413,7 @@ void MessageConnection::UpdateConnection()
 		// Check if the socket is dead and mark it read-closed.
 		if ((!socket || !socket->IsReadOpen()) && IsReadOpen())
 		{
-			LOGNET1("Peer closed connection.");
+			LOGNET("Peer closed connection.");
 			SetPeerClosed();
 		}
 	}
@@ -526,7 +526,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 			if (!outboundAcceptQueue.Insert(fragment))
 			{
 				///\todo Is it possible to check beforehand if this criteria is avoided, or if we are doomed?
-				LOGNET1("Critical: Failed to add message fragment to outboundAcceptQueue! Queue was full. Do not know how to recover here!");
+				LOGNET("Critical: Failed to add message fragment to outboundAcceptQueue! Queue was full. Do not know how to recover here!");
 				assert(false);
 			}
 		}
@@ -592,7 +592,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage &msg, size_t numBytes,
 			if (msg.reliable) // For nonreliable messages it is not critical if we can't enqueue the message. Just discard it.
 			{
 				///\todo Is it possible to check beforehand if this criteria is avoided, or if we are doomed?
-				LOG1(LogVerbose, "Critical: Failed to add new reliable message to outboundAcceptQueue! Queue was full. Discarding the message!");
+				LOG(LogVerbose, "Critical: Failed to add new reliable message to outboundAcceptQueue! Queue was full. Discarding the message!");
 				assert(false);
 			}
 			FreeMessage(&msg);
@@ -1068,7 +1068,7 @@ void MessageConnection::DumpStatus() const
 		(socket && socket->GetOverlappedSendEvent().Test()) ? "true" : "false",
 		(int)TimeUntilCanSendPacket());
 
-	LOGUSER1(str);
+	LOGUSER(str);
 
 	DumpConnectionStatus();
 }

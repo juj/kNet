@@ -147,7 +147,7 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 
 	if (maxReads == 0)
 	{
-		LOGNET1("Warning: Too many inbound messages: Datagram read loop throttled!");
+		LOGNET("Warning: Too many inbound messages: Datagram read loop throttled!");
 		return SocketReadThrottled;
 	}
 	else
@@ -297,7 +297,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		// or skip it if there are no transferIDs free.
 		if (msg->transfer)
 		{
-			LOGNET1("Sending out a fragmented transfer.");
+			LOGNET("Sending out a fragmented transfer.");
 			Lock<FragmentedSendManager> sends = fragmentedSends.Acquire();
 			if (msg->transfer->id == -1)
 			{
@@ -305,7 +305,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 
 				if (!success) // No transferIDs free - skip this message for now.
 				{
-					LOGNET1("Throttling fragmented transfer send! No free TransferID to start a new fragmented transfer with!");
+					LOGNET("Throttling fragmented transfer send! No free TransferID to start a new fragmented transfer with!");
 					outboundQueue.PopFront();
 					skippedMessages.push_back(msg);
 					continue;
@@ -637,7 +637,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		{
 			if (numTotalFragments == DataDeserializer::VLEReadError || numTotalFragments <= 1)
 			{
-				LOGNET1("Malformed UDP packet! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
+				LOGNET("Malformed UDP packet! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
 				return;
 			}
 
@@ -650,7 +650,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		{
 			if (fragmentNumber == DataDeserializer::VLEReadError)
 			{
-				LOGNET1("Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
+				LOGNET("Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
 				return;
 			}
 
@@ -1105,7 +1105,7 @@ void UDPMessageConnection::DumpConnectionStatus() const
 	PacketsInPerSec(), 
 	PacketsOutPerSec());
 
-	LOGUSER1(str);
+	LOGUSER(str);
 }
 
 } // ~kNet

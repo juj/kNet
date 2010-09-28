@@ -143,7 +143,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	OverlappedTransferBuffer *overlappedTransfer = socket->BeginSend();
 	if (!overlappedTransfer)
 	{
-		LOGNET1("TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
+		LOGNET("TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
 		return PacketSendSocketClosed;
 	}
 
@@ -282,7 +282,7 @@ void TCPMessageConnection::ExtractMessages()
 		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught a std::exception: \"%s\"!", e.what());
 	} catch(...)
 	{
-		LOG1(LogError, "TCPMessageConnection::ExtractMessages() caught an unknown exception!");
+		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught an unknown exception!");
 	}
 }
 

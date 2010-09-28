@@ -22,3 +22,4 @@
 #include "kNet/IMessageHandler.h"
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"
+#include "kNet/NetException.h"

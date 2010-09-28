@@ -715,7 +715,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	bool success = queuedSendBuffers.Insert(sendBuffer);
 	if (!success)
 	{
-		LOG1(LogError, "queuedSendBuffers.Insert(send); failed!");
+		LOG(LogError, "queuedSendBuffers.Insert(send); failed!");
 		///\todo WARNING: Deleting a buffer that is submitted to WSASend. This crashes. The alternative
 		/// is to leak. Refactor so that the above queuedSendBuffers.Insert is tried for success before calling WSASend.
 		DeleteOverlappedTransferBuffer(sendBuffer);

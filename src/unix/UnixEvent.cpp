@@ -95,7 +95,7 @@ void Event::Reset()
 {
 	if (IsNull())
 	{
-		LOGNET1("Event::Reset() failed! Tried to reset an uninitialized Event!");
+		LOGNET("Event::Reset() failed! Tried to reset an uninitialized Event!");
 		return;
 	}
 
@@ -109,7 +109,7 @@ void Event::Set()
 {
 	if (IsNull())
 	{
-		LOGNET1("Event::Set() failed! Tried to set an uninitialized Event!");
+		LOGNET("Event::Set() failed! Tried to set an uninitialized Event!");
 		return;
 	}
 
@@ -125,7 +125,7 @@ bool Event::Test() const
 {
 	if (IsNull())
 	{
-		LOGNET1("Event::Test() failed! Tried to test an uninitialized Event!");
+		LOGNET("Event::Test() failed! Tried to test an uninitialized Event!");
 		return false;
 	}
 
@@ -157,7 +157,7 @@ bool Event::Wait(unsigned long msecs) const
 {
 	if (IsNull())
 	{
-		LOGNET1("Event::Wait() failed! Tried to wait on an uninitialized Event!");
+		LOGNET("Event::Wait() failed! Tried to wait on an uninitialized Event!");
 		return false;
 	}
 

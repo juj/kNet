@@ -25,6 +25,10 @@
 using namespace std;
 using namespace kNet;
 
+#ifdef LINUX
+#define _stricmp strcasecmp
+#endif
+
 const unsigned long cChatMessageID = 42;
 
 class NetworkApp : public INetworkServerListener, public IMessageHandler
@@ -79,7 +83,7 @@ public:
 		while(server->GetConnections().size() == 0)
 		{
 			server->ProcessMessages();
-			Sleep(100);
+			Clock::Sleep(100);
 		}
 
 		Ptr(MessageConnection) clientConnection = server->GetConnections().begin()->second;
@@ -133,7 +137,7 @@ public:
 		// Always remember to sanitize data at both ends.
 		const unsigned long cMaxMsgSize = 1024;
 		if (strlen(message) >= cMaxMsgSize)
-			throw std::exception("Tried to send too large chat message!");
+			throw NetException("Tried to send too large chat message!");
 
 		const size_t messageLength = strlen(message)+1; // Add one to the length to guarantee a null byte to the stream.
 		if (server)
@@ -241,7 +245,7 @@ public:
 				if (!strcmp(inputText, "quit") || !strcmp(inputText, "exit") || !strcmp(inputText, "q"))
 					connection->Close();
 				else
-					SendChatMessage(connection, inputText);
+					SendChatMessage(inputText);
 			}
 #endif
 			// Nothing in the above sleeps or blocks to wait for any events. Sleep() to keep the CPU use down.
@@ -267,21 +271,21 @@ int main(int argc, char **argv)
 	}
 
 	SocketTransportLayer transport = SocketOverUDP;
-	if (!stricmp(argv[1], "tcp"))
+	if (!_stricmp(argv[1], "tcp"))
 		transport = SocketOverTCP;
-	else if (!!stricmp(argv[1], "udp"))
+	else if (!!_stricmp(argv[1], "udp"))
 	{
 		cout << "The second parameter is either 'tcp' or 'udp'!" << endl;
 		return 0;
 	}
 	NetworkApp app;
-	if (!stricmp(argv[2], "server"))
+	if (!_stricmp(argv[2], "server"))
 	{
 		unsigned short port = atoi(argv[3]);
 
 		app.RunServer(port, transport);
 	}
-	else if (!stricmp(argv[2], "client"))
+	else if (!_stricmp(argv[2], "client"))
 	{
 		if (argc < 5)
 		{

@@ -105,14 +105,14 @@ void PrintLocalIP()
     char ac[80];
     if (gethostname(ac, sizeof(ac)) == KNET_SOCKET_ERROR)
 	 {
-        LOGNET1("Error getting local host name!");
+        LOGNET("Error getting local host name!");
         return;
     }
     LOGNET("Host name is %s", ac);
 
     struct hostent *phe = gethostbyname(ac);
     if (phe == 0) {
-        LOGNET1("Bad host lookup.");
+        LOGNET("Bad host lookup.");
         return;
     }
 
@@ -128,68 +128,68 @@ void Network::PrintAddrInfo(const addrinfo *ptr)
 {
 	if (!ptr)
 	{
-		LOGNET1("(Null pointer passed to Network::PrintAddrInfo!)");
+		LOGNET("(Null pointer passed to Network::PrintAddrInfo!)");
 		return;
 	}
 
 	LOGNET("\tFlags: 0x%x\n", ptr->ai_flags);
-	LOGNET1("\tFamily: ");
+	LOGNET("\tFamily: ");
 	switch(ptr->ai_family)
 	{
 	case AF_UNSPEC:
-		LOGNET1("Unspecified\n");
+		LOGNET("Unspecified\n");
 		break;
 	case AF_INET:
-		LOGNET1("AF_INET (IPv4)\n");
+		LOGNET("AF_INET (IPv4)\n");
 		break;
 	case AF_INET6:
-		LOGNET1("AF_INET6 (IPv6)\n");
+		LOGNET("AF_INET6 (IPv6)\n");
 		break;
 #ifdef WIN32
 	case AF_NETBIOS:
-		LOGNET1("AF_NETBIOS (NetBIOS)\n");
+		LOGNET("AF_NETBIOS (NetBIOS)\n");
 		break;
 #endif
 	default:
 		LOGNET("Other %u\n", ptr->ai_family);
 		break;
 	}
-	LOGNET1("\tSocket type: ");
+	LOGNET("\tSocket type: ");
 	switch(ptr->ai_socktype)
 	{
 	case 0:
-		LOGNET1("Unspecified\n");
+		LOGNET("Unspecified\n");
 		break;
 	case SOCK_STREAM:
-		LOGNET1("SOCK_STREAM (stream)\n");
+		LOGNET("SOCK_STREAM (stream)\n");
 		break;
 	case SOCK_DGRAM:
-		LOGNET1("SOCK_DGRAM (datagram) \n");
+		LOGNET("SOCK_DGRAM (datagram) \n");
 		break;
 	case SOCK_RAW:
-		LOGNET1("SOCK_RAW (raw) \n");
+		LOGNET("SOCK_RAW (raw) \n");
 		break;
 	case SOCK_RDM:
-		LOGNET1("SOCK_RDM (reliable message datagram)\n");
+		LOGNET("SOCK_RDM (reliable message datagram)\n");
 		break;
 	case SOCK_SEQPACKET:
-		LOGNET1("SOCK_SEQPACKET (pseudo-stream packet)\n");
+		LOGNET("SOCK_SEQPACKET (pseudo-stream packet)\n");
 		break;
 	default:
 		LOGNET("Other %u\n", ptr->ai_socktype);
 		break;
 	}
-	LOGNET1("\tProtocol: ");
+	LOGNET("\tProtocol: ");
 	switch(ptr->ai_protocol)
 	{
 	case 0:
-		LOGNET1("Unspecified\n");
+		LOGNET("Unspecified\n");
 		break;
 	case IPPROTO_TCP:
-		LOGNET1("IPPROTO_TCP (TCP)\n");
+		LOGNET("IPPROTO_TCP (TCP)\n");
 		break;
 	case IPPROTO_UDP:
-		LOGNET1("IPPROTO_UDP (UDP) \n");
+		LOGNET("IPPROTO_UDP (UDP) \n");
 		break;
 	default:
 		LOGNET("Other %u\n", ptr->ai_protocol);
@@ -232,7 +232,7 @@ void Network::PrintHostNameInfo(const char *hostname, const char *port)
 		return;
 	}
 
-	LOGNET1("getaddrinfo returned success\n");
+	LOGNET("getaddrinfo returned success\n");
 
 	int i = 1;
 
@@ -274,7 +274,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 	assert(workerThread);
 	if (!workerThread)
 	{
-		LOGNET1("Cannot start server! NetworkWorkerThread is not running!");
+		LOGNET("Cannot start server! NetworkWorkerThread is not running!");
 		return 0;
 	}
 
@@ -305,13 +305,13 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 	assert(workerThread);
 	if (!workerThread)
 	{
-		LOGNET1("Cannot start server! NetworkWorkerThread is not running!");
+		LOGNET("Cannot start server! NetworkWorkerThread is not running!");
 		return 0;
 	}
 
 	if (listenPorts.size() == 0)
 	{
-		LOGNET1("Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
+		LOGNET("Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
 		return 0;
 	}
 
@@ -326,7 +326,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	if (listenSockets.size() == 0)
 	{
-		LOGNET1("Failed to start server. No ports to listen to!");
+		LOGNET("Failed to start server. No ports to listen to!");
 		return 0;
 	}
 
@@ -335,14 +335,14 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	workerThread->AddServer(server);
 
-	LOGNET1("Server up and listening on the following ports: ");
+	LOGNET("Server up and listening on the following ports: ");
 	{
 	std::stringstream ss;
 	ss << "UDP ";
 	for(size_t i = 0; i < listenSockets.size(); ++i)
 		if (listenSockets[i]->TransportLayer() == SocketOverUDP)
 			ss << listenSockets[i]->LocalPort() << " ";
-	LOGNET1(ss.str().c_str());
+	LOGNET(ss.str().c_str());
 	}
 	{
 		std::stringstream ss;
@@ -350,7 +350,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 		for(size_t i = 0; i < listenSockets.size(); ++i)
 			if (listenSockets[i]->TransportLayer() == SocketOverTCP)
 				ss << listenSockets[i]->LocalPort() << " ";
-		LOGNET1(ss.str().c_str());
+		LOGNET(ss.str().c_str());
 	}
 
 	return server;
@@ -367,7 +367,7 @@ void Network::CloseSocket(Socket *socket)
 {
 	if (!socket)
 	{
-		LOGNETVERBOSE1("Network::CloseSocket() called with a null socket pointer!");
+		LOGNETVERBOSE("Network::CloseSocket() called with a null socket pointer!");
 		return;
 	}
 
@@ -547,7 +547,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 
 	if (connectSocket == INVALID_SOCKET)
 	{
-		LOGNET1("Unable to connect to server!");
+		LOGNET("Unable to connect to server!");
 		return 0;
 	}
 

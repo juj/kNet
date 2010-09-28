@@ -183,7 +183,7 @@ public:
 
 		transferStartTick = Clock::Tick();
 
-		LOGNET1("Waiting for file receive.");
+		LOGNET("Waiting for file receive.");
 		while(clientConnection->IsReadOpen())
 		{
 			server->ProcessMessages();
@@ -199,7 +199,7 @@ public:
 				statsPrintTimer.StartMSecs(printIntervalMSecs);
 			}
 		}
-		LOGNET1("Finished file receive. Closing connection.");
+		LOGNET("Finished file receive. Closing connection.");
 		clientConnection->Close(15000);
 	}
 
@@ -287,7 +287,7 @@ public:
 #endif
 				if (read < bytesInThisFragment)
 				{
-					LOGNET1("Failed to read file!");
+					LOGNET("Failed to read file!");
 					connection->Close(0);
 				}
 				
@@ -298,7 +298,7 @@ public:
 			// If we've put out all file fragments to the network, close the connection down.
 			if (connection->IsWriteOpen() && bytesSent >= fileSize && connection->NumOutboundMessagesPending() == 0)
 			{
-				LOGNET1("All data sent. Disconnecting.");
+				LOGNET("All data sent. Disconnecting.");
 				connection->Disconnect(15000);
 			}
 			
@@ -313,7 +313,7 @@ public:
 			}
 		}
 		
-		LOGNET1("Waiting for peer to acknowledge all received data.");
+		LOGNET("Waiting for peer to acknowledge all received data.");
 		while((connection->NumOutboundMessagesPending() > 0 && connection->IsWriteOpen()) || connection->IsReadOpen())
 		{
 			connection->ProcessMessages();

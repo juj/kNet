@@ -55,7 +55,7 @@ void FragmentedSendManager::FreeFragmentedTransfer(FragmentedTransfer *transfer)
 			LOG(LogObjectAlloc, "Freed fragmented transfer ID=%d, numFragments: %d (0x%p).", transfer->id, transfer->totalNumFragments, transfer);
 			return;
 		}
-	LOG1(LogError, "Tried to free a fragmented send struct that didn't exist!");
+	LOG(LogError, "Tried to free a fragmented send struct that didn't exist!");
 }
 
 void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkMessage *message)
@@ -77,7 +77,7 @@ void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkM
 		iter = next;
 	}
 
-	LOG1(LogError, "Tried to remove a nonexisting message from a fragmented send struct!");
+	LOG(LogError, "Tried to remove a nonexisting message from a fragmented send struct!");
 }
 
 bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &transfer)
@@ -147,7 +147,7 @@ bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentN
 
 	if (numBytes == 0)
 	{
-		LOGNET1("Discarding fragment of size 0!");
+		LOGNET("Discarding fragment of size 0!");
 		return false;
 	}
 

@@ -194,7 +194,7 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 	if (recvData->bytesContains == 0)
 	{
 		listenSocket->EndReceive(recvData);
-		LOGNET1("Received 0 bytes of data in NetworkServer::ReadUDPSocketData!");
+		LOGNET("Received 0 bytes of data in NetworkServer::ReadUDPSocketData!");
 		return;
 	}
 	EndPoint endPoint = EndPoint::FromSockAddrIn(recvData->from); ///\todo Omit this conversion for performance.
@@ -208,7 +208,7 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 		UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(iter->second.ptr());
 		if (!udpConnection)
 		{
-			LOGNET1("Critical! UDP socket data received into a TCP socket!");
+			LOGNET("Critical! UDP socket data received into a TCP socket!");
 		}
 		else
 			udpConnection->ExtractMessages(recvData->buffer.buf, recvData->bytesContains);
@@ -234,7 +234,7 @@ void NetworkServer::EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 	bool success = udpConnectionAttempts.Insert(desc);
 	if (!success)
-		LOGNET1("Too many connection attempts!");
+		LOGNET("Too many connection attempts!");
 	else
 		LOGNET("Queued new connection attempt from %s.", endPoint.ToString().c_str());
 }
@@ -244,7 +244,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	LOGNET("New inbound connection attempt from %s with datagram of size %d.", endPoint.ToString().c_str(), numBytes);
 	if (!acceptNewConnections)
 	{
-		LOGNET1("Ignored connection attempt since server is set not to accept new connections.");
+		LOGNET("Ignored connection attempt since server is set not to accept new connections.");
 		return false;
 	}
 
@@ -254,7 +254,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 		bool connectionAccepted = networkServerListener->NewConnectionAttempt(endPoint, data, numBytes);
 		if (!connectionAccepted)
 		{
-			LOGNET1("Server listener did not accept the new connection.");
+			LOGNET("Server listener did not accept the new connection.");
 			return false;
 		}
 	}
@@ -268,7 +268,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	Socket *socket = owner->ConnectUDP(sock, endPoint);
 	if (!socket)
 	{
-		LOGNET1("Network::ConnectUDP failed! Cannot accept new UDP connection.");
+		LOGNET("Network::ConnectUDP failed! Cannot accept new UDP connection.");
 		return false;
 	}
 
@@ -396,7 +396,7 @@ void NetworkServer::ConnectionClosed(MessageConnection *connection)
 			return;
 		}
 
-	LOGNET1("Unknown MessageConnection passed to NetworkServer::Disconnect!");
+	LOGNET("Unknown MessageConnection passed to NetworkServer::Disconnect!");
 }
 
 } // ~kNet
