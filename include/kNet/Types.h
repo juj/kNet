@@ -16,8 +16,6 @@
 /** @file Types.h
 	@brief Provides platform-independent fixed size types. */
 
-#include <stdint.h>
-
 namespace kNet
 {
 ///\todo C99.

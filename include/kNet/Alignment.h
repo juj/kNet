@@ -20,6 +20,10 @@
 
 #include "Types.h"
 
+#ifdef LINUX
+#include <stdint.h>
+#endif
+
 namespace kNet
 {
 
