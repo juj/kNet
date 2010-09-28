@@ -105,7 +105,7 @@ public:
 				bytesReceived += numDataBytes;
 				WriteFinishedFragments();
 
-				LOG(LogUser, "Received fragment %d.", fragmentIndex); 
+				LOG(LogVerbose, "Received fragment %d.", fragmentIndex); 
 
 				if (statsPrintTimer.Test())
 				{

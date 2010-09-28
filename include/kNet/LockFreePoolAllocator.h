@@ -17,6 +17,7 @@
 	@brief The PoolAllocatable<T> and LockFreePoolAllocator<T> template classes. */
 
 #include <iostream>
+#include "Atomics.h"
 
 namespace kNet
 {
@@ -57,17 +58,12 @@ public:
 		T *allocated;
 		T *newRoot;
 
-		///\todo Cross-platform thread-safety.
-#ifdef WIN32
 		do
 		{
-#endif
 			allocated = root;
 			newRoot = root->next;
-#ifdef WIN32
+		} while(CmpXChgPointer((void**)&root, newRoot, allocated) == false);
 
-		} while(InterlockedCompareExchangePointer((void**)&root, newRoot, allocated) != allocated);
-#endif
 		assert(allocated != root);
 		return allocated;
 	}
@@ -80,16 +76,11 @@ public:
 		assert(ptr != root);
 		T *top;
 
-		///\todo Cross-platform thread-safety.
-#ifdef WIN32
 		do
 		{
-#endif
 			top = root;
 			ptr->next = top;
-#ifdef WIN32
-		} while(InterlockedCompareExchangePointer((void**)&root, ptr, top) != top);
-#endif
+		} while(CmpXChgPointer((void**)&root, ptr, top) == false);
 	}
 
 	/// Deallocates all cached unused nodes in this pool. Thread-safe and lock-free. If you are manually tearing

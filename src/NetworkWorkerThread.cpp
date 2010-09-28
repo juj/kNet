@@ -101,10 +101,10 @@ void NetworkWorkerThread::MainLoop()
 	while(!workThread.ShouldQuit())
 	{
 		Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
-		std::vector<Ptr(MessageConnection)> &connectionList = *lock; ///\todo Copying here is not nice for performance.
+		std::vector<Ptr(MessageConnection)> connectionList = *lock; ///\todo Copying here is not nice for performance.
 
 		Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
-		std::vector<Ptr(NetworkServer)> &serverList = *serverLock; ///\todo Copying here is not nice for performance.
+		std::vector<Ptr(NetworkServer)> serverList = *serverLock; ///\todo Copying here is not nice for performance.
 
 		serverLock.Unlock(); ///\bug Ptr() is not thread-safe!
 		lock.Unlock(); ///\bug Ptr() is not thread-safe!
