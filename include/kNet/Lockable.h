@@ -16,8 +16,12 @@
 /** @file Lockable.h
 	@brief The Lock<T> and Lockable<T> template classes. */
 
-#ifdef WIN32
-#include <windows.h>
+#ifdef KNET_USE_BOOST
+#include <boost/thread/mutex.hpp>
+#elif WIN32
+#include <Windows.h>
+#else
+#error No Mutex implementation available!
 #endif
 
 namespace kNet
@@ -139,7 +143,7 @@ public:
 
 	Lockable()
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_USE_BOOST)
 		InitializeCriticalSection(&lockObject);
 #endif
 	}
@@ -154,14 +158,14 @@ public:
 	explicit Lockable(const T &value_)
 	:value(value_)
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_USE_BOOST)
 		InitializeCriticalSection(&lockObject);
 #endif
 	}
 
 	~Lockable()
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_USE_BOOST)
 		DeleteCriticalSection(&lockObject);
 #endif
 	}
@@ -179,7 +183,9 @@ public:
 */
 	T &LockGet()
 	{
-#ifdef WIN32
+#ifdef KNET_USE_BOOST
+		boostMutex.lock();
+#elif WIN32
 		EnterCriticalSection(&lockObject);
 #endif
 		return value;
@@ -187,7 +193,9 @@ public:
 
 	const T &LockGet() const
 	{
-#ifdef WIN32
+#ifdef KNET_USE_BOOST
+		boostMutex.lock();
+#elif WIN32
 		EnterCriticalSection(&lockObject);
 #endif
 		return value;
@@ -195,7 +203,9 @@ public:
 
 	void Unlock() const
 	{
-#ifdef WIN32
+#ifdef KNET_USE_BOOST
+		boostMutex.unlock();
+#elif WIN32
 		LeaveCriticalSection(&lockObject);
 #endif
 	}
@@ -228,7 +238,9 @@ public:
 		return value;
 	}
 
-#ifdef WIN32
+#ifdef KNET_USE_BOOST
+	mutable boost::mutex boostMutex;
+#elif WIN32
 	mutable CRITICAL_SECTION lockObject;
 #endif
 };

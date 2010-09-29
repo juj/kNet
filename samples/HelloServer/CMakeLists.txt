@@ -17,7 +17,6 @@ project(HelloServer)
 
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
-link_directories(${Boost_LIBRARYDIR})
 
 file(GLOB HeaderFiles ./*.h )
 file(GLOB SourceFiles ./*.cpp)

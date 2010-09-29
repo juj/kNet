@@ -1,0 +1,4 @@
+rm -f CMakeCache.txt
+rm -f CMakeFiles/*.log
+cmake .
+make
