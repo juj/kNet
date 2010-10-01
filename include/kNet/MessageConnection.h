@@ -348,20 +348,29 @@ public:
 	///                 NetworkMessage::data field to hold at least that many bytes (Capacity() can also return a larger value).
 	///                 This number only needs to be an estimate, since you can later on call NetworkMessage::Reserve()
 	///                 to reallocate the message memory. If you pass in the default value 0, no pre-allocation will be performed.
-	NetworkMessage &StartNewMessage(unsigned long id, size_t numBytes = 0);
+	/// @return The NetworkMessage object that represents the new message to be built. This message is dynamically allocated
+	///         from an internal pool of NetworkMessage blocks. For each NetworkMessage pointer obtained, call
+	///         EndAndQueueMessage when you have finished building the message to commit the network send and to release the memory.
+	///         Alternatively, if after calling StartNewMessage, you decide to abort the network send, free up the NetworkMessage
+	///         by calling this->FreeMessage().
+	NetworkMessage *StartNewMessage(unsigned long id, size_t numBytes = 0);
 
 	/// Finishes building the message and submits it to the outbound send queue.
+	/// @param msg The message to send. After calling this function, this pointer should be considered freed and may not be
+	///            dereferenced or passed to any other member function of this MessageConnection. Only pass in here 
+	///            NetworkMessage pointers obtained by a call to StartNewMessage() of the same MessageConnection instance.
 	/// @param numBytes Specify here the number of actual bytes you filled in into the msg.data field. A size of 0
-	///                 is valid, and can be used in cases the message ID itself is the whole message. If you omit
-	///                 this parameter, the same value that was specified in StartNewMessage() is used.
-	/// @param internalQueue Specifies that this message was submitted from the network worker thread and not the application
-	///                 thread. Do not pass in a value here, or there is a chance of a race condition.
-	void EndAndQueueMessage(NetworkMessage &msg, size_t numBytes = (size_t)(-1), bool internalQueue = false);
+	///                 is valid, and can be used in cases the message ID itself is the whole message. Passing in the default 
+	///                 value of this parameter will use the size value that was specified in the call to StartNewMessage().
+	/// @param internalQueue If true, specifies that this message was submitted from the network worker thread and not the application
+	///                 thread. Pass in the value 'false' here in the client application, or there is a chance of a race condition.
+	void EndAndQueueMessage(NetworkMessage *msg, size_t numBytes = (size_t)(-1), bool internalQueue = false);
 
 	/// This is a conveniency function to access the above StartNewMessage/EndAndQueueMessage pair. The performance of this
 	/// function call is not as good, since a memcpy of the message will need to be made. For performance-critical messages,
 	/// it is better to craft the message directly into the buffer area provided by StartNewMessage.
-	void SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, unsigned long contentID, const char *data, size_t numBytes);
+	void SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, unsigned long contentID, 
+	                 const char *data, size_t numBytes);
 
 	/// Sends a message using a serializable structure.
 	template<typename SerializableData>
@@ -447,7 +456,7 @@ public:
 	NetworkMessage *ReceiveMessage(int maxMSecsToWait = -1);
 
 	/// Frees up a NetworkMessage struct when it is no longer needed. [Called by both worker and main thread]
-	/// You need to call this for each message that 
+	/// You need to call this for each message that you received from a call to ReceiveMessage.
 	void FreeMessage(NetworkMessage *msg);
 	
 	/// Returns the estimated RTT of the connection, in milliseconds. RTT is the time taken to communicate a message from client->host->client.

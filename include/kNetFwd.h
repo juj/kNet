@@ -13,8 +13,6 @@
    limitations under the License. */
 #pragma once
 
-#define KNET_USE_BOOST
-
 /** @file kNetFwd.h
 	@brief Forward-declares all common symbols defined by KristalliNet. */
 
@@ -22,9 +20,9 @@ namespace kNet
 {
 	class Clock;
 	class DataDeserializer;
-	class Datagram;
+	struct Datagram;
 	class DataSerializer;
-	class EndPoint;
+	struct EndPoint;
 	class Event;
 	class EventArray;
 	class IMessageHandler;

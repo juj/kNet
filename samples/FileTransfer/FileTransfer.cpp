@@ -241,16 +241,16 @@ public:
 
 		transferStartTick = Clock::Tick();
 
-		NetworkMessage &msg = connection->StartNewMessage(cFileTransferStartMessage, 2048);
-		DataSerializer ds(msg.data, 2048);
+		NetworkMessage *msg = connection->StartNewMessage(cFileTransferStartMessage, 2048);
+		DataSerializer ds(msg->data, 2048);
 		const size_t fragmentSize = 450;
 		const size_t numFragments = (fileSize + fragmentSize - 1) / fragmentSize;
 		ds.AddString(filename);
 		ds.Add<u32>(fileSize);
 		ds.Add<u32>(numFragments);
-		msg.priority = 100;
-		msg.reliable = true;
-		msg.inOrder = true;
+		msg->priority = 100;
+		msg->reliable = true;
+		msg->inOrder = true;
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
 
 		size_t nextFragment = 0;
@@ -272,12 +272,12 @@ public:
 				// File payload data bytes in this message.
 				const size_t bytesInThisFragment = min((int)fragmentSize, (int)(fileSize - bytesSent));
 
-				NetworkMessage &msg = connection->StartNewMessage(cFileTransferFragment, bytesInThisFragment+4);
-				msg.priority = 100;
-				msg.reliable = true;
-				msg.inOrder = true;
+				NetworkMessage *msg = connection->StartNewMessage(cFileTransferFragment, bytesInThisFragment+4);
+				msg->priority = 100;
+				msg->reliable = true;
+				msg->inOrder = true;
 
-				DataSerializer ds(msg.data, msg.Size());
+				DataSerializer ds(msg->data, msg->Size());
 				ds.Add<u32>(nextFragment++);
 
 #ifndef NULLTRANSFER

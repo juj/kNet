@@ -711,17 +711,17 @@ void UDPMessageConnection::NewDatagramSent()
 
 void UDPMessageConnection::SendDisconnectMessage(bool isInternal)
 {
-	NetworkMessage &msg = StartNewMessage(MsgIdDisconnect);
-	msg.priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
-	msg.reliable = true;
+	NetworkMessage *msg = StartNewMessage(MsgIdDisconnect);
+	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
+	msg->reliable = true;
 	EndAndQueueMessage(msg, isInternal);
 }
 
 void UDPMessageConnection::SendDisconnectAckMessage()
 {
-	NetworkMessage &msg = StartNewMessage(MsgIdDisconnectAck);
-	msg.priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
-	msg.reliable = false;
+	NetworkMessage *msg = StartNewMessage(MsgIdDisconnectAck);
+	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
+	msg->reliable = false;
 	EndAndQueueMessage(msg, true); ///\todo Check this flag!
 }
 
@@ -891,12 +891,12 @@ void UDPMessageConnection::SendPacketAckMessage()
 			}
 		}
 
-		NetworkMessage &msg = StartNewMessage(MsgIdPacketAck, 7);
-		DataSerializer mb(msg.data, 7);
+		NetworkMessage *msg = StartNewMessage(MsgIdPacketAck, 7);
+		DataSerializer mb(msg->data, 7);
 		mb.Add<u8>((u8)(packetID & 0xFF));
 		mb.Add<u16>((u16)(packetID >> 8));
 		mb.Add<u32>(sequence);
-		msg.priority = NetworkMessage::cMaxPriority - 1;
+		msg->priority = NetworkMessage::cMaxPriority - 1;
 		EndAndQueueMessage(msg, mb.BytesFilled(), true);
 	}
 }

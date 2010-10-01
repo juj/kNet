@@ -435,23 +435,28 @@ void MessageConnection::FreeMessage(NetworkMessage *msg)
 	messagePool.Free(msg);
 }
 
-NetworkMessage &MessageConnection::StartNewMessage(unsigned long id, size_t numBytes)
+NetworkMessage *MessageConnection::StartNewMessage(unsigned long id, size_t numBytes)
 {
-	NetworkMessage &msg = *AllocateNewMessage();
+	NetworkMessage *msg = AllocateNewMessage();
+	if (!msg)
+	{
+		LOG(LogError, "MessageConnection::SendMessage: StartNewMessage failed! Discarding message send.");
+		return 0; // Failed to allocate a new message. This is caused only by memory allocation issues.
+	}
 
-	msg.id = id;
-	msg.reliable = false;
-	msg.contentID = 0;
-	msg.obsolete = false;
+	msg->id = id;
+	msg->reliable = false;
+	msg->contentID = 0;
+	msg->obsolete = false;
 
 	// Give the new message the lowest priority by default.
-	msg.priority = 0;
+	msg->priority = 0;
 
 	// By default, the message is not fragmented. Later when admitting the message into the send queue, the need for
 	// fragmentation is examined and this field will be updated if needed.
-	msg.transfer = 0; 
+	msg->transfer = 0; 
 
-	msg.Resize(numBytes);
+	msg->Resize(numBytes);
 
 	return msg;
 }
@@ -497,7 +502,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 	{
 		const size_t thisFragmentSize = min(maxFragmentSize, message->dataSize - byteOffset);
 
-		NetworkMessage *fragment = &StartNewMessage(message->id, thisFragmentSize);
+		NetworkMessage *fragment = StartNewMessage(message->id, thisFragmentSize);
 		fragment->contentID = message->contentID;
 		fragment->inOrder = message->inOrder;
 		fragment->reliable = true; // We don't send fragmented messages as unreliable messages - the risk of a fragment getting lost wastes bandwidth.
@@ -541,64 +546,64 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 	FreeMessage(message);
 }
 
-void MessageConnection::EndAndQueueMessage(NetworkMessage &msg, size_t numBytes, bool internalQueue)
+void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes, bool internalQueue)
 {
 	// If the message was marked obsolete to start with, discard it.
-	if (msg.obsolete || !socket || GetConnectionState() == ConnectionClosed || !IsWriteOpen())
+	if (msg->obsolete || !socket || GetConnectionState() == ConnectionClosed || !IsWriteOpen())
 	{
-		FreeMessage(&msg);
+		FreeMessage(msg);
 		return;
 	}
 
 	// Remember the amount of bytes the client said to be using for later.
 	if (numBytes != (size_t)(-1))
-		msg.dataSize = numBytes;
+		msg->dataSize = numBytes;
 
-	assert(msg.dataSize <= msg.Capacity());
-	if (msg.dataSize > msg.Capacity())
+	assert(msg->dataSize <= msg->Capacity());
+	if (msg->dataSize > msg->Capacity())
 	{
 		LOGNET("Critical! User specified a larger NetworkMessage than there is Capacity() for. Call NetworkMessage::Reserve() "
 			"to ensure there is a proper amount of space for the buffer! Specified: %d bytes, Capacity(): %d bytes.",
-			msg.dataSize, msg.Capacity());
+			msg->dataSize, msg->Capacity());
 	}
 
 	// Check if the message is too big - in that case we split it into fixed size fragments and add them into the queue.
 	///\todo We can optimize here by doing the splitting at datagram creation time to create optimally sized datagrams, but
 	/// it is quite more complicated, so left for later. 
 	const size_t sendHeaderUpperBound = 32; // Reserve some bytes for the packet and message headers. (an approximate upper bound)
-	if (msg.dataSize + sendHeaderUpperBound > socket->MaxSendSize())
+	if (msg->dataSize + sendHeaderUpperBound > socket->MaxSendSize())
 	{
 		const size_t maxFragmentSize = socket->MaxSendSize() / 4 - sendHeaderUpperBound; ///\todo Check this is ok.
 		assert(maxFragmentSize > 0 && maxFragmentSize < socket->MaxSendSize());
-		SplitAndQueueMessage(&msg, internalQueue, maxFragmentSize);
+		SplitAndQueueMessage(msg, internalQueue, maxFragmentSize);
 		return;
 	}
 
-	msg.messageNumber = outboundMessageNumberCounter++;
-	msg.reliableMessageNumber = (msg.reliable ? outboundReliableMessageNumberCounter++ : 0);
-	msg.sendCount = 0;
+	msg->messageNumber = outboundMessageNumberCounter++;
+	msg->reliableMessageNumber = (msg->reliable ? outboundReliableMessageNumberCounter++ : 0);
+	msg->sendCount = 0;
 
 	if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 	{
-		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID %d.", msg.Size(), msg.id);
+		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID %d.", msg->Size(), msg->id);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
-		outboundQueue.InsertWithResize(&msg);
+		outboundQueue.InsertWithResize(msg);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 	}
 	else
 	{
-		if (!outboundAcceptQueue.Insert(&msg))
+		if (!outboundAcceptQueue.Insert(msg))
 		{
-			if (msg.reliable) // For nonreliable messages it is not critical if we can't enqueue the message. Just discard it.
+			if (msg->reliable) // For nonreliable messages it is not critical if we can't enqueue the message. Just discard it.
 			{
 				///\todo Is it possible to check beforehand if this criteria is avoided, or if we are doomed?
 				LOG(LogVerbose, "Critical: Failed to add new reliable message to outboundAcceptQueue! Queue was full. Discarding the message!");
 				assert(false);
 			}
-			FreeMessage(&msg);
+			FreeMessage(msg);
 			return;
 		}
-		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID %d.", msg.Size(), msg.id);
+		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID %d.", msg->Size(), msg->id);
 	}
 
 	// Signal the worker thread that there are new outbound events available.
@@ -609,14 +614,19 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage &msg, size_t numBytes,
 void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, 
                                     unsigned long contentID, const char *data, size_t numBytes)
 {
-	NetworkMessage &msg = StartNewMessage(id, numBytes);
-	msg.reliable = reliable;
-	msg.inOrder = inOrder;
-	msg.priority = priority;
-	msg.contentID = contentID;
-	assert(msg.data);
-	assert(msg.Size() == numBytes);
-	memcpy(msg.data, data, numBytes);
+	NetworkMessage *msg = StartNewMessage(id, numBytes);
+	if (!msg)
+	{
+		LOG(LogError, "MessageConnection::SendMessage: StartNewMessage failed! Discarding message send.");
+		return;
+	}
+	msg->reliable = reliable;
+	msg->inOrder = inOrder;
+	msg->priority = priority;
+	msg->contentID = contentID;
+	assert(msg->data);
+	assert(msg->Size() == numBytes);
+	memcpy(msg->data, data, numBytes);
 	EndAndQueueMessage(msg);
 }
 
@@ -957,9 +967,9 @@ void MessageConnection::SendPingRequestMessage()
 
 	stats.Unlock();
 
-	NetworkMessage &msg = StartNewMessage(MsgIdPingRequest, 1);
-	msg.data[0] = pingID;
-	msg.priority = NetworkMessage::cMaxPriority - 2;
+	NetworkMessage *msg = StartNewMessage(MsgIdPingRequest, 1);
+	msg->data[0] = pingID;
+	msg->priority = NetworkMessage::cMaxPriority - 2;
 	EndAndQueueMessage(msg, 1, true);
 	LOG(LogVerbose, "Enqueued ping message %d.", pingID);
 }
@@ -973,9 +983,9 @@ void MessageConnection::HandlePingRequestMessage(const char *data, size_t numByt
 	}
 
 	u8 pingID = (u8)*data;
-	NetworkMessage &msg = StartNewMessage(MsgIdPingReply, 1);
-	msg.data[0] = pingID;
-	msg.priority = NetworkMessage::cMaxPriority - 1;
+	NetworkMessage *msg = StartNewMessage(MsgIdPingReply, 1);
+	msg->data[0] = pingID;
+	msg->priority = NetworkMessage::cMaxPriority - 1;
 	EndAndQueueMessage(msg, 1, true);
 	LOG(LogVerbose, "HandlePingRequestMessage: %d.", pingID);
 }

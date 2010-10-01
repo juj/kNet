@@ -23,7 +23,7 @@
 
 #ifdef WIN32
 // See http://msdn.microsoft.com/en-us/library/ms683568(VS.85).aspx
-#define CmpXChgPointer(dst, newVal, cmp) (InterlockedCompareExchangePointer((dst), (newVal), (cmp)) != (cmp))
+#define CmpXChgPointer(dst, newVal, cmp) (InterlockedCompareExchangePointer((dst), (newVal), (cmp)) == (cmp))
 #else
 // See http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html
 #define CmpXChgPointer(dst, newVal, cmp) __sync_bool_compare_and_swap((dst), (cmp), (newVal))

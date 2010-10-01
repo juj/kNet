@@ -30,11 +30,11 @@ public:
    {
 		const int maxMsgBytes = 256;
       // Start building a new message.
-      NetworkMessage &msg = connection->StartNewMessage(cHelloMessageID, maxMsgBytes);
-      msg.reliable = true;
+      NetworkMessage *msg = connection->StartNewMessage(cHelloMessageID, maxMsgBytes);
+      msg->reliable = true;
       
       // Create a DataSerializer object with a buffer of 256 bytes.
-      DataSerializer ds(msg.data, maxMsgBytes);
+      DataSerializer ds(msg->data, maxMsgBytes);
       // Add a message string.
       ds.AddString(std::string("Hello! You are connecting from ") + connection->GetEndPoint().ToString());
       // Push the message out to the client.

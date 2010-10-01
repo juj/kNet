@@ -317,14 +317,14 @@ void NetworkServer::BroadcastMessage(unsigned long id, bool reliable, bool inOrd
 		if (connection == exclude || !connection->IsWriteOpen())
 			continue;
 
-		NetworkMessage &msg = connection->StartNewMessage(id, numBytes);
-		msg.reliable = reliable;
-		msg.inOrder = inOrder;
-		msg.priority = priority;
-		msg.contentID = contentID;
-		assert(msg.data);
-		assert(msg.Size() == numBytes);
-		memcpy(msg.data, data, numBytes);
+		NetworkMessage *msg = connection->StartNewMessage(id, numBytes);
+		msg->reliable = reliable;
+		msg->inOrder = inOrder;
+		msg->priority = priority;
+		msg->contentID = contentID;
+		assert(msg->data);
+		assert(msg->Size() == numBytes);
+		memcpy(msg->data, data, numBytes);
 		connection->EndAndQueueMessage(msg);
 	}
 }
@@ -334,8 +334,8 @@ void NetworkServer::SendMessage(const NetworkMessage &msg, MessageConnection &de
 	if (!destination.IsWriteOpen())
 		return;
 
-	NetworkMessage &cloned = destination.StartNewMessage(msg.id);
-	cloned = msg;
+	NetworkMessage *cloned = destination.StartNewMessage(msg.id);
+	*cloned = msg;
 	destination.EndAndQueueMessage(cloned);
 }
 
