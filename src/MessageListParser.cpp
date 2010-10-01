@@ -15,15 +15,16 @@
 /** @file MessageListParser.cpp
 	@brief */
 
-///\todo Currently disabled since TinyXML dependency is not resolved.
-#if 0
-
 #include <tinyxml.h>
 
 #include "kNet/NetworkLogging.h"
 #include "kNet/MessageListParser.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#ifdef LINUX
+typedef _stricmp strcasecmp
+#endif
 
 #define NUMELEMS(x) (sizeof(x)/sizeof(x[0]))
 
@@ -118,7 +119,7 @@ bool ParseBool(const char *str)
 	if (!str)
 		return false;
 
-	if (!stricmp(str, "true") || !stricmp(str, "1"))
+	if (!_stricmp(str, "true") || !_stricmp(str, "1"))
 		return true;
 	else
 		return false;
@@ -203,5 +204,3 @@ const SerializedMessageDesc *SerializedMessageList::FindMessageByName(const char
 }
 
 } // ~kNet
-
-#endif

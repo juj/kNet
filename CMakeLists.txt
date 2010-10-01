@@ -15,9 +15,11 @@
 cmake_minimum_required(VERSION 2.6)
 project(kNet)
 
-#if (UNIX) # By default only depend on Boost on Linux. You can manually remove this to also use Boost on windows.
 set(USE_BOOST TRUE)
-#endif()
+set(BOOST_ROOT "C:/boost")
+
+set(USE_TINYXML TRUE)
+set(TINYXML_ROOT "C:/tinyxml")
 
 if(USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
@@ -32,9 +34,12 @@ if(USE_BOOST)
       set(Boost_USE_MULTITHREADED TRUE)
       set(Boost_USE_STATIC_LIBS TRUE)
       set(Boost_ADDITIONAL_VERSIONS "1.39.0" "1.40.0" "1.41.0" "1.42.0" "1.43.0" "1.44.0")
-
-      set(BOOST_ROOT "C:/boost")
    endif()
+endif()
+
+if (USE_TINYXML)
+   include_directories(${TINYXML_ROOT})
+   link_directories(${TINYXML_ROOT})
 endif()
 
 file(GLOB kNetSourceFiles ./src/*.cpp)
@@ -70,13 +75,18 @@ endif()
 
 add_library(kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
 
+if (USE_TINYXML)
+   target_link_libraries(kNet debug tinyxmld.lib optimized tinyxml.lib)
+endif()
+
+# Add the main kNet include directory root folder to all projects.
 include_directories(./include)
 
 if (USE_BOOST)
    find_package(Boost 1.38.0 COMPONENTS thread)
    if(Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
-      link_directories(${BOOST_LIBRARYDIR})
+      link_directories(${Boost_LIBRARY_DIRS})
    else()
       message(FATAL_ERROR "Boost not found!")
    endif()
@@ -90,6 +100,7 @@ add_subdirectory(samples/FileTransfer)
 add_subdirectory(samples/HelloServer)
 add_subdirectory(samples/HelloClient)
 add_subdirectory(samples/SimpleChat)
+add_subdirectory(samples/MessageCompiler)
 
 #add_subdirectory(samples/TrashTalk)
 #add_subdirectory(samples/SpeedTest)
@@ -114,7 +125,7 @@ endif()
 
 #set_target_properties(kNet FileTransfer HelloServer HelloClient TrashTalk SpeedTest LatencyTest FirewallTest ConnectFlood SpeexVoipServer PROPERTIES 
 
-set_target_properties(kNet FileTransfer HelloServer HelloClient SimpleChat PROPERTIES 
+set_target_properties(kNet FileTransfer HelloServer HelloClient SimpleChat MessageCompiler PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
