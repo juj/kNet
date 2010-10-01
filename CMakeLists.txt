@@ -15,9 +15,9 @@
 cmake_minimum_required(VERSION 2.6)
 project(kNet)
 
-if (UNIX) # By default only depend on Boost on Linux. You can manually remove this to also use Boost on windows.
+#if (UNIX) # By default only depend on Boost on Linux. You can manually remove this to also use Boost on windows.
 set(USE_BOOST TRUE)
-endif()
+#endif()
 
 if(USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
@@ -33,8 +33,7 @@ if(USE_BOOST)
       set(Boost_USE_STATIC_LIBS TRUE)
       set(Boost_ADDITIONAL_VERSIONS "1.39.0" "1.40.0" "1.41.0" "1.42.0" "1.43.0" "1.44.0")
 
-      set(BOOST_ROOT "C:/boost_1_44_0")
-      set(ENV{BOOST_ROOT} "C:/boost_1_44_0")
+      set(BOOST_ROOT "C:/boost")
    endif()
 endif()
 
@@ -74,7 +73,7 @@ add_library(kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
 include_directories(./include)
 
 if (USE_BOOST)
-   find_package(Boost 1.40.0 COMPONENTS thread)
+   find_package(Boost 1.38.0 COMPONENTS thread)
    if(Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
       link_directories(${BOOST_LIBRARYDIR})

@@ -13,9 +13,12 @@
    limitations under the License. */
 #pragma once
 
+#define KNET_USE_BOOST
+
 /** @file kNet.h
 	@brief The main file of KristalliNet to #include by the client application. */
 
+#include "kNetFwd.h"
 #include "kNet/Network.h"
 #include "kNet/NetworkServer.h"
 #include "kNet/MessageConnection.h"

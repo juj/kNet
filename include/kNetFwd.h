@@ -13,6 +13,8 @@
    limitations under the License. */
 #pragma once
 
+#define KNET_USE_BOOST
+
 /** @file kNetFwd.h
 	@brief Forward-declares all common symbols defined by KristalliNet. */
 
