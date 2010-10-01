@@ -140,7 +140,7 @@ void SerializedMessageList::ParseMessages(TiXmlElement *root)
 		}
 		success = node->QueryIntAttribute("priority", (int*)&desc.priority);
 		if (success == TIXML_NO_ATTRIBUTE)
-			desc.priority = 0x7FFFFFFF; // If priority not specified, use default.
+			desc.priority = 0; // If priority not specified, use the default priority of zero - the lowest priority possible.
 		if (node->Attribute("name"))
 			desc.name = node->Attribute("name");
 		desc.reliable = ParseBool(node->Attribute("reliable"));

@@ -126,9 +126,9 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 		if (e.type == SerialStruct)
 		{
 			if (e.varyingCount)
-				out << "SumArray(" << memberName << ", " << memberName << ".size())";
+				out << "kNet::SumArray(" << memberName << ", " << memberName << ".size())";
 			else if (e.count > 1)
-				out << "SumArray(" << memberName << ", " << e.count << ")";
+				out << "kNet::SumArray(" << memberName << ", " << e.count << ")";
 			else
 				out << memberName << ".Size()";
 		}
@@ -154,7 +154,7 @@ void SerializationStructCompiler::WriteSerializeMemberFunction(const SerializedE
 {
 	assert(&elem && elem.type == SerialStruct);
 
-	out << Indent(level) << "inline void SerializeTo(DataSerializer &dst) const" << endl
+	out << Indent(level) << "inline void SerializeTo(kNet::DataSerializer &dst) const" << endl
 		<< Indent(level) << "{" << endl;
 
 	++level;
@@ -214,7 +214,7 @@ void SerializationStructCompiler::WriteDeserializeMemberFunction(const Serialize
 {
 	assert(&elem && elem.type == SerialStruct);
 
-	out << Indent(level) << "inline void DeserializeFrom(DataDeserializer &src)" << endl
+	out << Indent(level) << "inline void DeserializeFrom(kNet::DataDeserializer &src)" << endl
 		<< Indent(level) << "{" << endl;
 
 	++level;
@@ -310,7 +310,7 @@ void SerializationStructCompiler::WriteMessage(const SerializedMessageDesc &mess
 	out << Indent(1) << structName << "(const char *data, size_t numBytes)" << endl 
 		<< Indent(1) << "{" << endl
 		<< Indent(2) << "InitToDefault();" << endl
-		<< Indent(2) << "DataDeserializer dd(data, numBytes);" << endl
+		<< Indent(2) << "kNet::DataDeserializer dd(data, numBytes);" << endl
 		<< Indent(2) << "DeserializeFrom(dd);" << endl
 		<< Indent(1) << "}" << endl << endl;
 
