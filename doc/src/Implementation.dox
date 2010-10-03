@@ -17,14 +17,25 @@ We have built a reference implementation of the protocol in C++ using the WinSoc
 
 \section CoreComponents Core Components
 
-The main interface to perform networking is the @ref Network "" class. It allows the user to initiate new client connections or start up a server. The @ref MessageConnection "" class represents an active connection, while the @ref NetworkServer "" class provides all the necessary functionality for maintaining a listen server and multiple client connections.
+The structure of KristalliNet is presented in the diagram below.
 
-To receive data from a connection, implement the @ref IMessageHandler "" interface. To receive notifications about connection-related events on the server, implement the @ref INetworkServerListener "" interface.    
+\image html kNetStructure.png
+
+The main interface to perform networking is the \ref kNet::Network "Network" class. It allows the user to initiate new client 
+connections or start up a server. The \ref kNet::MessageConnection "MessageConnection" class represents an active connection, 
+while the \ref kNet::NetworkServer "NetworkServer" class provides all the necessary functionality for maintaining a listen server 
+and multiple client connections.
+
+To receive data from a connection, implement the \ref kNet::IMessageHandler "IMessageHandler" interface. To receive notifications 
+about connection-related events on the server, implement the \ref kNet::INetworkServerListener "INetworkServerListener" interface.
 
 \subsection MessageWriting Reading and Writing Network Messages
 
-The @ref NetworkMessage "" class is used to build outbound messages. It has accessible member fields that correspond to the @ref KristalliMessage "" specification. To serialize data, use the @ref DataSerializer "" utility class and to parse received message streams, use the @ref DataDeserializer "" class. Read the page \ref ImmediateModeSerialization "" for an example on how to work with these classes.
+The \ref kNet::NetworkMessage "NetworkMessage" class is used to build outbound messages. It has accessible member fields that 
+correspond to the \ref KristalliMessage "" specification. To serialize data, use the \ref kNet::DataSerializer "DataSerializer" 
+utility class and to parse received message streams, use the \ref kNet::DataDeserializer "DataDeserializer" class. Read the page 
+\ref ImmediateModeSerialization "" for an example on how to work with these classes.
 
-Alternatively, avoid using immediate-mode serialization and manage the whole process automatically through serializable objects that are generated using the @ref SerializationStructCompiler "" class. For more details on this, see \ref DeclarativeModeSerialization "".
+Alternatively, avoid using immediate-mode serialization and manage the whole process automatically through serializable objects that are generated using the \ref kNet::SerializationStructCompiler "SerializationStructCompiler" class. For more details on this, see \ref DeclarativeModeSerialization "".
 
 */

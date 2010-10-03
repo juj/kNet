@@ -4,7 +4,7 @@
 
 \section ImmediateModeSerializationSec Immediate Mode Data Serialization
 
-To communicate information between the server and the client, the application must convert the data it wishes to send into a raw byte stream. The KristalliNet reference implementation uses two utility classes, \ref DataSerializer "" and \ref DataDeserializer "" internally to craft and parse all the protocol headers. The application can use these tools for its own serialization purposes as well.
+To communicate information between the server and the client, the application must convert the data it wishes to send into a raw byte stream. The KristalliNet reference implementation uses two utility classes, \ref kNet::DataSerializer "DataSerializer" and \ref kNet::DataDeserializer "DataDeserializer" internally to craft and parse all the protocol headers. The application can use these tools for its own serialization purposes as well.
 
 \section SerializationEncoding Data Encoding and Compression 
 
@@ -12,7 +12,7 @@ Serialization in preparation for network transmission differs from the task of s
 
 \subsection KristalliUDPVLE Zero Truncation using Variable-Length Encoding
 
-The data in the KristalliNet headers heavily use variable-length encoding to remove unnecessary leading zeroes from unsigned data members where applicable. In the scope of this serialization library, we simply call this <b>VLE</b> -encoding. In the header fields there are two different VLE-schemes in use. The way values are encoded according to these schemes are shown in the two boxes below. Other VLE-schemes may be defined analogously. See \ref VLEType "" for the implementation.
+The data in the KristalliNet headers heavily use variable-length encoding to remove unnecessary leading zeroes from unsigned data members where applicable. In the scope of this serialization library, we simply call this <b>VLE</b> -encoding. In the header fields there are two different VLE-schemes in use. The way values are encoded according to these schemes are shown in the two boxes below. Other VLE-schemes may be defined analogously. See \ref kNet::VLEType "VLEType" for the implementation.
 
 The signature <b>VLE-1.7/8</b> means that 7 bits and one control bit are used to store a value in the range [0, 127], and if the value is larger than that, then extra 8 bits is used. This allows a total of 15 bits to be used for the value itself.
  
@@ -62,7 +62,7 @@ todo Kirjoita/poista?
 
 \section ImmvsDecl Immediate Versus Declarative Mode Serialization
 
-When dealing with high-performance large bandwidth data transfers, it is desirable to avoid excessive copying of the data bytes around memory before they are submitted to the network interface. The \ref DataSerializer "" class implements what could be described as <b>immediate mode</b> data serialization. In this mode, the data bytes of the message are crafted imperatively on-the-spot as instructed by a sequence of serialization commands. As the end result, the data is copied directly into the proper contiguous raw format that is required for submitting it for final transmission.
+When dealing with high-performance large bandwidth data transfers, it is desirable to avoid excessive copying of the data bytes around memory before they are submitted to the network interface. The \ref kNet::DataSerializer "DataSerializer" class implements what could be described as <b>immediate mode</b> data serialization. In this mode, the data bytes of the message are crafted imperatively on-the-spot as instructed by a sequence of serialization commands. As the end result, the data is copied directly into the proper contiguous raw format that is required for submitting it for final transmission.
 
 Contrast this to \ref DeclarativeModeSerialization "" (or retained mode serialization), which is a method where this compaction to a single contiguous buffer -step is hidden behind an abstraction layer that allows a higher level specification of the data using a structured declaration, or an object model. This abstraction allows the user to specify <i>what</i> data is serialized, and to at least partially hide the actual process of <i>how</i> it is being serialized. An advantage is that the serialization and deserialization procedures do not have to be manually maintained in sync. However for all but the simplest data collections, this abstraction results in an additional level of bit copying being performed. Also, implementing a dynamic structured declaration architecture requires a lot of sophistication and may not be worth it.
 
@@ -72,7 +72,7 @@ Alternatively, KristalliNet provides a tool called \ref SerializationStructCompi
 
 \section UsingDataSerializer Using DataSerializer
 
-The following code sample shows how to serialize a sequence of data with the \ref DataSerializer "" class.
+The following code sample shows how to serialize a sequence of data with the \ref kNet::DataSerializer "DataSerializer" class.
 
 \code
  	 DataSerializer ds;
@@ -93,7 +93,7 @@ The following code sample shows how to serialize a sequence of data with the \re
 
 \section UsingDataDeSerializer Using DataDeserializer
 
-When you receive a sequence of data bytes, you can use \ref DataDeserializer "" to extract the original values from the buffer. <b>The buffer does not know the type of the data that was stored into it</b>, so you have to know the structure from beforehand. Storing the structure of the data along with the data itself would consume extra space that is not required by all applications. If you need the data to encode its own structure, you can use a format that does so, e.g. XML. 
+When you receive a sequence of data bytes, you can use \ref kNet::DataDeserializer "DataDeserializer" to extract the original values from the buffer. <b>The buffer does not know the type of the data that was stored into it</b>, so you have to know the structure from beforehand. Storing the structure of the data along with the data itself would consume extra space that is not required by all applications. If you need the data to encode its own structure, you can use a format that does so, e.g. XML. 
 
 If the data is deserialized in the exact same order than it was serialized, the recovery of the original values is guaranteed. The following code sample deserializes the data stream that was serialized in the above code snippet.  
 \code
@@ -122,6 +122,6 @@ Maintaining synchronizity between the code for serialization and deserialization
 <li>Message templates perform runtime type checking. For example, an exception is thrown if the client tries to read a string when the next item the data stream contains is an integer.</li>
 </ol>
 
-To get started with message templates, see the documentation on classes \ref SerializedMessageList "", \ref SerializedElementDesc "" and \ref SerializedElementDesc "".
+To get started with message templates, see the documentation on classes \ref kNet::SerializedMessageList "SerializedMessageList", \ref kNet::SerializedElementDesc "SerializedElementDesc" and \ref kNet::SerializedElementDesc "SerializedElementDesc".
 
 */

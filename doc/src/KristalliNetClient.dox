@@ -1,25 +1,25 @@
 /**
 
-\page KristalliProtocolClient Writing a KristalliNet Client
+\page KristalliNetClient Writing a KristalliNet Client
 
-\section KristalliProtocolClientSec Writing a KristalliNet Client
+\section KristalliNetClientSec Writing a KristalliNet Client
 
 To write a client application for KristalliNet, proceed through the following steps:
 <ol>
 <li>#include "KristalliNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
-<li>Instantiate a \ref Network "" object. Make sure this object stays alive for the duration that the server is running.</li>
-<li>Define a class that implements the \ref IMessageHandler "" interface. See \ref KristalliProtocolClientMsgHandler "" for more details.</li>
-<li>Connect to a KristalliNet server by calling \ref Network::Connect "". You need to know the hostname and listen port of the server, as well as whether the server is in TCP or UDP mode. This method immediately returns a \ref MessageConnection "" object, but that connection might not have been established yet.</li>
-<li>a) <b>Polled mode:</b>Drive the application through your own main client loop, and periodically call \ref MessageConnection::ProcessMessages "" to receive new data from the server.
+<li>Instantiate a \ref kNet::Network "Network" object. Make sure this object stays alive for the duration that the server is running.</li>
+<li>Define a class that implements the \ref kNet::IMessageHandler "IMessageHandler" interface. See \ref KristalliNetClientMsgHandler "" for more details.</li>
+<li>Connect to a KristalliNet server by calling \ref kNet::Network::Connect "Network::Connect". You need to know the hostname and listen port of the server, as well as whether the server is in TCP or UDP mode. This method immediately returns a \ref MessageConnection "" object, but that connection might not have been established yet.</li>
+<li>a) <b>Polled mode:</b>Drive the application through your own main client loop, and periodically call \ref kNet::MessageConnection::ProcessMessages "MessageConnection::ProcessMessages" to receive new data from the server.
 <br />
-b) <b>Event mode:</b> Call \ref MessageConnection::RunModalClient "" to have the MessageConnection object start up its own event-based processing loop. It will notify about new connections through the listener object your registered when connecting. To return from the event loop, call \ref MessageConnection::Disconnect "". </li>
+b) <b>Event mode:</b> Call \ref kNet::MessageConnection::RunModalClient "MessageConnection::RunModalClient" to have the MessageConnection object start up its own event-based processing loop. It will notify about new connections through the listener object your registered when connecting. To return from the event loop, call \ref MessageConnection::Disconnect "". </li>
 </ol>
 
-\section KristalliProtocolClientMsgHandler MessageConnection Event Listener
+\section KristalliNetClientMsgHandler MessageConnection Event Listener
 
 For each MessageConnection that is created, the application needs to associate a listener object to manage the messages that are received.
 
-When a new message comes in from the other end of the connection, the MessageConnection worker thread places it into an internal message queue. To process this queue, the application should periodically call \ref MessageConnection::ProcessMessages "". This will cause \ref IMessageHandler::HandleMessage "" to be called for each message in the queue, after which the message is destroyed.
+When a new message comes in from the other end of the connection, the MessageConnection worker thread places it into an internal message queue. To process this queue, the application should periodically call \ref kNet::MessageConnection::ProcessMessages "MessageConnection::ProcessMessages". This will cause \ref IMessageHandler::HandleMessage "" to be called for each message in the queue, after which the message is destroyed.
 
 This concept of processing incoming messages through a message listener is demonstrated in the next sample.
 

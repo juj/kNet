@@ -58,8 +58,8 @@ This documentation was generated as a part of the C++ reference implementation o
 <td valign="top">
 <ul style="padding-left: 10px; padding-top: 0px; margin-top: 0px;">
 <li>\ref ImplementationOverview ""</li>
-<li>\ref KristalliProtocolServer ""</li>
-<li>\ref KristalliProtocolClient ""</li>
+<li>\ref KristalliNetServer ""</li>
+<li>\ref KristalliNetClient ""</li>
 <li>\ref ImmediateModeSerialization ""</li>
 <li>\ref DeclarativeModeSerialization ""</li>
 </td>

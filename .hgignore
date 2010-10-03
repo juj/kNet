@@ -77,6 +77,7 @@ settings\.ini
 
 /docs/
 /doc/
+doc/html/
 /_UpgradeReport_Files/
 /CodeAnalyst/
 \.tbp\.dir/

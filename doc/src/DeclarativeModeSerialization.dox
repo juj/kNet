@@ -6,7 +6,7 @@
 
 Writing and maintaining all the code for (de)serialization manually can become a complicated task, especially if the protocol specification constantly changes during development. Using message templates with immediate-mode serialization can enforce a proper (de)serialization procedure, but this check is only performed at run time.
 
-To solve these issues, the \ref MessageConnection "" interface allows sending messages using a <b>Serializable Structure</b> (via \ref MessageConnection::Send "" and \ref MessageConnection::SendStruct ""). A Serializable Structure is a (user-definable) type that implicitly implements the following interface:
+To solve these issues, the \ref kNet::MessageConnection "MessageConnection" interface allows sending messages using a <b>Serializable Structure</b> (via \ref MessageConnection::Send "" and \ref MessageConnection::SendStruct ""). A Serializable Structure is a (user-definable) type that implicitly implements the following interface:
 
 \code
 struct SerializableStructure
@@ -113,9 +113,9 @@ struct MsgPaintPixel
 
 \section SerializeStructSend Sending messages using declarative-mode serialization structs
 
-All classes that implement the SerializableStructure interface can be sent through a \ref MessageConnection "" by calling \ref MessageConnection::SendStruct "". This function takes as additional parameters the fields that are required to represent a message in the \ref KristalliMessageSec "".
+All classes that implement the SerializableStructure interface can be sent through a \ref kNet::MessageConnection "MessageConnection" by calling \ref kNet::MessageConnection::SendStruct "MessageConnection::SendStruct". This function takes as additional parameters the fields that are required to represent a message in the \ref KristalliMessageSec "".
 
-Classes that implement the SerializableMessage interface can be sent using the \ref MessageConnection::Send "" function. For example, to send a message of type MsgPaintPixel as specified above, the following code can be used:
+Classes that implement the SerializableMessage interface can be sent using the \ref kNet::MessageConnection::Send "MessageConnection::Send" function. For example, to send a message of type MsgPaintPixel as specified above, the following code can be used:
 
 \code
 
