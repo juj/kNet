@@ -29,22 +29,6 @@ namespace kNet
 /// know the contents of the data.
 class DataDeserializer
 {
-	/// The data pointer to read from.
-	const char *data;
-	/// The length of the read buffer in bytes.
-	size_t size;
-	/// The element we're reading next from in the data buffer.
-	size_t elemOfs;
-	/// The current bit index of the byte we're reading, [0, 7].
-	int bitOfs;
-
-	Ptr(SerializedDataIterator) iter;
-
-	u32 ReadBitsToU32(int count);
-
-	DataDeserializer(const DataDeserializer &);
-	void operator =(const DataDeserializer &);
-
 public:
 	DataDeserializer(const char *data_, size_t size_)
 	:data(data_), size(size_)
@@ -113,6 +97,23 @@ public:
 
 	/// Advances the read pointer with the given amount of bytes. Can only be used in nontemplate read mode.
 	void SkipBytes(size_t numBytes) { SkipBits(numBytes * 8); }
+
+private:
+	/// The data pointer to read from.
+	const char *data;
+	/// The length of the read buffer in bytes.
+	size_t size;
+	/// The element we're reading next from in the data buffer.
+	size_t elemOfs;
+	/// The current bit index of the byte we're reading, [0, 7].
+	int bitOfs;
+
+	Ptr(SerializedDataIterator) iter;
+
+	u32 ReadBitsToU32(int count);
+
+	DataDeserializer(const DataDeserializer &);
+	void operator =(const DataDeserializer &);
 };
 
 template<typename T>

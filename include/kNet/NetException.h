@@ -23,7 +23,6 @@ namespace kNet
 
 class NetException : public std::exception
 {
-	std::string exception;
 public:
 	explicit NetException(const char *reason)
 	:exception(reason)
@@ -35,6 +34,9 @@ public:
 	}
 
 	const char *what() const throw() { return exception.c_str(); }
+
+private:
+	std::string exception;
 };
 
 } // ~kNet

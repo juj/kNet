@@ -32,8 +32,6 @@ struct PoolAllocatable
 template<typename T>
 class LockFreePoolAllocator
 {
-	T * volatile root;
-
 public:
 	LockFreePoolAllocator()
 	:root(0)
@@ -149,6 +147,9 @@ public:
 		}
 		cout << "Total: " << size << " elements." << endl;
 	}
+
+private:
+	T * volatile root;
 };
 
 } // ~kNet

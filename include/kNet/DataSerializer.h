@@ -37,26 +37,6 @@ struct SerializedMessage : public RefCountable
 /// suitable for disk storage or network transfer.
 class DataSerializer
 {
-	void AppendByte(u8 byte);
-	void AppendUnalignedByte(u8 byte);
-	void AppendAlignedByte(u8 byte);
-
-	/// Iterator that iterates a template that specifies the elements that are present in the message.
-	Ptr(SerializedDataIterator) iter;
-
-	/// Points to the beginning of the data buffer we are filling.
-	char *data;
-
-	/// The number of bytes in data.
-	size_t maxBytes;
-
-	/// The actual data so far.
-	Ptr(SerializedMessage) messageData;
-	/// The current element we're filling in the data buffer.
-	size_t elemOfs;
-	/// The current bit of the element we're filling in the data buffer, [0, 7].
-	int bitOfs; 
-
 public:
 	/// Instantiates a new DataSerializer that maintains its own buffer space for serialization.
 	/// The size limit for the data to serialize can be specified as an optional parameter.
@@ -127,6 +107,27 @@ public:
 
 	/// @return The total capacity of the buffer we are filling into.
 	size_t Capacity() const { return maxBytes; }
+
+private:
+	void AppendByte(u8 byte);
+	void AppendUnalignedByte(u8 byte);
+	void AppendAlignedByte(u8 byte);
+
+	/// Iterator that iterates a template that specifies the elements that are present in the message.
+	Ptr(SerializedDataIterator) iter;
+
+	/// Points to the beginning of the data buffer we are filling.
+	char *data;
+
+	/// The number of bytes in data.
+	size_t maxBytes;
+
+	/// The actual data so far.
+	Ptr(SerializedMessage) messageData;
+	/// The current element we're filling in the data buffer.
+	size_t elemOfs;
+	/// The current bit of the element we're filling in the data buffer, [0, 7].
+	int bitOfs; 
 };
 
 template<typename T>

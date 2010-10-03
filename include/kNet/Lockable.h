@@ -35,9 +35,6 @@ class Lockable;
 template<typename T>
 class Lock
 {
-	mutable Lockable<T> *lockedObject;
-	mutable T *value;
-
 public:
 	explicit Lock(Lockable<T> *lockedObject_)
 	:lockedObject(lockedObject_), value(&lockedObject->LockGet())
@@ -80,6 +77,10 @@ public:
 
 	T *operator ->() const { return value; }
 	T &operator *() { return *value; }
+
+private:
+	mutable Lockable<T> *lockedObject;
+	mutable T *value;
 };
 
 /// @internal Wraps mutex-lock acquisition and releasing to const data into a RAII-style object 
@@ -87,11 +88,6 @@ public:
 template<typename T>
 class ConstLock
 {
-	const Lockable<T> *lockedObject;
-	const T *value;
-
-	void TearDown() { lockedObject = 0; value = 0; }
-
 public:
 	explicit ConstLock(const Lockable<T> *lockedObject_)
 	:lockedObject(lockedObject_), value(&lockedObject->Lock())
@@ -124,6 +120,12 @@ public:
 
 	const T *operator ->() const { return value; }
 	const T &operator *() const { return *value; }
+
+private:
+	const Lockable<T> *lockedObject;
+	const T *value;
+
+	void TearDown() { lockedObject = 0; value = 0; }
 };
 
 /// Stores an object of type T behind a mutex-locked shield. To access the object, one has to acquire a lock to it first, and remember
@@ -131,12 +133,6 @@ public:
 template<typename T>
 class Lockable
 {
-private:
-	T value;
-
-	void operator=(const Lockable<T> &);
-	Lockable(const Lockable<T> &);
-
 public:
 	typedef Lock<T> LockType;
 	typedef ConstLock<T> ConstLockType;
@@ -243,6 +239,12 @@ public:
 #elif WIN32
 	mutable CRITICAL_SECTION lockObject;
 #endif
+
+private:
+	T value;
+
+	void operator=(const Lockable<T> &);
+	Lockable(const Lockable<T> &);
 };
 
 } // ~kNet
