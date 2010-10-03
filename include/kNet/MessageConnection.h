@@ -125,166 +125,6 @@ std::string ConnectionStateToString(ConnectionState state);
 /// connection control, the scheduling and prioritization of outbound messages, and receiving inbound messages.
 class MessageConnection : public RefCountable
 {
-protected:
-	/// The Network object inside which this MessageConnection lives. [main thread]
-	Network *owner;
-	/// If this MessageConnection represents a client connection on the server side, this gives the owner. [main thread]
-	NetworkServer *ownerServer;
-
-	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
-	/// [produced by main thread, consumed by worker thread]
-	WaitFreeQueue<NetworkMessage*> outboundAcceptQueue;
-
-	/// A queue populated by the networking thread to hold all the incoming messages until the application can process them.
-	/// [produced by worker thread, consumed by main thread]
-	WaitFreeQueue<NetworkMessage*> inboundMessageQueue;
-
-	/// A priority queue to maintain in order all the messages that are going out the pipe.
-	///\todo Make the choice of which of the following structures to use a runtime option.
-//	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
-	WaitFreeQueue<NetworkMessage*> outboundQueue;
-
-	/// Tracks all the message sends that are fragmented. [worker thread]
-	Lockable<FragmentedSendManager> fragmentedSends;
-
-	/// Tracks all the receives of fragmented messages and helps reconstruct the original messages from fragments. [worker thread]
-	FragmentedReceiveManager fragmentedReceives;
-
-	/// Allocations of NetworkMessage structures go through a pool to avoid dynamic new/delete calls when sending messages.
-	LockFreePoolAllocator<NetworkMessage> messagePool;
-
-	float rtt; ///< The currently estimated round-trip time, in milliseconds.
-
-	PolledTimer pingTimer;
-	PolledTimer statsRefreshTimer;
-
-	/// Specifies the result of a Socket read activity.
-	enum SocketReadResult
-	{
-		SocketReadOK,        ///< All data was read from the socket and it is empty for now.
-		SocketReadError,     ///< An error occurred - probably the connection is dead.
-		SocketReadThrottled, ///< There was so much data to read that we need to pause and make room for sends as well.
-	};
-
-	enum PacketSendResult
-	{
-		PacketSendOK,
-		PacketSendSocketClosed,
-		PacketSendSocketFull,
-		PacketSendNoMessages,
-		PacketSendThrottled   ///< Cannot send just yet, throttle timer is in effect.
-	};
-
-	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes);
-
-	/// Allocates a new NetworkMessage struct. [both worker and main thread]
-	NetworkMessage *AllocateNewMessage();
-
-	// Ping/RTT management operations:
-	void SendPingRequestMessage();
-	void HandlePingRequestMessage(const char *data, size_t numBytes);
-	void HandlePingReplyMessage(const char *data, size_t numBytes);
-
-	// Frees all internal dynamically allocated message data.
-	void FreeMessageData();
-
-	/// Checks if the connection has been silent too long and has now timed out.
-	void DetectConnectionTimeOut();
-
-	/// Refreshes RTT and other connection related statistics.
-	void ComputeStats();
-	
-	/// Adds a new entry for outbound data statistics.
-	void AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
-
-	/// Adds a new entry for inbound data statistics.
-	void AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
-
-	/// Pulls in all new messages from the main thread to the worker thread side and admits them to the send priority queue. [worker thread only]
-	void AcceptOutboundMessages();
-
-	/// Starts the socket-specific disconnection procedure.
-	virtual void PerformDisconnection() = 0;
-
-	/// The object that receives notifications of all received data.
-	IMessageHandler *inboundMessageHandler;
-
-	/// The underlying socket on top of which this connection operates.
-	Socket *socket;
-
-	/// Specifies the current connection state.
-	ConnectionState connectionState;
-
-	/// If true, all sends to the socket are on hold, until ResumeOutboundSends() is called.
-	bool bOutboundSendsPaused;
-
-	friend class NetworkServer;
-	friend class Network;
-
-	/// Posted when the application has pushed us some messages to handle.
-	Event eventMsgsOutAvailable;
-
-	void operator=(const MessageConnection &); ///< Noncopyable, N/I.
-	MessageConnection(const MessageConnection &); ///< Noncopyable, N/I.
-
-	tick_t lastHeardTime; ///< The tick since last successful receive from the socket.	
-	float packetsInPerSec; ///< The average number of datagrams we are receiving/second.
-	float packetsOutPerSec; ///< The average number of datagrams we are sending/second.
-	float msgsInPerSec; ///< The average number of KristalliProtocol messages we are receiving/second.
-	float msgsOutPerSec; ///< The average number of KristalliProtocol messages we are sending/second.
-	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes KristalliProtocol headers.
-	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes KristalliProtocol headers.
-
-	/// A running number attached to each outbound message (not present in network stream) to 
-	/// break ties when deducing which message should come before which.
-	unsigned long outboundMessageNumberCounter;
-
-	/// A running number that is assigned to each outbound reliable message. This is used to
-	/// enforce proper ordering of ordered messages.
-	unsigned long outboundReliableMessageNumberCounter;
-
-	/// A (messageID, contentID) pair.
-	typedef std::pair<u32, u32> MsgContentIDPair;
-
-	typedef std::map<MsgContentIDPair, std::pair<packet_id_t, tick_t> > ContentIDReceiveTrack;
-
-	/// Each (messageID, contentID) pair has a packetID "stamp" associated to them to track 
-	/// and decimate out-of-order received obsoleted messages.
-	ContentIDReceiveTrack inboundContentIDStamps;
-
-	typedef std::map<MsgContentIDPair, NetworkMessage*> ContentIDSendTrack;
-
-	ContentIDSendTrack outboundContentIDMessages;
-
-	void CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg);
-
-	void ClearOutboundMessageWithContentID(NetworkMessage *msg);
-
-	/// Checks whether the given (messageID, contentID)-pair is already out-of-date and obsoleted
-	/// by a newer packet and should not be processed.
-	/// @return True if the packet should be processed (there was no superceding record), and
-	///         false if the packet is old and should be discarded.
-	bool CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID);
-
-	void SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize);
-
-	static const unsigned long MsgIdPingRequest = 0;
-	static const unsigned long MsgIdPingReply = 1;
-	static const unsigned long MsgIdFlowControlRequest = 2;
-	static const unsigned long MsgIdPacketAck = 3;
-	static const unsigned long MsgIdDisconnect = 0x3FFFFFFF;
-	static const unsigned long MsgIdDisconnectAck = 0x3FFFFFFE;
-
-	/// Private ctor - MessageConnections are instantiated by Network and NetworkServer classes.
-	explicit MessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
-
-	void StartWorkerThread();
-	void StopWorkerThread();
-
-	virtual void Initialize() {}
-
-	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; }
-
 public:
 	virtual ~MessageConnection();
 
@@ -380,6 +220,15 @@ public:
 	/// Sends a message using a compiled message structure.
 	template<typename SerializableMessage>
 	void Send(const SerializableMessage &data, unsigned long contentID = 0);
+
+	enum PacketSendResult
+	{
+		PacketSendOK,
+		PacketSendSocketClosed,
+		PacketSendSocketFull,
+		PacketSendNoMessages,
+		PacketSendThrottled   ///< Cannot send just yet, throttle timer is in effect.
+	};
 
 	/// Serializes several messages into a single UDP/TCP packet and sends it out to the wire.
 	virtual PacketSendResult SendOutPacket() = 0;
@@ -486,6 +335,14 @@ public:
 	/// Posted when the application has pushed us some messages to handle.
 	Event NewOutboundMessagesEvent() const;
 
+	/// Specifies the result of a Socket read activity.
+	enum SocketReadResult
+	{
+		SocketReadOK,        ///< All data was read from the socket and it is empty for now.
+		SocketReadError,     ///< An error occurred - probably the connection is dead.
+		SocketReadThrottled, ///< There was so much data to read that we need to pause and make room for sends as well.
+	};
+
 	/// Reads all the new bytes available in the socket. [used internally by worker thread]
 	/// This data will be read into the connection's internal data queue, where it will be 
 	/// parsed to messages.
@@ -499,6 +356,149 @@ public:
 
 	/// Sets the worker thread object that will handle this connection.
 	void SetWorkerThread(NetworkWorkerThread *thread) { workerThread = thread; }
+
+protected:
+	/// The Network object inside which this MessageConnection lives. [main thread]
+	Network *owner;
+	/// If this MessageConnection represents a client connection on the server side, this gives the owner. [main thread]
+	NetworkServer *ownerServer;
+
+	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
+	/// [produced by main thread, consumed by worker thread]
+	WaitFreeQueue<NetworkMessage*> outboundAcceptQueue;
+
+	/// A queue populated by the networking thread to hold all the incoming messages until the application can process them.
+	/// [produced by worker thread, consumed by main thread]
+	WaitFreeQueue<NetworkMessage*> inboundMessageQueue;
+
+	/// A priority queue to maintain in order all the messages that are going out the pipe.
+	///\todo Make the choice of which of the following structures to use a runtime option.
+//	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
+	WaitFreeQueue<NetworkMessage*> outboundQueue;
+
+	/// Tracks all the message sends that are fragmented. [worker thread]
+	Lockable<FragmentedSendManager> fragmentedSends;
+
+	/// Tracks all the receives of fragmented messages and helps reconstruct the original messages from fragments. [worker thread]
+	FragmentedReceiveManager fragmentedReceives;
+
+	/// Allocations of NetworkMessage structures go through a pool to avoid dynamic new/delete calls when sending messages.
+	LockFreePoolAllocator<NetworkMessage> messagePool;
+
+	float rtt; ///< The currently estimated round-trip time, in milliseconds.
+
+	PolledTimer pingTimer;
+	PolledTimer statsRefreshTimer;
+
+	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes);
+
+	/// Allocates a new NetworkMessage struct. [both worker and main thread]
+	NetworkMessage *AllocateNewMessage();
+
+	// Ping/RTT management operations:
+	void SendPingRequestMessage();
+	void HandlePingRequestMessage(const char *data, size_t numBytes);
+	void HandlePingReplyMessage(const char *data, size_t numBytes);
+
+	// Frees all internal dynamically allocated message data.
+	void FreeMessageData();
+
+	/// Checks if the connection has been silent too long and has now timed out.
+	void DetectConnectionTimeOut();
+
+	/// Refreshes RTT and other connection related statistics.
+	void ComputeStats();
+	
+	/// Adds a new entry for outbound data statistics.
+	void AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
+
+	/// Adds a new entry for inbound data statistics.
+	void AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
+
+	/// Pulls in all new messages from the main thread to the worker thread side and admits them to the send priority queue. [worker thread only]
+	void AcceptOutboundMessages();
+
+	/// Starts the socket-specific disconnection procedure.
+	virtual void PerformDisconnection() = 0;
+
+	/// The object that receives notifications of all received data.
+	IMessageHandler *inboundMessageHandler;
+
+	/// The underlying socket on top of which this connection operates.
+	Socket *socket;
+
+	/// Specifies the current connection state.
+	ConnectionState connectionState;
+
+	/// If true, all sends to the socket are on hold, until ResumeOutboundSends() is called.
+	bool bOutboundSendsPaused;
+
+	friend class NetworkServer;
+	friend class Network;
+
+	/// Posted when the application has pushed us some messages to handle.
+	Event eventMsgsOutAvailable;
+
+	void operator=(const MessageConnection &); ///< Noncopyable, N/I.
+	MessageConnection(const MessageConnection &); ///< Noncopyable, N/I.
+
+	tick_t lastHeardTime; ///< The tick since last successful receive from the socket.	
+	float packetsInPerSec; ///< The average number of datagrams we are receiving/second.
+	float packetsOutPerSec; ///< The average number of datagrams we are sending/second.
+	float msgsInPerSec; ///< The average number of kNet messages we are receiving/second.
+	float msgsOutPerSec; ///< The average number of kNet messages we are sending/second.
+	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes kNet headers.
+	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers.
+
+	/// A running number attached to each outbound message (not present in network stream) to 
+	/// break ties when deducing which message should come before which.
+	unsigned long outboundMessageNumberCounter;
+
+	/// A running number that is assigned to each outbound reliable message. This is used to
+	/// enforce proper ordering of ordered messages.
+	unsigned long outboundReliableMessageNumberCounter;
+
+	/// A (messageID, contentID) pair.
+	typedef std::pair<u32, u32> MsgContentIDPair;
+
+	typedef std::map<MsgContentIDPair, std::pair<packet_id_t, tick_t> > ContentIDReceiveTrack;
+
+	/// Each (messageID, contentID) pair has a packetID "stamp" associated to them to track 
+	/// and decimate out-of-order received obsoleted messages.
+	ContentIDReceiveTrack inboundContentIDStamps;
+
+	typedef std::map<MsgContentIDPair, NetworkMessage*> ContentIDSendTrack;
+
+	ContentIDSendTrack outboundContentIDMessages;
+
+	void CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg);
+
+	void ClearOutboundMessageWithContentID(NetworkMessage *msg);
+
+	/// Checks whether the given (messageID, contentID)-pair is already out-of-date and obsoleted
+	/// by a newer packet and should not be processed.
+	/// @return True if the packet should be processed (there was no superceding record), and
+	///         false if the packet is old and should be discarded.
+	bool CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID);
+
+	void SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize);
+
+	static const unsigned long MsgIdPingRequest = 0;
+	static const unsigned long MsgIdPingReply = 1;
+	static const unsigned long MsgIdFlowControlRequest = 2;
+	static const unsigned long MsgIdPacketAck = 3;
+	static const unsigned long MsgIdDisconnect = 0x3FFFFFFF;
+	static const unsigned long MsgIdDisconnectAck = 0x3FFFFFFE;
+
+	/// Private ctor - MessageConnections are instantiated by Network and NetworkServer classes.
+	explicit MessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
+
+	void StartWorkerThread();
+	void StopWorkerThread();
+
+	virtual void Initialize() {}
+
+	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; }
 };
 
 template<typename SerializableData>

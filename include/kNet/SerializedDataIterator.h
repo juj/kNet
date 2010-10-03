@@ -24,28 +24,6 @@ namespace kNet
 
 class SerializedDataIterator : public RefCountable
 {
-	struct ElemInfo
-	{
-		/// The element we are accessing next.
-		SerializedElementDesc *elem;
-		/// The index of the elem we are accessing next.
-		int nextElem;
-		/// The index of the instance we are accessing next.
-		int nextIndex;
-		/// The total number of instances of this element we are accessing.
-		int count;
-		/// If this element is a dynamic count -one, then this tracks whether the count has been passed in.
-		bool dynamicCountSpecified;
-	};
-
-	void ProceedToNextElement();
-	void DescendIntoStructure();
-
-	/// Stores the tree traversal progress.
-	std::vector<ElemInfo> currentElementStack;
-	/// The type of the message we are building.
-	const SerializedMessageDesc &desc;
-
 public:
 	SerializedDataIterator(const SerializedMessageDesc &desc_)
 	:desc(desc_)
@@ -67,6 +45,29 @@ public:
 	void SetVaryingElemSize(u32 count);
 
 	void ResetTraversal();
+
+private:
+	struct ElemInfo
+	{
+		/// The element we are accessing next.
+		SerializedElementDesc *elem;
+		/// The index of the elem we are accessing next.
+		int nextElem;
+		/// The index of the instance we are accessing next.
+		int nextIndex;
+		/// The total number of instances of this element we are accessing.
+		int count;
+		/// If this element is a dynamic count -one, then this tracks whether the count has been passed in.
+		bool dynamicCountSpecified;
+	};
+
+	void ProceedToNextElement();
+	void DescendIntoStructure();
+
+	/// Stores the tree traversal progress.
+	std::vector<ElemInfo> currentElementStack;
+	/// The type of the message we are building.
+	const SerializedMessageDesc &desc;
 };
 
 } // ~kNet

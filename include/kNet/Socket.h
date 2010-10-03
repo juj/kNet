@@ -100,27 +100,6 @@ struct OverlappedTransferBuffer
 /// Represents a low-level network socket.
 class Socket : public RefCountable
 {
-	SOCKET connectSocket;
-	sockaddr_in udpPeerName;
-	std::string destinationAddress;
-	unsigned short destinationPort;
-	SocketTransportLayer transport;
-	size_t maxSendSize;
-	bool writeOpen;
-	bool readOpen;
-
-	/// UDP server sockets operate in unbound (destination, or peer) mode, since the same socket is used
-	/// to send and receive data to and from all client addresses. UDP client sockets
-	/// and TCP sockets are always bound to a peer.
-	bool isUdpServerSocket;
-
-#ifdef WIN32
-	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
-	WaitFreeQueue<OverlappedTransferBuffer*> queuedSendBuffers;
-
-	void EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer = 0);
-#endif
-
 public:
 	Socket();
 
@@ -249,6 +228,28 @@ public:
 	void SetBlocking(bool isBlocking);
 
 	SOCKET &GetSocketHandle() { return connectSocket; }
+
+private:
+	SOCKET connectSocket;
+	sockaddr_in udpPeerName;
+	std::string destinationAddress;
+	unsigned short destinationPort;
+	SocketTransportLayer transport;
+	size_t maxSendSize;
+	bool writeOpen;
+	bool readOpen;
+
+	/// UDP server sockets operate in unbound (destination, or peer) mode, since the same socket is used
+	/// to send and receive data to and from all client addresses. UDP client sockets
+	/// and TCP sockets are always bound to a peer.
+	bool isUdpServerSocket;
+
+#ifdef WIN32
+	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
+	WaitFreeQueue<OverlappedTransferBuffer*> queuedSendBuffers;
+
+	void EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer = 0);
+#endif
 };
 
 } // ~kNet

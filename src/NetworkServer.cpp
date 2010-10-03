@@ -399,4 +399,15 @@ void NetworkServer::ConnectionClosed(MessageConnection *connection)
 	LOGNET("Unknown MessageConnection passed to NetworkServer::Disconnect!");
 }
 
+std::vector<Socket *> &NetworkServer::ListenSockets()
+{
+	return listenSockets;
+}
+
+NetworkServer::ConnectionMap NetworkServer::GetConnections()
+{ 
+	Lockable<ConnectionMap>::LockType lock = clients.Acquire();
+	return *lock;
+}
+
 } // ~kNet

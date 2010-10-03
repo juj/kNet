@@ -30,19 +30,6 @@ class Array;
 template<typename T, typename AllocT>
 class ArrayIterator
 {
-private:
-	T *ptr;
-	Array<T, AllocT> *container;
-
-	ArrayIterator(Array<T, AllocT> &container_, T *ptr_)
-	:container(&container_), ptr(ptr_)
-	{
-		assert(ptr >= container->beginptr());
-		assert(ptr <= container->endptr());
-	}
-
-	friend class Array<T, AllocT>;
-
 public:
 	ArrayIterator(const ArrayIterator &rhs):ptr(rhs.ptr), container(rhs.container) {}
 	~ArrayIterator() {}
@@ -94,20 +81,25 @@ public:
 	inline bool operator!=(const ArrayIterator &rhs) const { return ptr != rhs.ptr; }
 	inline bool operator>(const ArrayIterator &rhs) const { return ptr > rhs.ptr; }
 	inline bool operator>=(const ArrayIterator &rhs) const { return ptr >= rhs.ptr; }
+
+private:
+	T *ptr;
+	Array<T, AllocT> *container;
+
+	ArrayIterator(Array<T, AllocT> &container_, T *ptr_)
+	:container(&container_), ptr(ptr_)
+	{
+		assert(ptr >= container->beginptr());
+		assert(ptr <= container->endptr());
+	}
+
+	friend class Array<T, AllocT>;
 };
 
 /// std::vector -equivalent.
 template<typename T, typename AllocT>
 class Array
 {
-private:
-	T *data;
-	AllocT *allocator;
-	size_t cap; ///< The number of elements allocated in the data.
-	size_t used; ///< The number of elements actually in use.
-
-	static const size_t initialSize = 32;
-
 public:
 	typedef ArrayIterator<T, AllocT> iterator;
 
@@ -364,6 +356,14 @@ public:
 
 		return *this;
 	}
+
+private:
+	T *data;
+	AllocT *allocator;
+	size_t cap; ///< The number of elements allocated in the data.
+	size_t used; ///< The number of elements actually in use.
+
+	static const size_t initialSize = 32;
 };
 
 } // ~kNet

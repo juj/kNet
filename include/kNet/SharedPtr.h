@@ -29,9 +29,6 @@ namespace kNet
 /// Objects that require reference count tracking derive publicly from this.
 class RefCountable
 {
-private:
-	unsigned int refCount;
-
 public:
 	RefCountable():refCount(0) {}
 //	~RefCountable() {} // Can't put any functionality here since not virtual.
@@ -39,6 +36,9 @@ public:
 	void AddRef() { ++refCount; }
 	void DecRef() { assert(refCount > 0); --refCount; }
 	unsigned int RefCount() { return refCount; }
+
+private:
+	unsigned int refCount;
 };
 
 /** @brief SharedPtr is an intrusive refcount-tracked single-object lifetime-manager.
@@ -49,12 +49,6 @@ FreeFunc::free(T*) is called to clean up the memory used by the resource. */
 template<typename T>
 class SharedPtr
 {
-private:
-	T *dataPtr;			///< Pointer to the actual data.
-
-	void AddRef();		///< Increases reference count.
-	void Release();	///< Decreases reference count and deletes the object if 0.
-
 public:
 	/// Constructs a zero pointer.
 	SharedPtr():dataPtr(0) {}
@@ -93,6 +87,12 @@ public:
 	operator bool() const; ///< Test if pointer is good.
 
 	operator bool(); ///< Test if pointer is good.
+
+private:
+	T *dataPtr;			///< Pointer to the actual data.
+
+	void AddRef();		///< Increases reference count.
+	void Release();	///< Decreases reference count and deletes the object if 0.
 };
 
 /** Equality comparison for two SharedPtr. Note that the types must match.

@@ -62,6 +62,14 @@ namespace kNet
 
 class UDPMessageConnection : public MessageConnection
 {
+public:
+	UDPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
+	~UDPMessageConnection();
+
+	void SetDatagramInFlowRatePerSecond(int newDatagramReceiveRate, bool internalCall);
+
+	bool IsSlaveMode() const { return isSlaveSocket; }
+
 private:
 	/// Reads all the new bytes available in the socket. [used internally by worker thread]
 	/// @return The number of bytes successfully read.
@@ -244,14 +252,6 @@ private:
 	void DumpConnectionStatus() const;
 
 	friend class NetworkServer;
-
-public:
-	UDPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
-	~UDPMessageConnection();
-
-	void SetDatagramInFlowRatePerSecond(int newDatagramReceiveRate, bool internalCall);
-
-	bool IsSlaveMode() const { return isSlaveSocket; }
 };
 
 } // ~kNet

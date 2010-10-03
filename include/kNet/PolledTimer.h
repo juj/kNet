@@ -23,9 +23,6 @@ namespace kNet
 
 class PolledTimer
 {
-	bool enabled;
-	tick_t alarmTime;
-
 public:
 	PolledTimer():enabled(false)
 	{
@@ -139,6 +136,10 @@ public:
 		while(enabled && TicksLeft() > 0)
 			;
 	}
+
+private:
+	bool enabled;
+	tick_t alarmTime;
 };
 
 } // ~kNet

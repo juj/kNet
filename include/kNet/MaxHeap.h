@@ -54,10 +54,6 @@ template<typename T, typename PriorityCmp = sort::TriCmpObj<T>,
 			typename AllocT = StdCAlloc>
 class MaxHeap
 {
-private:
-	/** Internal helper for Search to start the search at the given index in the array. */
-	int Search(const T &value, int index);
-
 public:
 	/// Gives access to the queue as a linear array form.
 	Array<T, AllocT> data;
@@ -115,6 +111,11 @@ public:
 		Running time is O(n).
 		@return The index of the element where the first equaling item was found, or -1 if none was found. */
 	int Search(const T &value) { return Search(value, 0); }
+
+private:
+	/** Internal helper for Search to start the search at the given index in the array. */
+	int Search(const T &value, int index);
+
 };
 
 template<typename T, typename PriorityCmp, typename EqualCmp, typename LookupNotify, typename AllocT>

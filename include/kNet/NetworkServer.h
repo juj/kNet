@@ -36,51 +36,6 @@ class Network;
 /// NetworkServer has the 
 class NetworkServer : public RefCountable
 {
-	/// Private ctor - NetworkServer instances are created by the Network class.
-	NetworkServer(Network *owner, std::vector<Socket *> listenSockets);
-
-	/// We store possibly multiple listening sockets so that the server
-	/// can listen on several sockets (UDP or TCP) at once, making it
-	/// possible for clients to bypass firewalls and/or mix UDP and TCP use.
-	std::vector<Socket *> listenSockets;
-
-	typedef std::map<EndPoint, Ptr(MessageConnection)> ConnectionMap;
-
-	/// The list of active client connections.
-	Lockable<ConnectionMap> clients;
-
-	Network *owner;
-
-	/// If true, new connection attempts are processed. Otherwise, just discard all connection packets.
-	bool acceptNewConnections;
-
-	INetworkServerListener *networkServerListener;
-
-	void RegisterServerListener(INetworkServerListener *listener);
-
-	/// Stops listening for new connections, but all already established connections are maintained.
-	/// \todo As a limitation of this library, you cannot reopen the sockets after closing them.
-	/// You must create a new NetworkServer instance to do that, but this means you'll lose the old active connections.
-	void CloseListenSockets();
-
-	Socket *AcceptConnections(Socket *listenSocket);
-
-	struct ConnectionAttemptDescriptor
-	{
-		Socket *listenSocket;
-		EndPoint peer;
-		Datagram data;
-	};
-
-	WaitFreeQueue<ConnectionAttemptDescriptor> udpConnectionAttempts;
-
-	/// Called from the network worker thread.
-	void EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
-
-	bool ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
-
-	friend class Network;
-
 public:
 	/// When destroyed, the NetworkServer closes all the server connections it has.
 	~NetworkServer();
@@ -137,14 +92,57 @@ public:
 	void ConnectionClosed(MessageConnection *connection);
 
 	/// Returns all the sockets this server is listening on.
-	std::vector<Socket *> &ListenSockets() { return listenSockets; }
+	std::vector<Socket *> &ListenSockets();
+
+	typedef std::map<EndPoint, Ptr(MessageConnection)> ConnectionMap;
 
 	/// Returns all the currently tracked connections.
-	ConnectionMap GetConnections()
-	{ 
-		Lockable<ConnectionMap>::LockType lock = clients.Acquire();
-		return *lock;
-	}
+	ConnectionMap GetConnections();
+
+private:
+	/// Private ctor - NetworkServer instances are created by the Network class.
+	NetworkServer(Network *owner, std::vector<Socket *> listenSockets);
+
+	/// We store possibly multiple listening sockets so that the server
+	/// can listen on several sockets (UDP or TCP) at once, making it
+	/// possible for clients to bypass firewalls and/or mix UDP and TCP use.
+	std::vector<Socket *> listenSockets;
+
+	/// The list of active client connections.
+	Lockable<ConnectionMap> clients;
+
+	/// The Network object this NetworkServer was spawned from.
+	Network *owner;
+
+	/// If true, new connection attempts are processed. Otherwise, just discard all connection packets.
+	bool acceptNewConnections;
+
+	INetworkServerListener *networkServerListener;
+
+	void RegisterServerListener(INetworkServerListener *listener);
+
+	/// Stops listening for new connections, but all already established connections are maintained.
+	/// \todo As a limitation of this library, you cannot reopen the sockets after closing them.
+	/// You must create a new NetworkServer instance to do that, but this means you'll lose the old active connections.
+	void CloseListenSockets();
+
+	Socket *AcceptConnections(Socket *listenSocket);
+
+	struct ConnectionAttemptDescriptor
+	{
+		Socket *listenSocket;
+		EndPoint peer;
+		Datagram data;
+	};
+
+	WaitFreeQueue<ConnectionAttemptDescriptor> udpConnectionAttempts;
+
+	/// Called from the network worker thread.
+	void EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
+
+	bool ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
+
+	friend class Network;
 };
 
 } // ~kNet

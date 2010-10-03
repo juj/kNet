@@ -38,6 +38,9 @@ namespace kNet
 
 class TCPMessageConnection : public MessageConnection
 {
+public:
+	TCPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
+
 private:
 	/// Maintains a byte buffer that contains partial messages. (Used only in TCP mode) [worker thread]
 	RingBuffer tcpInboundSocketData;
@@ -57,10 +60,6 @@ private:
 	std::vector<NetworkMessage*> serializedMessages; // MessageConnection::TCPSendOutPacket()
 
 	void PerformDisconnection();
-
-public:
-	TCPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
-
 };
 
 } // ~kNet

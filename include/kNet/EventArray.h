@@ -27,8 +27,6 @@ namespace kNet
 /// become set. This object never calls Create() or Close() on any Event that is added to it.
 class EventArray
 {
-	static const int maxEvents = 64; ///< WSAWaitForMultipleEvents has a built-in limit of 64 items, hence this value.
-	int numAdded;
 public:
 	/// Constructs an EventArray with an empty list of events.
 	EventArray();
@@ -54,12 +52,14 @@ public:
 	/// Returns the number of events added to the array.
 	int Size() const;
 
-#ifdef WIN32
 private:
+	static const int maxEvents = 64; ///< WSAWaitForMultipleEvents has a built-in limit of 64 items, hence this value.
+	int numAdded;
+
+#ifdef WIN32
 	WSAEVENT events[maxEvents]; 
 
 #elif LINUX
-private:
 	fd_set readfds;
 	fd_set writefds;
 	int nfds;

@@ -54,43 +54,6 @@ inline packet_id_t SubPacketID(packet_id_t id, int sub)
 /// with fields that specify how it is treated by the network connection.
 class NetworkMessage : public PoolAllocatable<NetworkMessage>
 {
-private:
-
-//	void operator=(const NetworkMessage &); ///< Noncopyable, N/I.
-//	NetworkMessage(const NetworkMessage &); ///< Noncopyable, N/I.
-
-	friend class MessageConnection;
-	friend class UDPMessageConnection;
-	friend class TCPMessageConnection;
-	friend class FragmentedSendManager;
-	friend struct FragmentedSendManager::FragmentedTransfer;
-
-	/// A running number that is assigned to each message to distinguish the order
-	/// the messages were added to the queue. The network layer manages this numbering,
-	/// the application can not control it. This is used to break ties on packets
-	/// that have the same priority.
-	unsigned long messageNumber;
-
-	/// A running number that is assigned to each reliable message. This is used in the
-	/// network byte stream to implement ordering of messages.
-	unsigned long reliableMessageNumber;
-
-	/// The number of times this message has been sent and not been acked (reliable messages only).
-	unsigned long sendCount;
-
-	/// The index of this fragment, or not used (undefined) if totalNumFragments==0.
-	unsigned long fragmentIndex;
-
-	/// Tells the number of bytes that have been allocated and can be filled to the data array.
-	size_t dataCapacity;
-
-	/// Specifies the number of bytes actually used in the data array.
-	size_t dataSize;
-
-	/// If 0, this message is being sent unfragmented. Otherwise, this NetworkMessage is a fragment of the whole
-	/// message and transfer points to the data structure that tracks the transfer of a fragmented message.
-	FragmentedSendManager::FragmentedTransfer *transfer;
-
 public:
 	/// To create a NetworkMessage, call MessageConnection::StartNewMessage();
 	NetworkMessage()
@@ -180,6 +143,42 @@ public:
 
 	/// Returns the number of this message. The message number identifies the admission order of messages to the outbound queue.
 	unsigned long MessageNumber() const { return messageNumber; }
+
+private:
+//	void operator=(const NetworkMessage &); ///< Noncopyable, N/I.
+//	NetworkMessage(const NetworkMessage &); ///< Noncopyable, N/I.
+
+	friend class MessageConnection;
+	friend class UDPMessageConnection;
+	friend class TCPMessageConnection;
+	friend class FragmentedSendManager;
+	friend struct FragmentedSendManager::FragmentedTransfer;
+
+	/// A running number that is assigned to each message to distinguish the order
+	/// the messages were added to the queue. The network layer manages this numbering,
+	/// the application can not control it. This is used to break ties on packets
+	/// that have the same priority.
+	unsigned long messageNumber;
+
+	/// A running number that is assigned to each reliable message. This is used in the
+	/// network byte stream to implement ordering of messages.
+	unsigned long reliableMessageNumber;
+
+	/// The number of times this message has been sent and not been acked (reliable messages only).
+	unsigned long sendCount;
+
+	/// The index of this fragment, or not used (undefined) if totalNumFragments==0.
+	unsigned long fragmentIndex;
+
+	/// Tells the number of bytes that have been allocated and can be filled to the data array.
+	size_t dataCapacity;
+
+	/// Specifies the number of bytes actually used in the data array.
+	size_t dataSize;
+
+	/// If 0, this message is being sent unfragmented. Otherwise, this NetworkMessage is a fragment of the whole
+	/// message and transfer points to the data structure that tracks the transfer of a fragmented message.
+	FragmentedSendManager::FragmentedTransfer *transfer;
 };
 
 } // ~kNet

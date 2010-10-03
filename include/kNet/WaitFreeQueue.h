@@ -33,19 +33,6 @@ namespace kNet
 template<typename T>
 class WaitFreeQueue
 {
-private:
-	T *data;
-	/// Stores the AND mask (2^Size-1) used to perform the modulo check.
-	unsigned long maxElementsMask;
-	/// Stores the index of the first element in the queue. The next item to come off the queue is at this position,
-	/// unless head==tail, and the queue is empty. \todo Convert to C++0x atomic<unsigned long> head;
-	volatile unsigned long head;
-	/// Stores the index of one past the last element in the queue. \todo Convert to C++0x atomic<unsigned long> head;
-	volatile unsigned long tail; 
-
-	WaitFreeQueue(const WaitFreeQueue<T> &rhs);
-	void operator=(const WaitFreeQueue<T> &rhs);
-
 public:
 	/// @param maxElements A power-of-2 number that specifies the size of the ring buffer to construct. The number of elements the queue can store is maxElements-1.
 	explicit WaitFreeQueue(size_t maxElements)
@@ -217,6 +204,19 @@ public:
 		size_t head_ = (head + 1) & maxElementsMask;
 		head = head_;
 	}
+
+private:
+	T *data;
+	/// Stores the AND mask (2^Size-1) used to perform the modulo check.
+	unsigned long maxElementsMask;
+	/// Stores the index of the first element in the queue. The next item to come off the queue is at this position,
+	/// unless head==tail, and the queue is empty. \todo Convert to C++0x atomic<unsigned long> head;
+	volatile unsigned long head;
+	/// Stores the index of one past the last element in the queue. \todo Convert to C++0x atomic<unsigned long> head;
+	volatile unsigned long tail; 
+
+	WaitFreeQueue(const WaitFreeQueue<T> &rhs);
+	void operator=(const WaitFreeQueue<T> &rhs);
 };
 
 template<typename T>

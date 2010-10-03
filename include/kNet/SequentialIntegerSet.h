@@ -25,17 +25,6 @@ namespace kNet
 
 class SequentialIntegerSet
 {
-	unsigned long *table;
-	int tableSize;
-	int tableSizeMask;
-	int size;
-
-private:
-	void Add(unsigned long *dstTable, int value)
-	{
-		dstTable[Hash(value)] = value;
-	}
-
 public:
 	explicit SequentialIntegerSet(int tableSize_)
 	:tableSize(tableSize_), tableSizeMask(tableSize_-1)
@@ -94,6 +83,17 @@ public:
 	bool Exists(unsigned long value) const
 	{
 		return table[Hash(value)] == value;
+	}
+
+private:
+	unsigned long *table;
+	int tableSize;
+	int tableSizeMask;
+	int size;
+
+	void Add(unsigned long *dstTable, int value)
+	{
+		dstTable[Hash(value)] = value;
 	}
 };
 

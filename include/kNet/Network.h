@@ -35,34 +35,6 @@ class NetworkWorkerThread;
 /// Provides the application an interface for both client and server networking.
 class Network
 {
-	std::string machineIP;
-
-	/// Maintains the server-related data structures if this computer
-	/// is acting as a server. Otherwise this data is not used.
-	Ptr(NetworkServer) server;
-	/// Contains all active sockets in the system.
-	std::list<Socket> sockets;
-
-	/// Takes the ownership of the given socket, and returns a pointer to the owned one.
-	Socket *StoreSocket(const Socket &cp);
-
-	friend class NetworkServer;
-
-	void SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage);
-
-	/// Returns a new UDP socket that is bound to communicating with the given endpoint.
-	/// Does NOT send the connection packet.
-	/// The returned pointer is owned by this class.
-	Socket *ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint);
-
-	/// Opens a new socket that listens on the given port using the given transport.
-	Socket *OpenListenSocket(unsigned short port, SocketTransportLayer transport);
-
-	NetworkWorkerThread *workerThread;
-
-	void Init();
-	void DeInit();
-
 public:
 	Network();
 	~Network();
@@ -92,7 +64,7 @@ public:
 
 	void CloseConnection(Ptr(MessageConnection) connection);
 
-	/** Connects to the given address:port using KristalliProtocol over UDP or TCP. When you are done with the connection,
+	/** Connects to the given address:port using kNet over UDP or TCP. When you are done with the connection,
 		free it by letting the refcount go to 0. */
 	Ptr(MessageConnection) Connect(const char *address, unsigned short port, SocketTransportLayer transport, IMessageHandler *messageHandler, Datagram *connectMessage = 0);
 
@@ -109,6 +81,35 @@ public:
 
 	/// Returns the error id corresponding to the last error that occurred in the networking library.
 	static int GetLastError();
+
+private:
+	std::string machineIP;
+
+	/// Maintains the server-related data structures if this computer
+	/// is acting as a server. Otherwise this data is not used.
+	Ptr(NetworkServer) server;
+	/// Contains all active sockets in the system.
+	std::list<Socket> sockets;
+
+	/// Takes the ownership of the given socket, and returns a pointer to the owned one.
+	Socket *StoreSocket(const Socket &cp);
+
+	friend class NetworkServer;
+
+	void SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage);
+
+	/// Returns a new UDP socket that is bound to communicating with the given endpoint.
+	/// Does NOT send the connection packet.
+	/// The returned pointer is owned by this class.
+	Socket *ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint);
+
+	/// Opens a new socket that listens on the given port using the given transport.
+	Socket *OpenListenSocket(unsigned short port, SocketTransportLayer transport);
+
+	NetworkWorkerThread *workerThread;
+
+	void Init();
+	void DeInit();
 
 #ifdef WIN32
 	WSADATA wsaData;
