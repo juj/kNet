@@ -1,22 +1,22 @@
 /**
-\page KristalliUDP KristalliProtocol Transport over UDP
+\page KristalliUDP KristalliNet Transport over UDP
 
-\section KristalliUDPMain KristalliProtocol Transport over UDP
+\section KristalliUDPMain KristalliNet Transport over UDP
 
-This specification defines the details of KristalliProtocol Transport layer over UDP. 
+This specification defines the details of KristalliNet Transport layer over UDP. 
 
-KristalliProtocol over UDP offers the following enhancements over raw UDP datagrams:
+KristalliNet over UDP offers the following enhancements over raw UDP datagrams:
 <ul>
-<li><b>Connection-oriented.</b> KristalliProtocol implements virtual sessioning on top of the connectionless UDP layer.</li>
+<li><b>Connection-oriented.</b> KristalliNet implements virtual sessioning on top of the connectionless UDP layer.</li>
 <li><b>Reliable messaging.</b> Datagrams that are flagged reliable are retransmitted until they reach their destination.</li>
 <li><b>In-order messaging.</b> Messages that have ordering requirements are applied at the receiving end in their proper order. The application can model the dependencies as appropriate, using no/single/multiple in-order transmission channels or an arbitrary dependency graph. </li>
 <li><b>Message coalescing.</b> A single UDP datagram can carry as many application-level messages as can fit, instead of a naive 1:1 mapping between datagrams and messages that is sometimes used. </li>
-<li><b>Byte-efficient transport.</b> On average, the per-datagram overhead is 3-10 bytes, and the per-message overhead is 3-5 bytes. KristalliProtocol
+<li><b>Byte-efficient transport.</b> On average, the per-datagram overhead is 3-10 bytes, and the per-message overhead is 3-5 bytes. KristalliNet
 is suitable for applications profiled to transfer large amounts of small messages.</li> 
 <li><b>Large message transfers.</b> UDP datagram has a size limit of circa 1400 bytes, but the protocol supports transparent fragmentation and reassembling of large messages to hide this limit. The maximum message size is 2^30 * 1400 bytes, i.e. virtually unlimited.</li>
 </ul>
 
-The major advantages of using KristalliProtocol over UDP instead of TCP are the following:
+The major advantages of using KristalliNet over UDP instead of TCP are the following:
 <ul>
 <li><b>Unreliable messaging.</b> Datagrams that are not flagged reliable are treated unreliable and resources will not be wasted in guaranteeing their delivery.</li>
 <li><b>Out-of-order messaging.</b> If a TCP frame is lost, the stream transfer halts until the loss is detected and retransmitted. With UDP, messages without in-order requirements can be delivered to the application regardless of whether other frames have been lost.
@@ -26,12 +26,12 @@ The major advantages of using KristalliProtocol over UDP instead of TCP are the 
 
 The protocol specification was designed keeping in mind the possibility of implementing a certain set of performance-related features. For more details on this, see the \ref ImplementationOverview "C++ reference implementation".
 
-The image below shows an overview of the structural format of a KristalliProtocol UDP datagram.
-\image html KristalliFormat.png "KristalliProtocol UDP Datagram Structure."
+The image below shows an overview of the structural format of a KristalliNet UDP datagram.
+\image html KristalliFormat.png "KristalliNet UDP Datagram Structure."
 
 \subsection KristalliUDPByteFormat Datagram Byte Format
   
-The byte format of a KristalliProtocol <b>UDP datagram</b> is as follows.
+The byte format of a KristalliNet <b>UDP datagram</b> is as follows.
 Multibyte variables are serialized in little-endian order. To understand the VLE-encoded fields in the headers, see \ref KristalliUDPVLE "". 
 
 <div style="background-color: #E0E0E0; padding: 5px; border: solid 1px black;">
@@ -47,7 +47,7 @@ IOD x VLE-1.7/8    InOrderDatagramIndexArray.       [Only present if InOrder is 
 </pre>
 </div>
 
-The byte format of a KristalliProtocol <b>Message block</b> is as follows.
+The byte format of a KristalliNet <b>Message block</b> is as follows.
 <div style="background-color: #E0E0E0; padding: 5px; border: solid 1px black;">
 <b>Message Block Format.</b>
 <pre style="padding: 0px; margin: 0px;">
@@ -65,7 +65,7 @@ VLE-1.7/1.7/16     FragmentNumber.                  [Only present if Fragment is
 </pre>
 </div>
 
-The byte format of a KristalliProtocol <b>Content block</b> is as follows.
+The byte format of a KristalliNet <b>Content block</b> is as follows.
 <div style="background-color: #E0E0E0; padding: 5px; border: solid 1px black;">
 <b>Content Block Format.</b>
 <pre>
@@ -74,7 +74,7 @@ VLE-1.7/1.7/16     MessageID                        [Only present if FragmentSta
 </pre>
 </div>
    
-All the datagrams transferred through a KristalliProtocol channel need to follow this datagram format. 
+All the datagrams transferred through a KristalliNet channel need to follow this datagram format. 
 
 \subsection SessionInit Reserved Messages
 
@@ -179,7 +179,7 @@ If the application sends any other application-specific message than the <span s
  
 \subsection SessionChar Characteristic Values
 
-KristalliProtocol uses the following constant values to specify time intervals and data rates and other behavior-affecting values. These parameters may be changed at will and need not be static, but servers running on a changed set of characteristics should explicitly specify so. 
+KristalliNet uses the following constant values to specify time intervals and data rates and other behavior-affecting values. These parameters may be changed at will and need not be static, but servers running on a changed set of characteristics should explicitly specify so. 
 
 <div style="background-color: #E0B0B0; padding: 5px; border: solid 1px black;">
 <i>When a new connection is successfully established, this is the default datagram send and receive rate that both ends should adhere to.</i> <br />
@@ -217,7 +217,7 @@ KristalliProtocol uses the following constant values to specify time intervals a
 
 Building a session on top of the connectionless UDP layer is performed using traditional TCP-like three-way handshaking and acknowledged disconnection.
  
-A KristalliProtocol implementation has to maintain a state variable specifying the current <b>connection state</b>. The connection is expected to operate in the following modes:
+A KristalliNet implementation has to maintain a state variable specifying the current <b>connection state</b>. The connection is expected to operate in the following modes:
 <ul>
 <li><b>ConnectionClosed</b>: No active connection attempt has yet been initiated or the connection has already been closed.</li>
 <li><b>ConnectionSyn</b>: The connection has sent a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message and is waiting for acknowledgement. No datagrams may be sent through when the connection is in this state. When the connection receives a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSynAck</span> message, it sends a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectAck</span> message and transitions to <span style="background-color: #D5FFD5; border-bottom: dashed 1px green;">ConnectionOK</span> state, or it sends a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">DisconnectAck</span> message and transitions to <span style="background-color: #D5FFD5; border-bottom: dashed 1px green;">ConnectionClosed</span> state. If the connection receives any other messages while in this state or if the <span style="background-color: #FFD5D5; border-bottom: dashed 1px red;">ConnectTimeOut</span> limit is exceeded, the connection transitions to <span style="background-color: #D5FFD5; border-bottom: dashed 1px green;">ConnectionClosed</span> state.</li>
@@ -249,7 +249,7 @@ The states <span style="background-color: #D5FFD5; border-bottom: dashed 1px gre
 #  Server abox Server [label="ConnectionOK" ];
   
   --- [label="The connection is now properly established."];
-  Client rbox Server [label="Communication using KristalliProtocol datagrams."];
+  Client rbox Server [label="Communication using KristalliNet datagrams."];
   ...;
 
 #  Client abox Client [label="ConnectionDisconnecting" ],
@@ -269,11 +269,11 @@ The states <span style="background-color: #D5FFD5; border-bottom: dashed 1px gre
 <span style="vertical-align: super;">2</span>May be replaced with any application-specific message.  -->
 </div>
 
-To initiate a connection attempt, the client sends a KristalliProtocol datagram containing a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message. The data contained in this message is arbitrary and up to the application to specify. It can be left empty, or can contain a username or a password. It is up to the server application to parse this data and to either accept or reject the connection attempt. The rest of the communication then proceeds as specified above.    
+To initiate a connection attempt, the client sends a KristalliNet datagram containing a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message. The data contained in this message is arbitrary and up to the application to specify. It can be left empty, or can contain a username or a password. It is up to the server application to parse this data and to either accept or reject the connection attempt. The rest of the communication then proceeds as specified above.    
  
-\subsection ServerListen KristalliProtocol Server Side Listener Socket
+\subsection ServerListen KristalliNet Server Side Listener Socket
 
-On the server side the host maintains a single listen socket that receives inbound KristalliProtocol datagrams. It is up to the server application to specify a port number on which the server listens. The server maintains two operational modes:
+On the server side the host maintains a single listen socket that receives inbound KristalliNet datagrams. It is up to the server application to specify a port number on which the server listens. The server maintains two operational modes:
 <ul>
 <li><b>Listen Open</b>: If set, the server is actively listening and handling new connection attempts. If not set, the server ignores all new connection attempts, but continues to manage all the existing connections.</li>
 <li><b>Stealth Mode</b>: If set, the server operates in stealth mode, saving bandwidth and resources when handling new connection attempts. Otherwise the server operates in Responsive Mode by informing clients of all results of connection attempts.</li>
@@ -281,7 +281,7 @@ On the server side the host maintains a single listen socket that receives inbou
 
 When the server receives a datagram that corresponds to a new connection endpoint, it operates in the following way:
 <ul>
-<li>If the datagram parses to a valid KristalliProtocol datagram and contains a valid <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message, the contents of this message is parsed by the application. If the connection attempt is accepted, the server sends an appropriate <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSynAck</span> message back to the client and creates a new connection for that endpoint that is initially set to the <span style="background-color: #D5FFD5; border-bottom: dashed 1px green;">ConnectionSynAck</span> state.</li>
+<li>If the datagram parses to a valid KristalliNet datagram and contains a valid <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message, the contents of this message is parsed by the application. If the connection attempt is accepted, the server sends an appropriate <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSynAck</span> message back to the client and creates a new connection for that endpoint that is initially set to the <span style="background-color: #D5FFD5; border-bottom: dashed 1px green;">ConnectionSynAck</span> state.</li>
 <li>If the datagram does not parse properly or contains invalid messages that are not valid to be sent at this time, the server should silently discard the datagram. If the application-specific payload of the <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">ConnectSyn</span> message is not accepted, the server ignores the datagram if it is in Stealth Mode, or sends back a <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">DisconnectAck</span> message if it is operating in Responsive Mode. This message effectively signals a "Connection Refused" message. If a sequence of datagrams is received, only one <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">DisconnectAck</span> reply needs to be sent (It is open to the application to interpret what constitutes a sequence).</li>
 </ul>
 
@@ -312,9 +312,9 @@ Since a connection is deemed lost if no messages have been received through the 
 
 Raw UDP datagrams may be received out-of-order and it is up to the client to reorganize them. The stream-oriented TCP protocol handles this transparently to the user. However, in certain conditions this feature can be devastating with respect to network latency, and is seen as a major issue for realtime applications. Minimizing network latency and maintaining a total order at all times are two mutually exclusive goals. Therefore modelling message ordering requirements in a realtime network application can be tricky.
 
-Each KristalliProtocol datagram is associated with a unique <span style="background-color: #E8E8E8; border-bottom: dashed 1px black;">PacketID</span>, which is incremented by one after sending a packet. The client can use this information to reconstruct the original send order of the datagrams. However, the protocol does not enforce a single method for message ordering.
+Each KristalliNet datagram is associated with a unique <span style="background-color: #E8E8E8; border-bottom: dashed 1px black;">PacketID</span>, which is incremented by one after sending a packet. The client can use this information to reconstruct the original send order of the datagrams. However, the protocol does not enforce a single method for message ordering.
 
-When a connection receives a datagram with several messages, it is required to process the messages in the order they appear in the datagram. For dependencies between messages that were transmitted in different datagrams, KristalliProtocol proposes the following model. On protocol level, a message can depend on several different messages. This means that each message is associated with a list of <b>(PacketID, MessageIndex)</b> values that specify which messages in previous datagrams should have been applied before the given message can be applied. If a message does not specify any InOrder dependencies, it can be applied out-of-order without regard to other messages. A datagram can contain a mix of both ordered and out-of-order messages.
+When a connection receives a datagram with several messages, it is required to process the messages in the order they appear in the datagram. For dependencies between messages that were transmitted in different datagrams, KristalliNet proposes the following model. On protocol level, a message can depend on several different messages. This means that each message is associated with a list of <b>(PacketID, MessageIndex)</b> values that specify which messages in previous datagrams should have been applied before the given message can be applied. If a message does not specify any InOrder dependencies, it can be applied out-of-order without regard to other messages. A datagram can contain a mix of both ordered and out-of-order messages.
 
 As an example, the client may implement one of the following patterns for message ordering.
 <ul>

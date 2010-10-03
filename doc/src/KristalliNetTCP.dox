@@ -1,16 +1,16 @@
 /**
-\page KristalliTCP KristalliProtocol Transport over TCP
+\page KristalliTCP KristalliNet Transport over TCP
   
-\section KristalliTCPMain KristalliProtocol Transport over TCP
+\section KristalliTCPMain KristalliNet Transport over TCP
   
-It is possible to run KristalliProtocol connections on top of TCP. This has the following advantages over using UDP:
+It is possible to run KristalliNet connections on top of TCP. This has the following advantages over using UDP:
 <ul>
-<li>A restricting firewall may block UDP connections, which makes KristalliProtocol over UDP impossible.</li>
+<li>A restricting firewall may block UDP connections, which makes KristalliNet over UDP impossible.</li>
 <li>A poor ISP may consider UDP communication as P2P traffic and serve it with lower priority than TCP, throttle the maximum bandwidth, or even scramble it.</li>
 <li>Traditional TCP congestion control is applied, which is the method most routers are optimized for.</li>
 </ul>
 
-However, using KristalliProtocol in TCP mode has the following limitations:
+However, using KristalliNet in TCP mode has the following limitations:
 <ul>
 <li>No support for out-of-order messaging. This results in increased latency in the presence of packet loss.</li>
 <li>No support for unreliable datagrams, which makes TCP a poor fit for streaming lossy real-time content.</li>
@@ -20,7 +20,7 @@ However, using KristalliProtocol in TCP mode has the following limitations:
 <li>The server cannot operate in stealth mode.</li>
 </ul>
 
-KristalliProtocol over TCP implements RTT estimation and fragmented transfers in a similar way to when using KristalliProtocol over UDP. However, these two transport methods are not equivalent in features. For example, KristalliProtocol over TCP does not support UDP features such as <b>InOrder Messages</b>, <b>Flow Control</b> or <b>Session Management</b>.
+KristalliNet over TCP implements RTT estimation and fragmented transfers in a similar way to when using KristalliNet over UDP. However, these two transport methods are not equivalent in features. For example, KristalliNet over TCP does not support UDP features such as <b>InOrder Messages</b>, <b>Flow Control</b> or <b>Session Management</b>.
 
 \subsection KristalliTCPFormat TCP Stream Byte Format
 
@@ -41,7 +41,7 @@ To understand VLE-encoding, refer to \ref KristalliUDPVLE "".
 
 \subsection KristalliTCPConnection Connection Control Messages
 
-When using KristalliProtocol over TCP, the messages 
+When using KristalliNet over TCP, the messages 
 <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">\ref PingRequestMsg "PingRequest"</span> and 
 <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">\ref PingReplyMsg "PingReply"</span> are used in the same manner as specified by \ref KristalliUDPRTT "". The messages
 <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">\ref FlowControlRequestMsg "FlowControlRequest"</span>,

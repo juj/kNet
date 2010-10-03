@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-//	kNet::SetLogChannels((LogChannel)(-1)); // Enable all log channels.
+	kNet::SetLogChannels((LogChannel)(-1)); // Enable all log channels.
 
 	SocketTransportLayer transport = SocketOverUDP;
 	if (!_stricmp(argv[2], "tcp"))

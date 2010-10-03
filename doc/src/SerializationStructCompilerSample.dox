@@ -4,7 +4,7 @@
 
 \section SerializationStructCompilerSampleSec The MessageCompiler Sample
 
-The MessageCompiler utility converts \ref KristalliXMLSec "KristalliProtocol Message XML Description Files" into C++ header files. These headers contain structures that implement the \ref SerializableMessageDoc "SerializableMessage" interface, which allows them to be passed to the \ref MessageConnection::Send function. This is the basis of declarative-mode data serialization in the KristalliProtocol reference library.
+The MessageCompiler utility converts \ref KristalliXMLSec "KristalliNet Message XML Description Files" into C++ header files. These headers contain structures that implement the \ref SerializableMessageDoc "SerializableMessage" interface, which allows them to be passed to the \ref MessageConnection::Send function. This is the basis of declarative-mode data serialization in the KristalliNet reference library.
 
 The utility is invoked from the command line using the following syntax:
 

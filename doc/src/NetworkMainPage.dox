@@ -2,9 +2,9 @@
  \mainpage
 
 <div style="color: darkgray; font-size:50%; ">Document version 2.4 <br />2010/09/27</div> 
-  KristalliProtocol is a connection-oriented network protocol for transmitting arbitrary application-specific messages between network hosts. It is designed primarily for applications that require a method for rapid space-efficient real-time communication. 
+  KristalliNet is a connection-oriented network protocol for transmitting arbitrary application-specific messages between network hosts. It is designed primarily for applications that require a method for rapid space-efficient real-time communication. 
 
-KristalliProtocol consists of two major specifications. At a lower level, the <b>Transport-level specification</b> defines methods like:
+KristalliNet consists of two major specifications. At a lower level, the <b>Transport-level specification</b> defines methods like:
 <ul>
 <li>How a session is initialized, maintained and shut down.</li>
 <li>How data bytes are transferred between hosts.</li>

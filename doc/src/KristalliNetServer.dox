@@ -1,12 +1,12 @@
 /**
 
-\page KristalliProtocolServer Implementing a KristalliProtocol Server
+\page KristalliProtocolServer Implementing a KristalliNet Server
 
-\section KristalliProtocolServerSec Implementing a KristalliProtocol Server
+\section KristalliProtocolServerSec Implementing a KristalliNet Server
 
-To write a server for KristalliProtocol, proceed through the following steps:
+To write a server for KristalliNet, proceed through the following steps:
 <ol>
-<li>#include "KristalliProtocol.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
+<li>#include "KristalliNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
 <li>Instantiate a \ref Network "" object. Make sure this object stays alive for the duration that the server is running.</li>
 <li>Define a class that implements the \ref INetworkServerListener "" interface. See \ref KristalliProtocolServerListener "" for more details.</li>
 <li>Start listening for inbound connections by calling \ref Network::StartServer "". This method returns a newly created \ref NetworkServer "" object, which will be used to manage all server-related operations.</li>
@@ -56,7 +56,7 @@ The default implementation is not to do anything.
 
 \code
 
-#include "KristalliProtocol.h"
+#include "KristalliNet.h"
 
 // Define a MessageID for our a custom message.
 const message_id_t cHelloMessageID = 10;
