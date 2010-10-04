@@ -277,13 +277,15 @@ public:
 
 	/// Fetches all newly received messages waiting in the inbound queue, and passes each of these
 	/// to the message handler registered using RegisterInboundMessageHandler.
+	/// Call this function periodically to receive new data from the network if you are using the Observer pattern.
+	/// Alternatively, use the immediate-mode ReceiveMessage function to receive messages directly one at a time.
 	/// @param maxMessageToProcess If the inbound queue contains more than this amount of new messages,
 	///                            the processing loop will return to give processing time to other parts of the application.
 	///                            If 0 is passed, messages are processed until the queue is empty.
 	/// \note It is important to have a non-zero limit in maxMessagesToProcess (unless you're sure what you are doing), since
 	///       otherwise an attacker might affect the performance of the application main loop by sending messages so fast that
 	///       the queue never has time to exhaust, thus giving an infinite loop in practice.
-	void ProcessMessages(int maxMessagesToProcess = 100);
+	void Process(int maxMessagesToProcess = 100);
 	
 	/// Waits for at most the given amount of time, and returns immediately when a new message is received for processing.
 	/// @param maxMSecsToWait If 0, the call will wait indefinitely until a message is received or the connection transitions to
@@ -291,7 +293,7 @@ public:
 	///                       If a positive value is passed, at most that many milliseconds is waited for a new message to be received.
 	void WaitForMessage(int maxMSecsToWait);
 
-	/// Returns the next message in the inbound queue. This is an alternative API to RegisterInboundMessageHandler/ProcessMessages.
+	/// Returns the next message in the inbound queue. This is an alternative API to RegisterInboundMessageHandler/Process.
 	/// \note When using this function to receive messages, remember to call FreeMessage for each NetworkMessage returned, or you
 	/// will have a major size memory leak, fast.
 	/// @param maxMSecsToWait If a negative number, the call will not wait at all if there are no new messages to process, but 

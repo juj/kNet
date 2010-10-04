@@ -55,7 +55,8 @@ public:
 	void ReadUDPSocketData(Socket *listenSocket);
 
 	/// Handles all new connection attempts and pulls in new messages from all existing connections.
-	void ProcessMessages();
+	/// Periodically call this function to update the NetworkServer object.
+	void Process();
 
 	/// Broadcasts the given message to all currently active connections, except for the single 'exclude' connection.
 	/// If exclude is 0, all clients will receive the message.
@@ -125,6 +126,8 @@ private:
 	/// \todo As a limitation of this library, you cannot reopen the sockets after closing them.
 	/// You must create a new NetworkServer instance to do that, but this means you'll lose the old active connections.
 	void CloseListenSockets();
+
+	void CleanupDeadConnections();
 
 	Socket *AcceptConnections(Socket *listenSocket);
 

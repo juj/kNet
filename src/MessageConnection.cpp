@@ -110,8 +110,8 @@ bool MessageConnection::IsReadOpen() const
 		return true;
 	if (GetConnectionState() == ConnectionPeerClosed || GetConnectionState() == ConnectionClosed)
 		return false;
-	if (socket && socket->IsReadOpen())
-		return true;
+	if (socket)
+		return socket->IsReadOpen();
 	return false;
 }
 
@@ -131,7 +131,7 @@ void MessageConnection::RunModalClient()
 {
 	while(GetConnectionState() != ConnectionClosed)
 	{
-		ProcessMessages();
+		Process();
 
 		///\todo WSACreateEvent/WSAWaitForMultipleEvents for improved responsiveness and performance.
 		Clock::Sleep(10);
@@ -148,6 +148,11 @@ bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 	PolledTimer timer((float)maxMSecsToWait);
 	while(GetConnectionState() == ConnectionPending && !timer.Test())
 		Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
+
+//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
+	LOG(LogVerbose, "MessageConnection::WaitToEstablishConnection: Waited %f msecs for connection. Result: %s.",
+		timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
+//#endif
 
 	return GetConnectionState() == ConnectionOK;
 }
@@ -220,6 +225,12 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 			if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
 				connectionState = ConnectionDisconnecting;
 		}
+
+//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
+		LOG(LogVerbose, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
+			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
+//#endif
+
 	}
 
 	if (GetConnectionState() == ConnectionClosed)
@@ -368,7 +379,7 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 	if (connectionState != ConnectionOK)
 		return;
 
-	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
+//	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 
 	// To throttle an over-eager main application, only accept this many messages from the main thread
 	// at each execution frame.
@@ -385,7 +396,7 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 		CheckAndSaveOutboundMessageWithContentID(msg);
 	}
 	assert(ContainerUniqueAndNoNullElements(outboundQueue));
-	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
+//	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 }
 
 void MessageConnection::UpdateConnection()
@@ -431,6 +442,9 @@ NetworkMessage *MessageConnection::AllocateNewMessage()
 
 void MessageConnection::FreeMessage(NetworkMessage *msg)
 {
+	if (!msg)
+		return;
+
 	LOG(LogObjectAlloc, "MessageConnection::FreeMessage 0x%8X!", msg);
 	messagePool.Free(msg);
 }
@@ -548,9 +562,19 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes, bool internalQueue)
 {
+	assert(msg);
+	if (!msg)
+		return;
+
 	// If the message was marked obsolete to start with, discard it.
-	if (msg->obsolete || !socket || GetConnectionState() == ConnectionClosed || !IsWriteOpen())
+	if (msg->obsolete || !socket || GetConnectionState() == ConnectionClosed || !socket->IsWriteOpen() || 
+		(internalQueue == false && !IsWriteOpen()))
 	{
+		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Discarded message with ID 0x%X and size %d bytes. "
+			"msg->obsolete: %d. socket ptr: 0x%p. ConnectionState: %s. socket->IsWriteOpen(): %s. msgconn->IsWriteOpen: %s. "
+			"internalQueue: %s.",
+			msg->id, numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), socket->IsWriteOpen() ? "true" : "false",
+			IsWriteOpen() ? "true" : "false", internalQueue ? "true" : "false");
 		FreeMessage(msg);
 		return;
 	}
@@ -585,7 +609,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 
 	if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 	{
-		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID %d.", msg->Size(), msg->id);
+		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID 0x%X.", msg->Size(), msg->id);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 		outboundQueue.InsertWithResize(msg);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
@@ -603,7 +627,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 			FreeMessage(msg);
 			return;
 		}
-		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID %d.", msg->Size(), msg->id);
+		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID 0x%X.", msg->Size(), msg->id);
 	}
 
 	// Signal the worker thread that there are new outbound events available.
@@ -631,7 +655,7 @@ void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrde
 }
 
 /// Called from the main thread to fetch & handle all new inbound messages.
-void MessageConnection::ProcessMessages(int maxMessagesToProcess)
+void MessageConnection::Process(int maxMessagesToProcess)
 {
 	assert(maxMessagesToProcess >= 0);
 
@@ -685,14 +709,24 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 
 	// Wait indefinitely until we get a new message, or the connection is torn down.
 	if (maxMSecsToWait == 0)
+	{
+		///\todo Log out warning if this takes AGES. Or rather, perhaps remove support for this altogether
+		/// to avoid deadlocks.
 		while(inboundMessageQueue.Size() == 0 && GetConnectionState() == ConnectionOK)
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
+	}
 	else
 	{
 		PolledTimer timer;
 		timer.StartMSecs((float)maxMSecsToWait);
 		while(inboundMessageQueue.Size() == 0 && GetConnectionState() == ConnectionOK && !timer.Test())
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
+
+//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
+		LOG(LogVerbose, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
+			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), inboundMessageQueue.Size());
+//#endif
+
 	}
 }
 

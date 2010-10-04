@@ -106,7 +106,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	return socket;
 }
 
-void NetworkServer::ProcessMessages()
+void NetworkServer::CleanupDeadConnections()
 {
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 
@@ -127,6 +127,11 @@ void NetworkServer::ProcessMessages()
 		}
 		iter = next;
 	}
+}
+
+void NetworkServer::Process()
+{
+	CleanupDeadConnections();
 
 	for(size_t i = 0; i < listenSockets.size(); ++i)
 	{
@@ -161,6 +166,8 @@ void NetworkServer::ProcessMessages()
 
 				EndPoint endPoint = EndPoint::FromSockAddrIn(sockname);
 				std::cout << "Client connected from " << endPoint.ToString() << std::endl;
+
+				Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 				(*clientsLock)[endPoint] = clientConnection;
 			}
 		}
@@ -178,8 +185,9 @@ void NetworkServer::ProcessMessages()
 	}
 
 	// Process all new inbound data for each connection handled by this server.
+	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
-		iter->second->ProcessMessages();
+		iter->second->Process();
 }
 
 void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
@@ -355,7 +363,11 @@ void NetworkServer::Close(int disconnectWaitMilliseconds)
 	///\todo Re-implement this function to remove the monolithic Sleep here. Instead of this,
 	/// wait for the individual connections to finish.
 	if (GetConnections().size() > 0)
+	{
 		Clock::Sleep(disconnectWaitMilliseconds);
+		LOG(LogVerbose, "NetworkServer::Close: Waited a fixed period of %d msecs for all connections to disconnect.",
+			disconnectWaitMilliseconds);
+	}
 
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
@@ -369,7 +381,7 @@ void NetworkServer::RunModalServer()
 	///\todo Loop until StopModalServer() is called.
 	for(;;)
 	{
-		ProcessMessages();
+		Process();
 
 		///\todo WSACreateEvent/WSAWaitForMultipleEvents for improved responsiveness and performance.
 		Clock::Sleep(1);

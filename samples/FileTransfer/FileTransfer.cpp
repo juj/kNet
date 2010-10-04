@@ -24,10 +24,6 @@
 
 #include "kNet.h"
 
-#include "kNet/Clock.h"
-#include "kNet/PolledTimer.h"
-#include "kNet/NetworkLogging.h"
-
 // If enabled, this sample is used for network transfer profiling and all disk operations are ignored.
 //#define NULLTRANSFER
 
@@ -119,7 +115,7 @@ public:
 			}
 			else // Queue up this fragment.
 			{
-				cout << "Queued up received fragment " << fragmentIndex << endl;
+//				cout << "Queued up received fragment " << fragmentIndex << endl;
 				Fragment f;
 				size_t numDataBytes = dd.BytesLeft();
 #ifndef NULLTRANSFER
@@ -168,8 +164,8 @@ public:
 
 		while(server->GetConnections().size() == 0)
 		{
-			server->ProcessMessages();
-			Clock::Sleep(1);
+			server->Process();
+			Clock::Sleep(2000);
 		}
 
 		Ptr(MessageConnection) clientConnection = server->GetConnections().begin()->second;
@@ -177,16 +173,16 @@ public:
 		// Stop accepting any further connections.
 		server->SetAcceptNewConnections(false);
 
-		clientConnection->WaitToEstablishConnection();
+		clientConnection->WaitToEstablishConnection(10000);
 
 		statsPrintTimer.StartMSecs(printIntervalMSecs);
 
 		transferStartTick = Clock::Tick();
 
-		LOGNET("Waiting for file receive.");
+		LOG(LogUser, "Waiting for file receive.");
 		while(clientConnection->IsReadOpen())
 		{
-			server->ProcessMessages();
+			server->Process();
 			
 			Clock::Sleep(1);
 			if (statsPrintTimer.Test())
@@ -199,7 +195,7 @@ public:
 				statsPrintTimer.StartMSecs(printIntervalMSecs);
 			}
 		}
-		LOGNET("Finished file receive. Closing connection.");
+		LOG(LogUser, "Finished file receive. Closing connection.");
 		clientConnection->Close(15000);
 	}
 
@@ -231,7 +227,7 @@ public:
 		}
 
 		// We have nothing better to do while waiting for the connection to build up, so wait modally.
-		if (!connection->WaitToEstablishConnection())
+		if (!connection->WaitToEstablishConnection(10000))
 		{
 			cout << "Failed to connect to server!" << endl;
 			return;
@@ -262,7 +258,7 @@ public:
 
 		while(connection->IsWriteOpen())
 		{
-			connection->ProcessMessages();
+			connection->Process();
 
 			// Add new data fragments into the queue.
 			const int outboundMsgQueueSize = 200;
@@ -287,7 +283,7 @@ public:
 #endif
 				if (read < bytesInThisFragment)
 				{
-					LOGNET("Failed to read file!");
+					LOG(LogUser, "Failed to read file!");
 					connection->Close(0);
 				}
 				
@@ -298,7 +294,7 @@ public:
 			// If we've put out all file fragments to the network, close the connection down.
 			if (connection->IsWriteOpen() && bytesSent >= fileSize && connection->NumOutboundMessagesPending() == 0)
 			{
-				LOGNET("All data sent. Disconnecting.");
+				LOG(LogUser, "All data sent. Disconnecting.");
 				connection->Disconnect(15000);
 			}
 			
@@ -313,10 +309,10 @@ public:
 			}
 		}
 		
-		LOGNET("Waiting for peer to acknowledge all received data.");
+		LOG(LogUser, "Waiting for peer to acknowledge all received data.");
 		while((connection->NumOutboundMessagesPending() > 0 && connection->IsWriteOpen()) || connection->IsReadOpen())
 		{
-			connection->ProcessMessages();
+			connection->Process();
 			Clock::Sleep(1);
 
 			if (statsPrintTimer.TriggeredOrNotRunning())
@@ -352,7 +348,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	kNet::SetLogChannels((LogChannel)(-1)); // Enable all log channels.
+//	kNet::SetLogChannels((LogChannel)(-1) & ~(LogObjectAlloc | LogVerbose)); // Enable all log channels.
+	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
 	SocketTransportLayer transport = SocketOverUDP;
 	if (!_stricmp(argv[2], "tcp"))

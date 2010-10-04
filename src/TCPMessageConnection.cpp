@@ -229,6 +229,9 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 void TCPMessageConnection::SendOutPackets()
 {
+	if (!socket || !socket->IsWriteOpen() || !socket->IsOverlappedSendReady())
+		return;
+
 	PacketSendResult result = PacketSendOK;
 	int maxSends = 50; // Place an arbitrary limit to how many packets we will send at a time.
 	while(result == PacketSendOK && TimeUntilCanSendPacket() == 0 && maxSends-- > 0)

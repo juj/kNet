@@ -82,7 +82,7 @@ public:
 
 		while(server->GetConnections().size() == 0)
 		{
-			server->ProcessMessages();
+			server->Process();
 			Clock::Sleep(100);
 		}
 
@@ -221,7 +221,7 @@ public:
 		while((server && server->GetConnections().size() > 0) || (connection && connection->IsReadOpen()))
 		{
 			if (server)
-				server->ProcessMessages();
+				server->Process();
 
 			for(int i = 0; i < 100; ++i) // Process a maximum of 100 messages at one go.
 			{
