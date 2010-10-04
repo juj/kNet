@@ -24,8 +24,10 @@ namespace kNet
 class PolledTimer
 {
 public:
+	/// The default ctor starts the timer when the object is created.
 	PolledTimer():enabled(false)
 	{
+		startTime = Clock::Tick();
 	}
 
 	explicit PolledTimer(float msecs)
@@ -43,7 +45,8 @@ public:
 	/// Starts the timer in a non-periodic mode, to go off once in the given amount of high-precision Clock ticks.
 	void StartTicks(tick_t ticks)
 	{
-		alarmTime = Clock::Tick() + ticks;
+		startTime = Clock::Tick();
+		alarmTime = startTime + ticks;
 		enabled = true;
 	}
 
@@ -57,12 +60,32 @@ public:
 		Stop();
 	}
 
+	/// Returns the amount of time in ticks this timer has been running.
+	tick_t TicksElapsed() const
+	{
+		return Clock::Tick() - startTime;
+	}
+
+	float MSecsElapsed() const
+	{
+		return Clock::TicksToMillisecondsF(TicksElapsed());
+	}
+
+	/// Starts the timer from zero to run upwards without a target period, i.e. the timer will never go off,
+	/// but will only report TicksElapsed/MSecsElapsed values.
+	void Start()
+	{
+		enabled = false; // The target-timer is disabled.
+		startTime = Clock::Tick(); // Start counting from now.
+	}
+
 	bool Enabled() const
 	{
 		return enabled;
 	}
 
 	/// Tests whether the timer has gone off, and resets it as well.
+	/// Returns true if the timer has elapsed, false otherwise.
 	bool Test()
 	{
 		if (!enabled)
@@ -139,7 +162,10 @@ public:
 
 private:
 	bool enabled;
+	/// The wallclock time when this PolledTimer is supposed to go off.
 	tick_t alarmTime;
+	/// The wallclock time when this PolledTimer was last started.
+	tick_t startTime;
 };
 
 } // ~kNet
