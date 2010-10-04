@@ -40,6 +40,7 @@ endif()
 if (USE_TINYXML)
    include_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT})
+   link_directories(${TINYXML_ROOT}/Release)
 endif()
 
 file(GLOB kNetSourceFiles ./src/*.cpp)
@@ -101,6 +102,7 @@ add_subdirectory(samples/HelloServer)
 add_subdirectory(samples/HelloClient)
 add_subdirectory(samples/SimpleChat)
 add_subdirectory(samples/MessageCompiler)
+add_subdirectory(samples/SilenceTest)
 
 #add_subdirectory(samples/TrashTalk)
 #add_subdirectory(samples/SpeedTest)
@@ -125,7 +127,7 @@ endif()
 
 #set_target_properties(kNet FileTransfer HelloServer HelloClient TrashTalk SpeedTest LatencyTest FirewallTest ConnectFlood SpeexVoipServer PROPERTIES 
 
-set_target_properties(kNet FileTransfer HelloServer HelloClient SimpleChat MessageCompiler PROPERTIES 
+set_target_properties(kNet FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)

@@ -13,7 +13,8 @@
    limitations under the License. */
 #pragma once
 
-//#define KNET_USE_BOOST
+///\todo Remove this in favor of pimpl.
+#define KNET_USE_BOOST
 
 /** @file kNet.h
 	@brief The main file of KristalliNet that #includes all the commonly used headers for the the 
