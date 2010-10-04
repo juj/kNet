@@ -39,6 +39,7 @@ public:
       ds.AddString(std::string("Hello! You are connecting from ") + connection->GetEndPoint().ToString());
       // Push the message out to the client.
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
+		LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
    }
 };
 
@@ -47,12 +48,14 @@ int main()
    Network network;
    ServerListener listener;
    
+	LOG(LogUser, "Starting server.");
    // Start listening on a port.
    const unsigned short cServerPort = 1234;
    NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener);
 
 	if (server)
 	{
+		LOG(LogUser, "Waiting for incoming connections.");
 		// Run the main server loop.
 		// This never returns since we don't call NetworkServer::Stop(), but for this example, it doesn't matter.  
 		server->RunModalServer();

@@ -23,6 +23,7 @@
 #include "kNet/Event.h"
 #include "kNet/EventArray.h"
 #include "kNet/Clock.h"
+#include "kNet/Thread.h"
 
 using namespace std;
 
@@ -63,7 +64,12 @@ void NetworkWorkerThread::AddServer(Ptr(NetworkServer) server)
 
 void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 {
+//#ifdef VERBOSELOGGING
+	PolledTimer timer;
 	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
+	float lockWait = timer.MSecsElapsed();
+	LOG(LogVerbose, "NetworkWorkerThread::RemoveServer: Waited %f msecs to lock servers list.",
+		lockWait);
 
 	for(size_t i = 0; i < lock->size(); ++i)
 		if ((*lock)[i] == server)
@@ -98,18 +104,27 @@ void NetworkWorkerThread::MainLoop()
 
 	LOGNET("NetworkWorkerThread running main loop.");
 
+	std::vector<Ptr(MessageConnection)> connectionList;
+	std::vector<Ptr(NetworkServer)> serverList;
+
 	while(!workThread.ShouldQuit())
 	{
-		Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
-		std::vector<Ptr(MessageConnection)> connectionList = *lock; ///\todo Copying here is not nice for performance.
+		{
+			Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
+			connectionList = *lock; ///\todo Copying here is not nice for performance.
+			///\bug Ptr() is not thread-safe!
+		}
 
-		Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
-		std::vector<Ptr(NetworkServer)> serverList = *serverLock; ///\todo Copying here is not nice for performance.
+		{
+			Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
+			serverList = *serverLock; ///\todo Copying here is not nice for performance.
+		}
 
-		serverLock.Unlock(); ///\bug Ptr() is not thread-safe!
-		lock.Unlock(); ///\bug Ptr() is not thread-safe!
-
-		const int maxWaitTime = 1000; // msecs.
+		// Inconveniency: Cannot wait for long time periods, since this will call select() or WSAWaitForMultipleObjects,
+		// which does not support aborting from the wait if the thread is signalled to interrupt and quit/join. To fix
+		// this, should add a custom "interrupt Event" into the WaitArray to wake the thread up when it is supposed to be killed.
+		// For now, just sleep only small periods of time at once to make this issue not a problem at application exit time.
+		const int maxWaitTime = 200; // msecs.
 		int waitTime = maxWaitTime;
 
 		waitEvents.Clear();
@@ -200,7 +215,7 @@ void NetworkWorkerThread::MainLoop()
 		// any connections to manage. Sleep for a moment, until we get some connections to handle.
 		if (waitEvents.Size() == 0)
 		{
-			Clock::Sleep(1000);
+			Thread::Sleep(100);
 			continue;
 		}
 

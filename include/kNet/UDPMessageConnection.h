@@ -118,8 +118,11 @@ private:
 	/// A running index to identify packet datagrams as they are send out to the stream.
 	packet_id_t datagramPacketIDCounter;
 
+	/// Specifies in milliseconds the currently recommended datagram timeout value for any packet that is sent out at the present time.
 	float retransmissionTimeout;
 
+	/// The flow control operates on fixed time window intervals called 'frames'. This variable remembers
+	/// when the previous frame ended, and the currently elapsed frame starts.
 	tick_t lastFrameTime;
 	int numAcksLastFrame;
 	int numLossesLastFrame;

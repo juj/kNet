@@ -20,7 +20,7 @@ namespace kNet
 {
 
 /// An interface implementable by the owner of a network server to receive notifications about connection-related events.
-/// @note Do not call NetworkServer::ProcessMessages from any of these methods. This might cause infinite recursion.
+/// @note Do not call NetworkServer::Process from any of these methods. This might cause infinite recursion.
 class INetworkServerListener
 {
 public:

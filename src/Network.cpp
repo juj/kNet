@@ -361,6 +361,7 @@ void Network::StopServer()
 	workerThread->RemoveServer(server);
 	///\todo This is a forceful stop. Perhaps have a benign teardown as well?
 	server = 0;
+	LOG(LogVerbose, "Network::StopServer: Deinitialized NetworkServer.");
 }
 
 void Network::CloseSocket(Socket *socket)
@@ -398,6 +399,8 @@ void Network::CloseConnection(Ptr(MessageConnection) connection)
 
 void Network::DeInit()
 {
+	PolledTimer timer;
+
 	if (workerThread)
 	{
 		workerThread->StopThread();
@@ -413,6 +416,7 @@ void Network::DeInit()
 #ifdef WIN32
 	WSACleanup();
 #endif
+	LOG(LogVerbose, "Network::DeInit: Deinitialized kNet Network object, took %f msecs.", timer.MSecsElapsed());
 }
 
 Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport)
@@ -608,7 +612,7 @@ Socket *Network::ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint
 	socket->SetBlocking(false);
 	socket->SetUDPPeername(remoteEndPoint.ToSockAddrIn());
 
-	LOGNET("Connected an UDP socket to %s.", socket->ToString().c_str());
+	LOGNET("Network::ConnectUDP: Connected an UDP socket to %s.", socket->ToString().c_str());
 	return socket;
 }
 

@@ -18,6 +18,7 @@
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 #elif WIN32
 #include <Windows.h>
 #else
