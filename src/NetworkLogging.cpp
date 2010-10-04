@@ -23,7 +23,12 @@
 #include <string>
 #include <cstring>
 
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
+
 #include "kNet/NetworkLogging.h"
+#include "kNet/Lockable.h"
 #include "kNet/Clock.h"
 
 #ifdef LINUX
@@ -42,6 +47,8 @@ LogChannel kNetActiveLogChannels = LogUser;
 /// Specifies the file in which all logging is printed to. If this file is not open, logging goes to std::cout.
 ofstream kNetLogFile;
 
+Lockable<int> logWriteMutex;
+
 string Time()
 {
 	static tick_t firstTick;
@@ -55,6 +62,9 @@ string Time()
 	double t = Clock::SecondsSinceD(firstTick);
 	std::stringstream ss;
 	ss << t;
+#ifdef KNET_USE_BOOST
+	ss << ", " << boost::this_thread::get_id();
+#endif
 	return ss.str();
 }
 
@@ -64,6 +74,8 @@ void TimeOutputDebugStringVariadic(LogChannel logChannel, const char * /*filenam
 {
 	if ((logChannel & kNetActiveLogChannels) == 0)
 		return;
+
+	Lockable<int>::LockType lock = logWriteMutex.Acquire();
 
 	char errorStr[1024];
 	va_list args;
@@ -82,6 +94,8 @@ void TimeOutputDebugString(LogChannel logChannel, const char * /*filename*/, int
 {
 	if ((logChannel & kNetActiveLogChannels) == 0)
 		return;
+
+	Lockable<int>::LockType lock = logWriteMutex.Acquire();
 
 	char errorStr[1024];
 	_snprintf(errorStr, 1023, "%s", msg);
@@ -104,6 +118,8 @@ LogChannel GetLogChannels()
 
 void SetLogFile(const char *filename)
 {
+	Lockable<int>::LockType lock = logWriteMutex.Acquire();
+
 	kNetLogFile.close();
 	if (filename && strlen(filename) > 0)
 		kNetLogFile.open(filename, ios::app);
