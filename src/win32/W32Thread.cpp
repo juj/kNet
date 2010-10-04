@@ -153,4 +153,10 @@ void Thread::StartThread()
 		LOGNET("Thread::Run(): Thread created.");
 }
 
+void Thread::Sleep(int msecs)
+{
+	///\todo Allow interruption between sleep.
+	Clock::Sleep(msecs);
+}
+
 } // ~kNet

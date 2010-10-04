@@ -55,6 +55,10 @@ public:
 	template<typename Class, typename MemberFuncPtr>
 	void Run(Class *obj, MemberFuncPtr memberFuncPtr);
 
+	/// Sleeps the current thread for the given amount of time, or interrupts the sleep if the thread was signalled
+	/// to quit in between.
+	static void Sleep(int msecs);
+
 private:
 	Thread(const Thread &);
 	void operator =(const Thread &);

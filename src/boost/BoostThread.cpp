@@ -22,6 +22,7 @@
 #include "kNet/NetworkLogging.h"
 #include "kNet/Clock.h"
 #include "kNet/NetException.h"
+#include "kNet/PolledTimer.h"
 
 namespace kNet
 {
@@ -48,8 +49,12 @@ bool Thread::IsRunning() const
 
 void Thread::Stop()
 {
+	PolledTimer timer;
+
 	thread.interrupt();
 	thread.join();
+
+	LOG(LogVerbose, "Thread::Stop: Took %f msecs.", timer.MSecsElapsed());
 }
 
 void Thread::StartThread()
@@ -58,6 +63,11 @@ void Thread::StartThread()
 		Stop();
 
 	thread = boost::thread(boost::ref(*invoker));
+}
+
+void Thread::Sleep(int msecs)
+{
+	boost::this_thread::sleep(boost::posix_time::millisec(msecs));
 }
 
 } // ~kNet
