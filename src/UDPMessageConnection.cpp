@@ -51,7 +51,8 @@ lastSentInOrderPacketID(0), datagramPacketIDCounter(0),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
 datagramInRatePerSecond(initialDatagramRatePerSecond),
 datagramSendRate(10),
-receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024)
+receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
+isSlaveSocket(false)
 {
 }
 
@@ -78,7 +79,7 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 	if (bytesRead > 0 && connectionState == ConnectionPending)
 	{
 		connectionState = ConnectionOK;
-		LOG(LogUser, "Established connection to socket %s.", socket->ToString().c_str());
+		LOG(LogUser, "UDPMessageConnection::ReadSocket: Received data from socket %s. Transitioned from ConnectionPending to ConnectionOK state.", socket->ToString().c_str());
 	}
 	if (readResult == SocketReadError)
 		return SocketReadError;
@@ -223,7 +224,7 @@ void UDPMessageConnection::HandleFlowControl()
 			datagramSendRate += increment;
 			datagramSendRate = min(datagramSendRate, totalEstimatedBandwidth);
 			lowestDatagramSendRateOnPacketLoss = datagramSendRate;
-			LOG(LogVerbose, "Incremented sendRate by %.2f to %.2f", increment, datagramSendRate);
+//			LOG(LogVerbose, "Incremented sendRate by %.2f to %.2f", increment, datagramSendRate);
 		}
 		numAcksLastFrame = 0;
 		numLossesLastFrame = 0;
@@ -232,10 +233,16 @@ void UDPMessageConnection::HandleFlowControl()
 		else
 			lastFrameTime = Clock::Tick();
 	}
+
+	// Do a fixed flow control for testing.
+	datagramSendRate = 50; ///\todo Remove.
 }
 
 void UDPMessageConnection::SendOutPackets()
 {
+	if (!socket || !socket->IsWriteOpen())
+		return;
+
 	PacketSendResult result = PacketSendOK;
 	int maxSends = 50;
 	while(result == PacketSendOK && TimeUntilCanSendPacket() == 0 && maxSends-- > 0)
@@ -403,7 +410,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		for(size_t i = 0; i < datagramSerializedMessages.size(); ++i)
 			outboundQueue.Insert(datagramSerializedMessages[i]);
 
-		LOGNET("Socket::Send failed to socket %s!", socket->ToString().c_str());
+		LOG(LogError, "UDPMessageConnection::SendOutPacket: Socket::EndSend failed to socket %s!", socket->ToString().c_str());
 		return PacketSendSocketFull;
 	}
 
@@ -431,6 +438,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		const tick_t now = Clock::Tick();
 		ack.sendCount = 1;
 		ack.sentTick = now;
+		retransmissionTimeout = 5000.f; ///\todo Remove this.
 		ack.timeoutTick = now + (tick_t)((double)retransmissionTimeout * Clock::TicksPerMillisecond());
 		ack.datagramSendRate = datagramSendRate;
 
@@ -457,6 +465,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		LOGNET("Connection closed by peer: %s.", ToString().c_str());
 	}
 
+	LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Socket::EndSend succeeded with %d bytes.", writer.BytesFilled());
 	return PacketSendOK;
 }
 
@@ -711,18 +720,22 @@ void UDPMessageConnection::NewDatagramSent()
 
 void UDPMessageConnection::SendDisconnectMessage(bool isInternal)
 {
-	NetworkMessage *msg = StartNewMessage(MsgIdDisconnect);
+	NetworkMessage *msg = StartNewMessage(MsgIdDisconnect, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = true;
-	EndAndQueueMessage(msg, isInternal);
+	EndAndQueueMessage(msg, 0, isInternal);
+
+	LOG(LogInfo, "UDPMessageConnection::SendDisconnectMessage: Sent Disconnect.");
 }
 
 void UDPMessageConnection::SendDisconnectAckMessage()
 {
-	NetworkMessage *msg = StartNewMessage(MsgIdDisconnectAck);
+	NetworkMessage *msg = StartNewMessage(MsgIdDisconnectAck, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = false;
-	EndAndQueueMessage(msg, true); ///\todo Check this flag!
+	EndAndQueueMessage(msg, 0, true); ///\todo Check this flag!
+
+	LOG(LogInfo, "UDPMessageConnection::SendDisconnectAckMessage: Sent DisconnectAck.");
 }
 
 void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, size_t numBytes)
@@ -842,6 +855,7 @@ void UDPMessageConnection::UpdateRTOCounterOnPacketAck(float rtt)
 	const float safetyThresholdAdd = 1.f;
 	const float safetyThresholdMul = 2.f;
 
+//	retransmissionTimeout = min(maxRTOTimeoutValue, max(minRTOTimeoutValue, safetyThresholdAdd + safetyThresholdMul * (smoothedRTT + rttVariation)));
 	retransmissionTimeout = min(maxRTOTimeoutValue, max(minRTOTimeoutValue, safetyThresholdAdd + safetyThresholdMul * (smoothedRTT + rttVariation)));
 
 ///	const float maxDatagramSendRate = 3000.f;
@@ -931,15 +945,19 @@ void UDPMessageConnection::HandleDisconnectMessage()
 		connectionState = ConnectionDisconnecting;
 		SendDisconnectAckMessage();
 	}
+	else
+	{
+		LOG(LogError, "UDPMessageConnection::HandleDisconnectMessage: Received Disconnect message when in ConnectionClosed state!");
+	}
 }
 
 void UDPMessageConnection::HandleDisconnectAckMessage()
 {
 	if (connectionState != ConnectionDisconnecting)
-		LOGNET("Received DisconnectAck message on a MessageConnection not in ConnectionDisconnecting state! (state was %d)",
+		LOG(LogInfo, "Received DisconnectAck message on a MessageConnection not in ConnectionDisconnecting state! (state was %d)",
 		connectionState);
 	else
-		LOGNET("Connection closed to %s.", ToString().c_str());
+		LOG(LogInfo, "UDPMessageConnection::HandleDisconnectAckMessage: Connection closed to %s.", ToString().c_str());
 
 	connectionState = ConnectionClosed;
 }
@@ -1041,7 +1059,7 @@ void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceive
 	NetworkMessage &msg = StartNewMessage(MsgIdFlowControlRequest);
 	AppendU16ToVector(msg.data, newDatagramReceiveRate);
 	msg.priority = NetworkMessage::cMaxPriority - 1;
-	EndAndQueueMessage(msg, internalCall);*/
+	EndAndQueueMessage(msg, 2, internalCall);*/
 }
 
 bool UDPMessageConnection::HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes)
