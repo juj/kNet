@@ -509,20 +509,20 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 {
 	const size_t dataSize = data.Size();
 
-	NetworkMessage &msg = StartNewMessage(id, dataSize);
+	NetworkMessage *msg = StartNewMessage(id, dataSize);
 
 	if (dataSize > 0)
 	{
-		DataSerializer mb(msg.data, dataSize);
+		DataSerializer mb(msg->data, dataSize);
 		data.SerializeTo(mb);
 		assert(mb.BytesFilled() == dataSize); // The SerializableData::Size() estimate must be exact!
 	}
 
-	msg.id = id;
-	msg.contentID = contentID;
-	msg.inOrder = inOrder;
-	msg.priority = priority;
-	msg.reliable = reliable;
+	msg->id = id;
+	msg->contentID = contentID;
+	msg->inOrder = inOrder;
+	msg->priority = priority;
+	msg->reliable = reliable;
 
 	EndAndQueueMessage(msg);
 }
@@ -532,20 +532,20 @@ void MessageConnection::Send(const SerializableMessage &data, unsigned long cont
 {
 	const size_t dataSize = data.Size();
 
-	NetworkMessage &msg = StartNewMessage(data.MessageID(), dataSize);
+	NetworkMessage *msg = StartNewMessage(data.MessageID(), dataSize);
 
 	if (dataSize > 0)
 	{
-		DataSerializer mb(msg.data, dataSize);
+		DataSerializer mb(msg->data, dataSize);
 		data.SerializeTo(mb);
 		assert(mb.BytesFilled() == dataSize);
 	}
 
-	msg.id = data.MessageID();
-	msg.contentID = contentID;
-	msg.inOrder = data.inOrder;
-	msg.priority = data.priority;
-	msg.reliable = data.reliable;
+	msg->id = data.MessageID();
+	msg->contentID = contentID;
+	msg->inOrder = data.inOrder;
+	msg->priority = data.priority;
+	msg->reliable = data.reliable;
 
 	EndAndQueueMessage(msg);
 }

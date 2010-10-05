@@ -1056,9 +1056,9 @@ void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceive
 	
 	datagramInRatePerSecond = newDatagramReceiveRate;
 
-	NetworkMessage &msg = StartNewMessage(MsgIdFlowControlRequest);
-	AppendU16ToVector(msg.data, newDatagramReceiveRate);
-	msg.priority = NetworkMessage::cMaxPriority - 1;
+	NetworkMessage *msg = StartNewMessage(MsgIdFlowControlRequest);
+	AppendU16ToVector(msg->data, newDatagramReceiveRate);
+	msg->priority = NetworkMessage::cMaxPriority - 1;
 	EndAndQueueMessage(msg, 2, internalCall);*/
 }
 
