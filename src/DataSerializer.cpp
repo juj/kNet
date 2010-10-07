@@ -128,7 +128,7 @@ void DataSerializer::AppendBits(u32 value, int amount)
 	u8 remainder = *bytes & LSB(amount);
 
 	data[elemOfs] = (data[elemOfs] & LSB(bitOfs)) | ((remainder & LSB(8-bitOfs)) << bitOfs);
-	if (amount > 8-bitOfs)
+	if (bitOfs + amount >= 8)
 		data[++elemOfs] = remainder >> (8-bitOfs);
 
 	bitOfs = (bitOfs + amount) & 7;
