@@ -21,7 +21,7 @@
 #include <cassert>
 
 /// Smart pointer for dynamic single object allocations on the heap.
-#define Ptr(type) SharedPtr< type > 
+#define Ptr(type) kNet::SharedPtr< type > 
 
 namespace kNet
 {
