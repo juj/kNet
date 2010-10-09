@@ -209,7 +209,7 @@ int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::LowestPriorityIndex
 }
 
 template<typename T, typename PriorityCmp, typename EqualCmp, typename LookupNotify, typename AllocT>
-int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::Search(const T &value, int index = 0)
+int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::Search(const T &value, int index)
 {
 	if (index >= data.size())
 		return -1;
