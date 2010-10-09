@@ -25,15 +25,13 @@ if(USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
 
    if (WIN32)
-      set(Boost_USE_MULTITHREADED TRUE)
-      set(Boost_USE_STATIC_LIBS FALSE)
       set(Boost_FIND_REQUIRED TRUE)
       set(Boost_FIND_QUIETLY TRUE)
       set(Boost_DEBUG FALSE)
-      set(Boost_DETAILED_FAILURE_MSG FALSE)
       set(Boost_USE_MULTITHREADED TRUE)
-      set(Boost_USE_STATIC_LIBS TRUE)
+      set(Boost_DETAILED_FAILURE_MSG FALSE)
       set(Boost_ADDITIONAL_VERSIONS "1.39.0" "1.40.0" "1.41.0" "1.42.0" "1.43.0" "1.44.0")
+      set(Boost_USE_STATIC_LIBS TRUE)
    endif()
 endif()
 
@@ -85,7 +83,7 @@ include_directories(./include)
 
 if (USE_BOOST)
    find_package(Boost 1.38.0 COMPONENTS thread)
-   if(Boost_FOUND)
+   if (Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
       link_directories(${Boost_LIBRARY_DIRS})
    else()
@@ -93,8 +91,10 @@ if (USE_BOOST)
    endif()
 endif()
 
-if(WIN32)
+if (WIN32)
    target_link_libraries(kNet ws2_32.lib ${Boost_LIBRARIES})
+elseif (UNIX)
+   target_link_libraries(kNet ${Boost_LIBRARIES})
 endif()
 
 add_subdirectory(samples/FileTransfer)
@@ -105,29 +105,6 @@ add_subdirectory(samples/MessageCompiler)
 add_subdirectory(samples/SilenceTest)
 
 add_subdirectory(tests)
-
-#add_subdirectory(samples/TrashTalk)
-#add_subdirectory(samples/SpeedTest)
-#add_subdirectory(samples/LatencyTest)
-#add_subdirectory(samples/FirewallTest)
-#add_subdirectory(samples/ConnectFlood)
-#add_subdirectory(samples/SpeexVoipServer)
-
-if (WIN32)
-#add_subdirectory(samples/RawTransfer)
-
-#add_subdirectory(samples/SpeexVoip)
-
-#set_target_properties(SpeexVoip SimpleChat PROPERTIES 
-
-#set_target_properties(SimpleChat PROPERTIES 
-#	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
-#	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
-#	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
-
-endif()
-
-#set_target_properties(kNet FileTransfer HelloServer HelloClient TrashTalk SpeedTest LatencyTest FirewallTest ConnectFlood SpeexVoipServer PROPERTIES 
 
 set_target_properties(kNet Tests FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib

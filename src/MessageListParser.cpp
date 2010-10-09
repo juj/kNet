@@ -15,15 +15,25 @@
 /** @file MessageListParser.cpp
 	@brief */
 
+#ifdef KNET_USE_TINYXML
 #include <tinyxml.h>
+#endif
+
+#ifdef LINUX
+#define _stricmp strcasecmp
+#endif
+
+#include <cassert>
+#include <cstring>
 
 #include "kNet/NetworkLogging.h"
 #include "kNet/MessageListParser.h"
+#include "kNet/NetException.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
 #ifdef LINUX
-typedef _stricmp strcasecmp
+#define _stricmp strcasecmp
 #endif
 
 #define NUMELEMS(x) (sizeof(x)/sizeof(x[0]))
@@ -62,6 +72,7 @@ size_t SerialTypeSize(BasicSerializedDataType type)
 
 SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, SerializedElementDesc *parentNode)
 {
+#ifdef KNET_USE_TINYXML
 	elements.push_back(SerializedElementDesc());
 	SerializedElementDesc *elem = &elements.back();
 	elem->parent = parentNode;
@@ -112,6 +123,9 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 	}
 
 	return elem;
+#else
+	throw NetException("kNet was built without TinyXml support! SerializedMessageList is not available!");
+#endif
 }
 
 bool ParseBool(const char *str)
@@ -127,6 +141,7 @@ bool ParseBool(const char *str)
 
 void SerializedMessageList::ParseMessages(TiXmlElement *root)
 {
+#ifdef KNET_USE_TINYXML
 	TiXmlElement *node = root->FirstChildElement("message");
 	while(node)
 	{
@@ -153,10 +168,14 @@ void SerializedMessageList::ParseMessages(TiXmlElement *root)
 
 		node = node->NextSiblingElement("message");
 	}
+#else
+	throw NetException("kNet was built without TinyXml support! SerializedMessageList is not available!");
+#endif
 }
 
 void SerializedMessageList::ParseStructs(TiXmlElement *root)
 {
+#ifdef KNET_USE_TINYXML
 	TiXmlElement *node = root->FirstChildElement("struct");
 	while(node)
 	{
@@ -164,10 +183,14 @@ void SerializedMessageList::ParseStructs(TiXmlElement *root)
 
 		node = node->NextSiblingElement("struct");
 	}
+#else
+	throw NetException("kNet was built without TinyXml support! SerializedMessageList is not available!");
+#endif
 }
 
 void SerializedMessageList::LoadMessagesFromFile(const char *filename)
 {
+#ifdef KNET_USE_TINYXML
 	TiXmlDocument doc(filename);
 	bool success = doc.LoadFile();
 	if (!success)
@@ -180,6 +203,9 @@ void SerializedMessageList::LoadMessagesFromFile(const char *filename)
 
 	ParseStructs(xmlRoot);
 	ParseMessages(xmlRoot);
+#else
+	throw NetException("kNet was built without TinyXml support! SerializedMessageList is not available!");
+#endif
 }
 
 
