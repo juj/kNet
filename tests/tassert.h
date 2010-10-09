@@ -79,4 +79,3 @@ void assertEqualsTest(const T &x, const T &y, const char *str)
 	get assert failure "Failed expression x==y: 10 != 14", which is a lot more informative. */
 #define assertEquals(x, y) assertEqualsTest(x, y, #x "==" #y);
 
-#endif
