@@ -16,6 +16,8 @@
 /** @file BitOps.h
 	@brief Provides bit operation utilities on bitfields. */
 
+#include <cassert>
+
 #include "Types.h"
 
 namespace kNet

@@ -89,6 +89,9 @@ public:
 	/// @return The bit index, [0, 7] of the byte that will be read next. The reading will proceed from LSBit to MSBit, i.e. 0 -> 7.
 	u32 BitPos() const { return bitOfs; }
 
+	/// @return The number of bits read so far in total.
+	size_t BitsReadTotal() const { return elemOfs * 8 + bitOfs; }
+
 	/// @return A pointer in the byte stream at the current read position.
 	const char *CurrentData() const { return data + BytePos(); }
 
@@ -132,6 +135,10 @@ T DataDeserializer::Read()
 	return value;
 }
 
+template<> std::string DataDeserializer::Read<std::string>();
+
+template<> bool DataDeserializer::Read<bit>();
+
 template<typename VLEType>
 u32 DataDeserializer::ReadVLE()
 {
@@ -173,9 +180,6 @@ void DataDeserializer::ReadArray(T *dst, size_t numElems)
 	if (numElems == 0 && iter)
 		iter->ProceedToNextVariable();
 }
-
-template<>
-bool DataDeserializer::Read<bit>();
 
 template<>
 void DataDeserializer::ReadArray(bit *dst, size_t numElems);

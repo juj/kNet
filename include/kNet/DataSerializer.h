@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <cassert>
+#include <string>
 
 #include "kNet/SharedPtr.h"
 
@@ -61,7 +62,11 @@ public:
 	/// @param maxBytes The maximum number of bytes that the message can take up space.
 	DataSerializer(std::vector<char> &data, size_t maxBytes, const SerializedMessageDesc *msgTemplate);
 
-	/// Appends a single element of the passed type.
+	/// Appends a single element of the passed type. If you are using a serialization template to
+	/// aid in serialization, the type T may be any of the types bit, u8, s8, u16, s16, u32, s32, u64, s64, float, double, 
+	/// const char * or std::string.
+	/// If you are not using a serialization template, you may pass in any type that is a POD type and can be reinterpret_casted
+	/// to a u8 buffer and memcpy'd to a byte buffer.
 	template<typename T>
 	void Add(const T &value);
 
@@ -102,11 +107,17 @@ public:
 	/// @return The number of bytes filled so far. Partial bits at the end are rounded up to constitute a full byte.
 	size_t BytesFilled() const { return elemOfs + ((bitOfs != 0) ? 1 : 0); }
 
-	/// @return The number of bits filled so far.
+	/// @return The number of bits filled so far total.
 	size_t BitsFilled() const { return elemOfs * 8 + bitOfs; }
 
 	/// @return The total capacity of the buffer we are filling into.
 	size_t Capacity() const { return maxBytes; }
+
+	/// Returns the current byte offset the DataSerializer is writing to.
+	size_t ByteOffset() const { return elemOfs; }
+
+	/// Returns the current bit offset in the current byte this DataSerializer is writing to, [0, 7].
+	size_t BitOffset() const { return bitOfs; }
 
 private:
 	void AppendByte(u8 byte);
@@ -150,8 +161,11 @@ void DataSerializer::Add(const T &value)
 		iter->ProceedToNextVariable();
 }
 
-template<>
-void DataSerializer::Add<bit>(const bit &value);
+template<> void DataSerializer::Add<char*>(char * const & value);
+template<> void DataSerializer::Add<const char*>(const char * const & value);
+template<> void DataSerializer::Add<std::string>(const std::string &value);
+
+template<> void DataSerializer::Add<bit>(const bit &value);
 
 template<typename VLEType>
 void DataSerializer::AddVLE(u32 value)

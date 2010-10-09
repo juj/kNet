@@ -44,6 +44,7 @@ enum BasicSerializedDataType
 	SerialS64, ///< Associated with the type 's64'.
 	SerialFloat,   ///< Associated with the type 'float'.
 	SerialDouble,  ///< Associated with the type 'double'.
+	SerialString,  ///< An ASCII string.
 	SerialStruct,  ///< Not associated with a basic type, but defines that the given node contains an aggregate of multiple other types.
 	SerialDynamicCount, ///< Not a data type, but an identifier for the SerializedMessageIterator to return when a dynamic count of a block is the next field to fill.
 
@@ -62,20 +63,24 @@ size_t SerialTypeSize(BasicSerializedDataType type);
 template<typename T>
 struct SerializedDataTypeTraits
 {
-	// The specializations each have to contain the following member: (The generic template version deliberately doesn't).
-	// static const BasicSerializedDataType type = x;
+	// The specializations each have to contain the following members: (The generic template version deliberately doesn't)
+//	static const BasicSerializedDataType type = SerialInvalid; // The type enum of this data type.
+//	static const int bitSize = 0; // The number of bits this data type takes up when serialized.
 };
 
-template<> struct SerializedDataTypeTraits<bit> { static const BasicSerializedDataType type = SerialBit; };
-template<> struct SerializedDataTypeTraits<u8>  { static const BasicSerializedDataType type = SerialU8; };
-template<> struct SerializedDataTypeTraits<s8>  { static const BasicSerializedDataType type = SerialS8; };
-template<> struct SerializedDataTypeTraits<u16> { static const BasicSerializedDataType type = SerialU16; };
-template<> struct SerializedDataTypeTraits<s16> { static const BasicSerializedDataType type = SerialS16; };
-template<> struct SerializedDataTypeTraits<u32> { static const BasicSerializedDataType type = SerialU32; };
-template<> struct SerializedDataTypeTraits<s32> { static const BasicSerializedDataType type = SerialS32; };
-template<> struct SerializedDataTypeTraits<u64> { static const BasicSerializedDataType type = SerialU64; };
-template<> struct SerializedDataTypeTraits<s64> { static const BasicSerializedDataType type = SerialS64; };
-template<> struct SerializedDataTypeTraits<float> { static const BasicSerializedDataType type = SerialFloat; };
-template<> struct SerializedDataTypeTraits<double> { static const BasicSerializedDataType type = SerialDouble; };
+template<> struct SerializedDataTypeTraits<bit> { static const BasicSerializedDataType type = SerialBit; static const int bitSize = 1; };
+template<> struct SerializedDataTypeTraits<u8>  { static const BasicSerializedDataType type = SerialU8; static const int bitSize = 8; };
+template<> struct SerializedDataTypeTraits<s8>  { static const BasicSerializedDataType type = SerialS8; static const int bitSize = 8; };
+template<> struct SerializedDataTypeTraits<u16> { static const BasicSerializedDataType type = SerialU16; static const int bitSize = 16; };
+template<> struct SerializedDataTypeTraits<s16> { static const BasicSerializedDataType type = SerialS16; static const int bitSize = 16; };
+template<> struct SerializedDataTypeTraits<u32> { static const BasicSerializedDataType type = SerialU32; static const int bitSize = 32; };
+template<> struct SerializedDataTypeTraits<s32> { static const BasicSerializedDataType type = SerialS32; static const int bitSize = 32; };
+template<> struct SerializedDataTypeTraits<u64> { static const BasicSerializedDataType type = SerialU64; static const int bitSize = 64; };
+template<> struct SerializedDataTypeTraits<s64> { static const BasicSerializedDataType type = SerialS64; static const int bitSize = 64; };
+template<> struct SerializedDataTypeTraits<float> { static const BasicSerializedDataType type = SerialFloat; static const int bitSize = 32; };
+template<> struct SerializedDataTypeTraits<double> { static const BasicSerializedDataType type = SerialDouble; static const int bitSize = 64; };
+template<> struct SerializedDataTypeTraits<char*> { static const BasicSerializedDataType type = SerialString; static const int bitSize = 0; };
+template<> struct SerializedDataTypeTraits<const char*> { static const BasicSerializedDataType type = SerialString; static const int bitSize = 0; };
+template<> struct SerializedDataTypeTraits<std::string> { static const BasicSerializedDataType type = SerialString; static const int bitSize = 0; };
 
 } // ~kNet

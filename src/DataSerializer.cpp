@@ -164,6 +164,24 @@ void DataSerializer::SetVaryingElemSize(u32 count)
 }
 
 template<>
+void DataSerializer::Add<char*>(char * const & value)
+{
+	AddString(value);
+}
+
+template<>
+void DataSerializer::Add<const char*>(const char * const & value)
+{
+	AddString(value);
+}
+
+template<>
+void DataSerializer::Add<std::string>(const std::string &value)
+{
+	AddString(value);
+}
+
+template<>
 void DataSerializer::Add<bit>(const bit &value)
 {
 	u8 val = (value != 0) ? 1 : 0;
