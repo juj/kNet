@@ -19,7 +19,7 @@ set(USE_BOOST TRUE)
 set(BOOST_ROOT "C:/boost")
 
 set(USE_TINYXML TRUE)
-set(TINYXML_ROOT "C:/tinyxml")
+set(TINYXML_ROOT "../tinyxml")
 
 if(USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
@@ -104,6 +104,8 @@ add_subdirectory(samples/SimpleChat)
 add_subdirectory(samples/MessageCompiler)
 add_subdirectory(samples/SilenceTest)
 
+add_subdirectory(tests)
+
 #add_subdirectory(samples/TrashTalk)
 #add_subdirectory(samples/SpeedTest)
 #add_subdirectory(samples/LatencyTest)
@@ -127,7 +129,7 @@ endif()
 
 #set_target_properties(kNet FileTransfer HelloServer HelloClient TrashTalk SpeedTest LatencyTest FirewallTest ConnectFlood SpeexVoipServer PROPERTIES 
 
-set_target_properties(kNet FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest PROPERTIES 
+set_target_properties(kNet Tests FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)

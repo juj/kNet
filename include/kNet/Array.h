@@ -217,12 +217,17 @@ public:
 		++used;
 	}
 
+	/// Inserts the given element to back of the Array, but without doing bounds checking. 
+	/// Call this function only if you know there is enough capacity in the Array.
 	void push_back_unsafe(const T &val)
 	{
 		assert(used < cap);
 		data[used++] = val;
 	}
 
+	/// Inserts an uninitialized value to the back of the Array, and returns a reference to it.
+	/// This function was implemented after profiling a code generation issue with VS2008 that
+	/// resulted in suboptimal performance.
 	T &push_back_unsafe_pod()
 	{
 		assert(used < cap);
@@ -304,6 +309,9 @@ public:
 		used = 0;
 	}
 
+	/// Clears the whole Array by simply marking the size to 0. Running time is O(1).
+	/// Only call this function if the element type is a POD that does not need its dtor
+	/// to be called for cleanup.
 	void clear_pod()
 	{
 		used = 0;
@@ -325,6 +333,7 @@ public:
 //		memcpy(newData, data, sizeof(T)*used);
 		for(size_t i = 0; i < used; ++i)
 			newData[i] = data[i];
+
 		DeleteArray(data, allocator);
 		data = newData;
 		cap = newSize;
@@ -367,4 +376,3 @@ private:
 };
 
 } // ~kNet
-
