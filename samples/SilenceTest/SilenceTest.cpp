@@ -24,6 +24,10 @@
 
 #include "kNet.h"
 
+#ifdef LINUX
+#define _stricmp strcasecmp
+#endif
+
 using namespace std;
 using namespace kNet;
 
@@ -41,7 +45,7 @@ void RunServer(short int port, SocketTransportLayer transport)
 	{
 		server->Process();
 		NetworkServer::ConnectionMap connectionMap = server->GetConnections();
-		connections = max(server->GetConnections().size(), connections);
+		connections = max(server->GetConnections().size(), (size_t)connections);
 		if (connections > 0 && server->GetConnections().size() == 0)
 			break;
 

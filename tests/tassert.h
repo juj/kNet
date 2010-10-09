@@ -17,6 +17,10 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <string.h>
+
+#include "kNet/NetException.h"
 
 /** Starts a test block that tracks and catches all failures inside.
 	To start a test block, call TEST("testname");
@@ -69,9 +73,9 @@ void assertEqualsTest(const T &x, const T &y, const char *str)
 	{
 		std::stringstream ss;
 		ss << "Failed expression \"" << str << "\": \"" << x << "\" != \"" << y << "\"";
-		char str[256];
-		strncpy(str, ss.str().c_str(), 256);
-		THROW(str);
+		char str[512];
+		strncpy(str, ss.str().c_str(), 512);
+		throw kNet::NetException(str);
 	}
 }
 
