@@ -17,6 +17,7 @@
 	@brief The VLEType2<int,int> and VLEType3<int,int,int> template classes. */
 
 #include "BitOps.h"
+#include "NetException.h"
 
 namespace kNet
 {
@@ -56,6 +57,8 @@ public:
 
 	static u32 Encode(u32 value)
 	{
+		if (value > maxValue)
+			throw NetException("VLEType2::Encode: Trying to encode too large value!");
 		if (value <= maxValue1)
 			return value;
 		else
@@ -121,6 +124,9 @@ public:
 
 	static u32 Encode(u32 value)
 	{
+		if (value > maxValue)
+			throw NetException("VLEType2::Encode: Trying to encode too large value!");
+
 		if (value > maxValue)
 			value = maxValue;
 
