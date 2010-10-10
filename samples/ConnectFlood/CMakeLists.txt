@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 cmake_minimum_required(VERSION 2.6)
-project(SimpleChat)
+project(ConnectFlood)
 
 file(GLOB HeaderFiles ./*.h )
 file(GLOB SourceFiles ./*.cpp)

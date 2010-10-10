@@ -19,4 +19,4 @@ file(GLOB HeaderFiles ./*.h )
 file(GLOB SourceFiles ./*.cpp)
 add_executable(${PROJECT_NAME} ${SourceFiles} ${HeaderFiles})
 
-target_link_libraries(${PROJECT_NAME} kNet ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} kNet)
