@@ -51,7 +51,9 @@ isUdpServerSocket(false)
 
 Socket::~Socket()
 {
-	Close();
+	// We cannot Close() the socket here, since the same underlying BSD SOCKET handle can be shared
+	// between multiple Socket objects. We rely instead to non-RAII behavior and manually remembering to 
+	// Close().
 #ifdef WIN32
 	FreeOverlappedTransferBuffers();
 #endif
