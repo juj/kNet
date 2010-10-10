@@ -19,6 +19,7 @@
 #include <string>
 
 #include "kNet.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 //#undef WIN32
 

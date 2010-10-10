@@ -16,6 +16,9 @@
 	@brief */
 
 #include <cassert>
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/Clock.h"
 #include "kNet/NetworkLogging.h"
 

@@ -17,9 +17,10 @@
 
 #include <cstring>
 
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/DataSerializer.h"
 #include "kNet/BitOps.h"
-#include "kNet/DebugMemoryLeakCheck.h"
 
 namespace kNet
 {

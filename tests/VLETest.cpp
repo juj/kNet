@@ -17,6 +17,7 @@
 
 #include <string>
 
+#include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"
 

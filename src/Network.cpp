@@ -28,12 +28,13 @@
 #endif
 
 #include "kNet/Network.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/TCPMessageConnection.h"
 #include "kNet/UDPMessageConnection.h"
 #include "kNet/NetworkWorkerThread.h"
 #include "kNet/NetworkLogging.h"
-
-#include "kNet/DebugMemoryLeakCheck.h"
 
 namespace kNet
 {

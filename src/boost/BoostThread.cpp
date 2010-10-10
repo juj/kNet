@@ -19,6 +19,9 @@
 #include <exception>
 
 #include "kNet/Thread.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/NetworkLogging.h"
 #include "kNet/Clock.h"
 #include "kNet/NetException.h"

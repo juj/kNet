@@ -17,11 +17,13 @@
 
 #include <cstring>
 
-#include "kNet/FragmentedTransferManager.h"
 #include "kNet/MessageConnection.h"
-#include "kNet/NetworkLogging.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/FragmentedTransferManager.h"
+#include "kNet/NetworkLogging.h"
+
 
 using namespace std;
 

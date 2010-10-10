@@ -17,6 +17,7 @@
 
 #include "kNet/MaxHeap.h"
 #include "tassert.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 void MaxHeapTest()
 {

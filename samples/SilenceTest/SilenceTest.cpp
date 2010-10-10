@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "kNet.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 #ifdef LINUX
 #define _stricmp strcasecmp

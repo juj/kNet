@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "kNet.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 // If enabled, this sample is used for network transfer profiling and all disk operations are ignored.
 //#define NULLTRANSFER

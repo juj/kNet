@@ -17,6 +17,8 @@
 
 #include <cassert>
 
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/Event.h"
 #include "kNet/NetworkLogging.h"
 

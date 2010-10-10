@@ -13,6 +13,10 @@
    limitations under the License. */
 #pragma once
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
 /** @file Atomics.h
 	@brief Abstracts platform-specific atomics operations. */
 

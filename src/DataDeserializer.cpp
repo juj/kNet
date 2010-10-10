@@ -18,8 +18,9 @@
 #include <cassert>
 #include <cstring>
 
-#include "kNet/DataDeserializer.h"
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/DataDeserializer.h"
 #include "kNet/NetException.h"
 
 using namespace std;

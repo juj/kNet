@@ -17,8 +17,11 @@
 
 #include <utility>
 
-#include "kNet/NetworkWorkerThread.h"
 #include "kNet/UDPMessageConnection.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/NetworkWorkerThread.h"
 #include "kNet/NetworkLogging.h"
 #include "kNet/Event.h"
 #include "kNet/EventArray.h"

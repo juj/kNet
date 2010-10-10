@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "kNet.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 using namespace std;
 using namespace kNet;

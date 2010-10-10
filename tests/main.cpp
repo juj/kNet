@@ -15,6 +15,8 @@
 /** @file main.cpp
 	@brief */
 
+#include "kNet/DebugMemoryLeakCheck.h"
+
 void VLETest();
 void DataSerializerTest();
 void MaxHeapTest();

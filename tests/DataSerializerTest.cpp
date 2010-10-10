@@ -20,6 +20,7 @@
 #include <iostream>
 #include <list>
 
+#include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/BitOps.h"
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"

@@ -20,9 +20,9 @@
 #include <cassert>
 #include <cstring>
 
-#include "kNet/SerializationStructCompiler.h"
-
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/SerializationStructCompiler.h"
 
 using namespace std;
 

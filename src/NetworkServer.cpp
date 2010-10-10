@@ -15,16 +15,17 @@
 /** @file NetworkServer.cpp
 	@brief */
 
-#include "kNet/NetworkServer.h"
 #include "kNet/Network.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/NetworkServer.h"
 #include "kNet/TCPMessageConnection.h"
 #include "kNet/UDPMessageConnection.h"
 #include "kNet/Datagram.h"
 #include "kNet/NetworkWorkerThread.h"
 #include "kNet/NetworkLogging.h"
 #include "kNet/Clock.h"
-
-#include "kNet/DebugMemoryLeakCheck.h"
 
 #include <iostream>
 

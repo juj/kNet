@@ -16,6 +16,7 @@
 	@brief */
 
 #include "kNet.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 using namespace kNet;
 

@@ -27,6 +27,8 @@
 #include <boost/thread/thread.hpp>
 #endif
 
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/NetworkLogging.h"
 #include "kNet/Lockable.h"
 #include "kNet/Clock.h"

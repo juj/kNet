@@ -14,7 +14,9 @@
 #pragma once
 
 ///\todo Remove this in favor of pimpl.
+#ifndef KNET_USE_BOOST
 #define KNET_USE_BOOST
+#endif
 
 /** @file kNet.h
 	@brief The main file of KristalliNet that #includes all the commonly used headers for the the 

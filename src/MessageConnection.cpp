@@ -19,21 +19,22 @@
 #include <iostream>
 #include <cassert>
 
+#include "kNet/MessageConnection.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
+
 #include "kNet/PolledTimer.h"
 #include "kNet/Sort.h"
 #include "kNet/BitOps.h"
 
 #include "kNet/Network.h"
 #include "kNet/NetworkLogging.h"
-#include "kNet/MessageConnection.h"
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"
 #include "kNet/VLEPacker.h"
 #include "kNet/FragmentedTransferManager.h"
 #include "kNet/NetworkServer.h"
 #include "kNet/Clock.h"
-
-#include "kNet/DebugMemoryLeakCheck.h"
 
 using namespace std;
 
