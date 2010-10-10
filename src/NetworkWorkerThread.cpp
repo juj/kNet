@@ -249,7 +249,7 @@ void NetworkWorkerThread::MainLoop()
 				{
 					NetworkServer &server = *serverList[0]; ///\bug In case of multiple servers, this is not correct!
 					std::vector<Socket *> &listenSockets = server.ListenSockets();
-					if (socketIndex < listenSockets.size())
+					if (socketIndex < (int)listenSockets.size())
 						server.ReadUDPSocketData(listenSockets[socketIndex]);
 					else
 					{

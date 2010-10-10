@@ -104,6 +104,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	EnableMemoryLeakLoggingAtExit();
+
 	kNet::SetLogChannels((LogChannel)(-1) & ~LogObjectAlloc); // Enable all log channels.
 //	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 

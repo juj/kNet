@@ -70,7 +70,7 @@ string Time()
 	return ss.str();
 }
 
-}
+} // ~unnamed namespace
 
 void TimeOutputDebugStringVariadic(LogChannel logChannel, const char * /*filename*/, int /*lineNumber*/, const char *msg, ...)
 {
@@ -125,6 +125,22 @@ void SetLogFile(const char *filename)
 	kNetLogFile.close();
 	if (filename && strlen(filename) > 0)
 		kNetLogFile.open(filename, ios::app);
+}
+
+void EnableMemoryLeakLoggingAtExit()
+{
+#ifdef WIN32
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+#endif
 }
 
 } // ~kNet

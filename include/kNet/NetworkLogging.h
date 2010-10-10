@@ -55,6 +55,10 @@ LogChannel GetLogChannels();
 /// logging to target std::cout.
 void SetLogFile(const char *filename);
 
+/// When called, sets the runtime to print out all memory leaks at program exit time. Win32-only. On
+/// linux, this is a no-op.
+void EnableMemoryLeakLoggingAtExit();
+
 } // ~kNet
 
 /// Prints out a variadic message to the log channel User.

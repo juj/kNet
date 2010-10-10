@@ -27,32 +27,34 @@ const message_id_t cHelloMessageID = 10;
 class ServerListener : public INetworkServerListener
 {
 public:
-   void NewConnectionEstablished(MessageConnection *connection)
-   {
+	void NewConnectionEstablished(MessageConnection *connection)
+	{
 		const int maxMsgBytes = 256;
-      // Start building a new message.
-      NetworkMessage *msg = connection->StartNewMessage(cHelloMessageID, maxMsgBytes);
-      msg->reliable = true;
-      
-      // Create a DataSerializer object with a buffer of 256 bytes.
-      DataSerializer ds(msg->data, maxMsgBytes);
-      // Add a message string.
-      ds.AddString(std::string("Hello! You are connecting from ") + connection->GetEndPoint().ToString());
-      // Push the message out to the client.
+		// Start building a new message.
+		NetworkMessage *msg = connection->StartNewMessage(cHelloMessageID, maxMsgBytes);
+		msg->reliable = true;
+
+		// Create a DataSerializer object with a buffer of 256 bytes.
+		DataSerializer ds(msg->data, maxMsgBytes);
+		// Add a message string.
+		ds.AddString(std::string("Hello! You are connecting from ") + connection->GetEndPoint().ToString());
+		// Push the message out to the client.
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
 		LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
-   }
+	}
 };
 
 int main()
 {
-   Network network;
-   ServerListener listener;
-   
+	EnableMemoryLeakLoggingAtExit();
+
+	Network network;
+	ServerListener listener;
+
 	LOG(LogUser, "Starting server.");
-   // Start listening on a port.
-   const unsigned short cServerPort = 1234;
-   NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener);
+	// Start listening on a port.
+	const unsigned short cServerPort = 1234;
+	NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener);
 
 	if (server)
 	{

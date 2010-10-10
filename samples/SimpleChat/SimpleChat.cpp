@@ -271,6 +271,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	EnableMemoryLeakLoggingAtExit();
+
 	SocketTransportLayer transport = SocketOverUDP;
 	if (!_stricmp(argv[1], "tcp"))
 		transport = SocketOverTCP;

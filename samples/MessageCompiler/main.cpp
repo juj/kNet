@@ -15,6 +15,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	EnableMemoryLeakLoggingAtExit();
+
 	SerializedMessageList msg;
 	msg.LoadMessagesFromFile(argv[1]);
 

@@ -16,6 +16,7 @@
 	@brief */
 
 #include "kNet/DebugMemoryLeakCheck.h"
+#include "kNet/NetworkLogging.h"
 
 void VLETest();
 void DataSerializerTest();
@@ -23,6 +24,8 @@ void MaxHeapTest();
 
 int main()
 {
+	kNet::EnableMemoryLeakLoggingAtExit();
+
 	DataSerializerTest();
 	MaxHeapTest();
 	VLETest();

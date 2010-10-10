@@ -47,6 +47,9 @@ int main(int argc, char **argv)
       std::cout << "Usage: " << argv[0] << " server-ip" << std::endl;
       return 0;
    }
+
+	EnableMemoryLeakLoggingAtExit();
+
    Network network;
    MessageListener listener;
 	const unsigned short cServerPort = 1234;
