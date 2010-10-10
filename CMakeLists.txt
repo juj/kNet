@@ -62,6 +62,7 @@ if(WIN32)
 
    add_definitions(-D_WINSOCKAPI_)
    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+   add_definitions(-DKNET_MEMORY_LEAK_CHECK)
 elseif(UNIX)
    file(GLOB kNetUnixSourceFiles ./src/unix/*.cpp)
    file(GLOB kNetUnixHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/unix/*.h)
@@ -103,10 +104,11 @@ add_subdirectory(samples/HelloClient)
 add_subdirectory(samples/SimpleChat)
 add_subdirectory(samples/MessageCompiler)
 add_subdirectory(samples/SilenceTest)
+add_subdirectory(samples/SpeedTest)
 
 add_subdirectory(tests)
 
-set_target_properties(kNet Tests FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest PROPERTIES 
+set_target_properties(kNet Tests FileTransfer HelloServer HelloClient SimpleChat MessageCompiler SilenceTest SpeedTest PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
