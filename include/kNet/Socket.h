@@ -248,6 +248,9 @@ private:
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedSendBuffers;
 
+	/// Frees all allocated data in the queuedReceiveBuffers and queuedSendBuffers queues.
+	void FreeOverlappedTransferBuffers();
+
 	void EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer = 0);
 #endif
 };

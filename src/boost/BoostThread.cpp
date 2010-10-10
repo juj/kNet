@@ -31,6 +31,7 @@ namespace kNet
 {
 
 Thread::Thread()
+:invoker(0)
 {
 }
 
@@ -58,6 +59,9 @@ void Thread::Stop()
 	thread.join();
 
 	LOG(LogVerbose, "Thread::Stop: Took %f msecs.", timer.MSecsElapsed());
+
+	delete invoker;
+	invoker = 0;
 }
 
 void Thread::StartThread()

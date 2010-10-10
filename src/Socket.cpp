@@ -19,12 +19,13 @@
 #include <cassert>
 #include <utility>
 
-#include "kNet/Socket.h"
 #include "kNet/Network.h"
-#include "kNet/NetworkLogging.h"
-#include "kNet/EventArray.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/Socket.h"
+#include "kNet/NetworkLogging.h"
+#include "kNet/EventArray.h"
 
 using namespace std;
 
@@ -50,6 +51,10 @@ isUdpServerSocket(false)
 
 Socket::~Socket()
 {
+	Close();
+#ifdef WIN32
+	FreeOverlappedTransferBuffers();
+#endif
 }
 
 Socket::Socket(SOCKET connection, const char *address, unsigned short port, SocketTransportLayer transport_, size_t maxSendSize_,
@@ -116,7 +121,7 @@ bool Socket::WaitForData(int msecs)
 
 OverlappedTransferBuffer *AllocateOverlappedTransferBuffer(int bytes)
 {
-	OverlappedTransferBuffer *buffer = new OverlappedTransferBuffer();
+	OverlappedTransferBuffer *buffer = new OverlappedTransferBuffer;
 	memset(buffer, 0, sizeof(OverlappedTransferBuffer));
 	buffer->buffer.buf = new char[bytes];
 	buffer->buffer.len = bytes;
@@ -517,17 +522,30 @@ void Socket::Close()
 	connectSocket = INVALID_SOCKET;
 	destinationAddress = "";
 	destinationPort = 0;
-/** \todo Use CancelIo to tear-down commited OverlappedTransferBuffers before freeing data. http://msdn.microsoft.com/en-us/library/aa363792(VS.85).aspx
+
 #ifdef WIN32
+	FreeOverlappedTransferBuffers();
+#endif
+}
+
+#ifdef WIN32
+void Socket::FreeOverlappedTransferBuffers()
+{
+/// \todo Use CancelIo to tear-down commited OverlappedTransferBuffers before freeing data. http://msdn.microsoft.com/en-us/library/aa363792(VS.85).aspx
 	while(queuedReceiveBuffers.Size() > 0)
 	{
 		OverlappedTransferBuffer *b = queuedReceiveBuffers.TakeFront();
 		delete b->buffer.buf;
 		delete b;
 	}
-#endif
-*/
+	while(queuedSendBuffers.Size() > 0)
+	{
+		OverlappedTransferBuffer *b = queuedSendBuffers.TakeFront();
+		delete b->buffer.buf;
+		delete b;
+	}
 }
+#endif
 
 void Socket::SetBlocking(bool isBlocking)
 {

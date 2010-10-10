@@ -23,6 +23,8 @@
 #include "kNet/Clock.h"
 #include "kNet/NetException.h"
 
+#include "kNet/DebugMemoryLeakCheck.h"
+
 namespace kNet
 {
 
@@ -36,6 +38,7 @@ invoker(0)
 Thread::~Thread()
 {
 	Stop();
+	delete invoker;
 }
 
 bool Thread::ShouldQuit() const { return threadHandle == NULL || threadEnabled == false; }
@@ -59,11 +62,15 @@ bool Thread::IsRunning() const
 
 void Thread::Stop()
 {
-	if (threadHandle == NULL)
-		return;
-
 	// Signal that the thread should quit now.
 	threadEnabled = false;
+
+	if (threadHandle == NULL)
+	{
+		delete invoker;
+		invoker = 0;
+		return;
+	}
 
 	kNet::Clock::Sleep(10);
 	assert(threadHandle != 0);
