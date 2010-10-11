@@ -62,11 +62,15 @@ bool Event::IsNull() const
 
 void Event::Reset()
 {
+	if (wsaEvent == NULL)
+		LOG(LogError, "Event::Reset called on a null event!");
 	WSAResetEvent(wsaEvent);
 }
 
 void Event::Set()
 {
+	if (wsaEvent == NULL)
+		LOG(LogError, "Event::Set called on a null event!");
 	WSASetEvent(wsaEvent);
 }
 
@@ -78,6 +82,8 @@ bool Event::Test() const
 /// Returns true if the event was set during this time, or false if timout occurred.
 bool Event::Wait(unsigned long msecs) const
 {
+	if (wsaEvent == NULL)
+		LOG(LogError, "Event::Wait called on a null event!");
 	DWORD ret = WSAWaitForMultipleEvents(1, &wsaEvent, TRUE, msecs, TRUE);
 	return ret == WSA_WAIT_EVENT_0;
 }

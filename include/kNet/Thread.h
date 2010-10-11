@@ -21,6 +21,8 @@
 #elif WIN32
 #include <Windows.h>
 
+#include "Event.h"
+
 namespace kNet
 {
 typedef void (*ThreadEntryFunc)(void *threadStartData);
@@ -41,9 +43,22 @@ public:
 	Thread();
 	~Thread();
 
+	/// Call this function only from inside the thread that is running. Returns true if the worker thread
+	/// should exit immediately.
 	bool ShouldQuit() const;
 
+	/// Callable from either the thread owner or the thread itself.
 	bool IsRunning() const;
+
+	/// Suspends the thread until 'Resume()' is called. Call this function from the main thread.
+	void Hold();
+
+	/// Resumes the thread that is being held.
+	void Resume();
+
+	/// Makes the worker thread sleep if this thread is held, until this thread is resumed. Only callable
+	/// from the worker thread.
+	void CheckHold();
 
 	/// Tries first to gracefully close the thread (waits for a while), and forcefully terminates the thread if
 	/// it didn't respond in that time. \todo Allow specifying the timeout period.
@@ -101,6 +116,11 @@ private:
 	};
 
 	ObjInvokeBase *invoker;
+
+	// The following objects are used to implement thread suspendion/holding.
+	Event threadHoldEvent;
+	Event threadHoldEventAcked;
+	Event threadResumeEvent;
 
 	void StartThread();
 

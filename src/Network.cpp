@@ -380,14 +380,15 @@ void Network::CloseSocket(Socket *socket)
 			// The Socket pointers MessageConnection objects have are pointers to this list,
 			// so after calling this function with a Socket pointer, the Socket is deleted for good.
 			sockets.erase(iter);
-			LOGNET("Closed socket 0x%08X!", socket);
+			LOGNET("Network::CloseSocket: Closed socket 0x%08X!", socket);
 			return;
 		}
-	LOGNET("Tried to close a nonexisting socket 0x%08X!", socket);
+	LOGNET("Network::CloseSocket: Tried to close a nonexisting socket 0x%08X!", socket);
 }
 
 void Network::CloseConnection(Ptr(MessageConnection) connection)
 {
+	LOG(LogVerbose, "Network::CloseConnection: Closing down connection 0x%X.", connection.ptr());
 	if (!connection)
 		return;
 
@@ -400,6 +401,7 @@ void Network::CloseConnection(Ptr(MessageConnection) connection)
 
 void Network::DeInit()
 {
+	LOG(LogVerbose, "Network::DeInit: Closing down network worker thread.");
 	PolledTimer timer;
 
 	if (workerThread)
@@ -442,7 +444,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	}
 
 	SOCKET listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	LOGNET("Created listenSocket 0x%8X.", listenSocket);
+	LOGNET("Network::OpenListenSocket: Created listenSocket 0x%8X.", listenSocket);
 
 	if (listenSocket == INVALID_SOCKET)
 	{

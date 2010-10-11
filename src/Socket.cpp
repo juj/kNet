@@ -141,6 +141,7 @@ void DeleteOverlappedTransferBuffer(OverlappedTransferBuffer *buffer)
 	delete buffer->buffer.buf;
 #ifdef WIN32
 	WSACloseEvent(buffer->overlapped.hEvent);
+	buffer->overlapped.hEvent = NULL;
 #endif
 	delete buffer;
 }
@@ -178,12 +179,14 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 {
 	if (!readOpen || queuedReceiveBuffers.CapacityLeft() == 0)
 	{
+		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0x%X)", buffer);
 		DeleteOverlappedTransferBuffer(buffer); // buffer may be a zero pointer, but that is alright.
 		return;
 	}
 
 	if (!buffer)
 	{
+		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0)");
 		const int receiveBufferSize = 4096;
 		buffer = AllocateOverlappedTransferBuffer(receiveBufferSize);
 	}
@@ -472,6 +475,8 @@ void Socket::EndReceive(OverlappedTransferBuffer *buffer)
 
 void Socket::Disconnect()
 {
+	LOG(LogVerbose, "Socket::Disconnect(), this: 0x%X.", this);
+
 	if (connectSocket == INVALID_SOCKET)
 		return;
 
@@ -494,6 +499,8 @@ void Socket::Disconnect()
 
 void Socket::Close()
 {
+	LOG(LogVerbose, "Socket::Close(), this: 0x%X.", this);
+
 	if (connectSocket == INVALID_SOCKET)
 		return;
 
@@ -519,7 +526,10 @@ void Socket::Close()
 	// Each TCP Socket owns the SOCKET they contain. For UDP server, the same SOCKET is shared by 
 	// several Sockets, so closing one would close them all.
 	if (!isUdpServerSocket)
+	{
+//		CancelIo((SOCKET)connectSocket);
 		closesocket(connectSocket);
+	}
 
 	connectSocket = INVALID_SOCKET;
 	destinationAddress = "";
@@ -533,19 +543,14 @@ void Socket::Close()
 #ifdef WIN32
 void Socket::FreeOverlappedTransferBuffers()
 {
+	LOG(LogVerbose, "Socket::FreeOverlappedTransferBuffers(), this: 0x%X.", this);
 /// \todo Use CancelIo to tear-down commited OverlappedTransferBuffers before freeing data. http://msdn.microsoft.com/en-us/library/aa363792(VS.85).aspx
 	while(queuedReceiveBuffers.Size() > 0)
-	{
-		OverlappedTransferBuffer *b = queuedReceiveBuffers.TakeFront();
-		delete b->buffer.buf;
-		delete b;
-	}
+		DeleteOverlappedTransferBuffer(queuedReceiveBuffers.TakeFront());
+
 	while(queuedSendBuffers.Size() > 0)
-	{
-		OverlappedTransferBuffer *b = queuedSendBuffers.TakeFront();
-		delete b->buffer.buf;
-		delete b;
-	}
+		DeleteOverlappedTransferBuffer(queuedSendBuffers.TakeFront());
+
 }
 #endif
 

@@ -39,13 +39,17 @@ NetworkWorkerThread::NetworkWorkerThread()
 
 void NetworkWorkerThread::AddConnection(Ptr(MessageConnection) connection)
 {
+	workThread.Hold();
 	Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
 	lock->push_back(connection);
 	LOGNET("Added connection 0x%8X to NetworkWorkerThread.", connection.ptr());
+	workThread.Resume();
 }
 
 void NetworkWorkerThread::RemoveConnection(Ptr(MessageConnection) connection)
 {
+	workThread.Hold();
+
 	Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
 
 	for(size_t i = 0; i < lock->size(); ++i)
@@ -53,20 +57,26 @@ void NetworkWorkerThread::RemoveConnection(Ptr(MessageConnection) connection)
 		{
 			lock->erase(lock->begin() + i);
 			LOGNET("NetworkWorkerThread::RemoveConnection: Connection 0x%8X removed.", connection.ptr());
+			workThread.Resume();
 			return;
 		}
 	LOGNET("NetworkWorkerThread::RemoveConnection called for a nonexisting connection 0x%8X!", connection.ptr());
+	workThread.Resume();
 }
 
 void NetworkWorkerThread::AddServer(Ptr(NetworkServer) server)
 {
+	workThread.Hold();
 	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
 	lock->push_back(server);
 	LOGNET("Added server 0x%8X to NetworkWorkerThread.", server.ptr());
+	workThread.Resume();
 }
 
 void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 {
+	workThread.Hold();
+
 //#ifdef VERBOSELOGGING
 	PolledTimer timer;
 	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
@@ -79,9 +89,11 @@ void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 		{
 			lock->erase(lock->begin() + i);
 			LOGNET("NetworkWorkerThread::RemoveServer: Server 0x%8X removed.", server.ptr());
+			workThread.Resume();
 			return;
 		}
 	LOGNET("NetworkWorkerThread::RemoveServer called for a nonexisting server 0x%8X!", server.ptr());
+	workThread.Resume();
 }
 
 void NetworkWorkerThread::StartThread()
@@ -107,21 +119,17 @@ void NetworkWorkerThread::MainLoop()
 
 	LOGNET("NetworkWorkerThread running main loop.");
 
-	std::vector<Ptr(MessageConnection)> connectionList;
-	std::vector<Ptr(NetworkServer)> serverList;
-
 	while(!workThread.ShouldQuit())
 	{
-		{
-			Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
-			connectionList = *lock; ///\todo Copying here is not nice for performance.
-			///\bug Ptr() is not thread-safe!
-		}
+		workThread.CheckHold();
+		if (workThread.ShouldQuit())
+			break;
 
-		{
-			Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
-			serverList = *serverLock; ///\todo Copying here is not nice for performance.
-		}
+		Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
+		std::vector<Ptr(MessageConnection)> &connectionList = *lock;
+
+		Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
+		std::vector<Ptr(NetworkServer)> &serverList = *serverLock;
 
 		// Inconveniency: Cannot wait for long time periods, since this will call select() or WSAWaitForMultipleObjects,
 		// which does not support aborting from the wait if the thread is signalled to interrupt and quit/join. To fix
@@ -144,6 +152,7 @@ void NetworkWorkerThread::MainLoop()
 			connection.UpdateConnection();
 			if (connection.GetConnectionState() == ConnectionClosed || !connection.GetSocket() || !connection.GetSocket()->Connected()) // This does not need to be checked each iteration.
 			{
+				LOG(LogVerbose, "NetworkWorkerThread::MainLoop: Clearing connection 0x%p from connectionList.", &connection);
 				connectionList.erase(connectionList.begin() + i);
 				--i;
 				continue;

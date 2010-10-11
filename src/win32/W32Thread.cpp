@@ -67,6 +67,10 @@ void Thread::Stop()
 
 	if (threadHandle == NULL)
 	{
+		threadHoldEvent.Close();
+		threadHoldEventAcked.Close();
+		threadResumeEvent.Close();
+
 		delete invoker;
 		invoker = 0;
 		return;
@@ -107,6 +111,10 @@ void Thread::Stop()
 
 	delete invoker;
 	invoker = 0;
+
+	threadHoldEvent.Close();
+	threadHoldEventAcked.Close();
+	threadResumeEvent.Close();
 }
 
 DWORD WINAPI ThreadEntryPoint(LPVOID lpParameter)
@@ -151,6 +159,10 @@ void Thread::StartThread()
 {
 	if (threadHandle != NULL)
 		return;
+
+	threadHoldEvent = CreateNewEvent(EventWaitSignal);
+	threadHoldEventAcked = CreateNewEvent(EventWaitSignal);
+	threadResumeEvent = CreateNewEvent(EventWaitSignal);
 
 	threadEnabled = true;
 	threadHandle = CreateThread(NULL, 0, ThreadEntryPoint, this, 0, NULL);

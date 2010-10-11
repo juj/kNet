@@ -18,6 +18,7 @@
 #include <cassert>
 #include <exception>
 
+#include "kNet/Event.h" ///\todo Omit this.
 #include "kNet/Thread.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
@@ -62,12 +63,20 @@ void Thread::Stop()
 
 	delete invoker;
 	invoker = 0;
+
+	threadHoldEvent.Close();
+	threadHoldEventAcked.Close();
+	threadResumeEvent.Close();
 }
 
 void Thread::StartThread()
 {
 	if (IsRunning())
 		Stop();
+
+	threadHoldEvent = CreateNewEvent(EventWaitSignal);
+	threadHoldEventAcked = CreateNewEvent(EventWaitSignal);
+	threadResumeEvent = CreateNewEvent(EventWaitSignal);
 
 	thread = boost::thread(boost::ref(*invoker));
 }
