@@ -419,7 +419,7 @@ void Network::DeInit()
 #ifdef WIN32
 	WSACleanup();
 #endif
-	LOG(LogVerbose, "Network::DeInit: Deinitialized kNet Network object, took %f msecs.", timer.MSecsElapsed());
+	LOG(LogWaits, "Network::DeInit: Deinitialized kNet Network object, took %f msecs.", timer.MSecsElapsed());
 }
 
 Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport)

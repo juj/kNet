@@ -30,6 +30,7 @@ const LogChannel LogError = 4;       ///< Successful connects and disconnects.
 const LogChannel LogObjectAlloc = 8; ///< Successful connects and disconnects.
 const LogChannel LogData = 16;       ///< Successful connects and disconnects.
 const LogChannel LogVerbose = 32;    ///< Print all information for debugging purposes.
+const LogChannel LogWaits = 64;      ///< Logs all long performance-related waits (thread/mutex blocks) that occur in the system.
 }
 
 /// Prints a variadic line to log.

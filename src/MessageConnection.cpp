@@ -151,7 +151,7 @@ bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 		Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
 
 //#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
-	LOG(LogVerbose, "MessageConnection::WaitToEstablishConnection: Waited %f msecs for connection. Result: %s.",
+	LOG(LogWaits, "MessageConnection::WaitToEstablishConnection: Waited %f msecs for connection. Result: %s.",
 		timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
 //#endif
 
@@ -228,7 +228,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 		}
 
 //#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
-		LOG(LogVerbose, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
+		LOG(LogWaits, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
 			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
 //#endif
 
@@ -724,7 +724,7 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
 
 //#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
-		LOG(LogVerbose, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
+		LOG(LogWaits, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
 			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), inboundMessageQueue.Size());
 //#endif
 

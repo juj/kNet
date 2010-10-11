@@ -168,8 +168,13 @@ void NetworkServer::Process()
 				EndPoint endPoint = EndPoint::FromSockAddrIn(sockname);
 				std::cout << "Client connected from " << endPoint.ToString() << std::endl;
 
-				Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
-				(*clientsLock)[endPoint] = clientConnection;
+				{
+					PolledTimer timer;
+					Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+					(*clientsLock)[endPoint] = clientConnection;
+					LOG(LogWaits, "NetworkServer::Process: Adding new accepted TCP connection to connection list took %f msecs.",
+						timer.MSecsElapsed());
+				}
 			}
 		}
 	}
@@ -209,7 +214,15 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 	EndPoint endPoint = EndPoint::FromSockAddrIn(recvData->from); ///\todo Omit this conversion for performance.
 	LOG(LogData, "Received a datagram of size %d to socket %s from endPoint %s.", recvData->bytesContains, listenSocket->ToString().c_str(),
 		endPoint.ToString().c_str());
+
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	if (timer.MSecsElapsed() > 50.f)
+	{
+		LOG(LogWaits, "NetworkServer::ReadUDPSocketData: Accessing the connection list in UDP server receive code took %f msecs.",
+			timer.MSecsElapsed());
+	}
+
 	ConnectionMap::iterator iter = clientsLock->find(endPoint); ///\todo HashTable for performance.
 	if (iter != clientsLock->end())
 	{
@@ -285,8 +298,12 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	Ptr(MessageConnection) connection(udpConnection);
 	udpConnection->SetUDPSlaveMode(true);
 	{
+		PolledTimer timer;
 		Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 		(*clientsLock)[endPoint] = connection;
+
+		LOG(LogWaits, "NetworkServer::ProcessNewUDPConnectionAttempt: Accessing the connection list took %f msecs.",
+			timer.MSecsElapsed());
 	}
 
 	// Pass the MessageConnection to the main application so it can hook the inbound packet stream.
@@ -303,7 +320,14 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 void NetworkServer::BroadcastMessage(const NetworkMessage &msg, MessageConnection *exclude)
 {
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	if (timer.MSecsElapsed() >= 50.f)
+	{
+		LOG(LogWaits, "NetworkServer::BroadcastMessage: Accessing the connection list took %f msecs.",
+			timer.MSecsElapsed());
+	}
+
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
 	{
 		MessageConnection *connection = iter->second;
@@ -318,7 +342,14 @@ void NetworkServer::BroadcastMessage(unsigned long id, bool reliable, bool inOrd
                                      unsigned long contentID, const char *data, size_t numBytes,
                                      MessageConnection *exclude)
 {
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	if (timer.MSecsElapsed() >= 50.f)
+	{
+		LOG(LogWaits, "NetworkServer::BroadcastMessage: Accessing the connection list took %f msecs.",
+			timer.MSecsElapsed());
+	}
+
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
 	{
 		MessageConnection *connection = iter->second;
@@ -352,7 +383,11 @@ void NetworkServer::DisconnectAllClients()
 {
 	SetAcceptNewConnections(false);
 
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	LOG(LogWaits, "NetworkServer::DisconnectAllClients: Accessing the connection list took %f msecs.",
+		timer.MSecsElapsed());
+
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
 		iter->second->Disconnect(0); // Do not wait for any client.
 }
@@ -370,7 +405,10 @@ void NetworkServer::Close(int disconnectWaitMilliseconds)
 			disconnectWaitMilliseconds);
 	}
 
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	LOG(LogWaits, "NetworkServer::Close: Accessing the connection list took %f msecs.",
+		timer.MSecsElapsed());
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
 		iter->second->Close(0); // Do not wait for any client.
 }
@@ -391,7 +429,10 @@ void NetworkServer::RunModalServer()
 
 void NetworkServer::ConnectionClosed(MessageConnection *connection)
 {
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	LOG(LogWaits, "NetworkServer::ConnectionClosed: Accessing the connection list took %f msecs.",
+		timer.MSecsElapsed());
 	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
 		if (iter->second == connection)
 		{
@@ -419,7 +460,13 @@ std::vector<Socket *> &NetworkServer::ListenSockets()
 
 NetworkServer::ConnectionMap NetworkServer::GetConnections()
 { 
+	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType lock = clients.Acquire();
+	if (timer.MSecsElapsed() > 50.f)
+	{
+		LOG(LogWaits, "NetworkServer::ConnectionClosed: Accessing the connection list took %f msecs.",
+			timer.MSecsElapsed());
+	}
 	return *lock;
 }
 

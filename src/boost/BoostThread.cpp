@@ -59,7 +59,7 @@ void Thread::Stop()
 	thread.interrupt();
 	thread.join();
 
-	LOG(LogVerbose, "Thread::Stop: Took %f msecs.", timer.MSecsElapsed());
+	LOG(LogWaits, "Thread::Stop: Took %f msecs.", timer.MSecsElapsed());
 
 	delete invoker;
 	invoker = 0;

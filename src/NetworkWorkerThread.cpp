@@ -81,7 +81,7 @@ void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 	PolledTimer timer;
 	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
 	float lockWait = timer.MSecsElapsed();
-	LOG(LogVerbose, "NetworkWorkerThread::RemoveServer: Waited %f msecs to lock servers list.",
+	LOG(LogWaits, "NetworkWorkerThread::RemoveServer: Waited %f msecs to lock servers list.",
 		lockWait);
 
 	for(size_t i = 0; i < lock->size(); ++i)
@@ -135,7 +135,7 @@ void NetworkWorkerThread::MainLoop()
 		// which does not support aborting from the wait if the thread is signalled to interrupt and quit/join. To fix
 		// this, should add a custom "interrupt Event" into the WaitArray to wake the thread up when it is supposed to be killed.
 		// For now, just sleep only small periods of time at once to make this issue not a problem at application exit time.
-		const int maxWaitTime = 200; // msecs.
+		const int maxWaitTime = 50; // msecs.
 		int waitTime = maxWaitTime;
 
 		waitEvents.Clear();
@@ -227,7 +227,7 @@ void NetworkWorkerThread::MainLoop()
 		// any connections to manage. Sleep for a moment, until we get some connections to handle.
 		if (waitEvents.Size() == 0)
 		{
-			Thread::Sleep(100);
+			Thread::Sleep(50);
 			continue;
 		}
 
