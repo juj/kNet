@@ -33,6 +33,11 @@ using namespace std;
 #include <fcntl.h>
 #endif
 
+#ifdef WIN32
+const int numConcurrentReceiveBuffers = 4;
+const int numConcurrentSendBuffers = 4;
+#endif
+
 namespace kNet
 {
 
@@ -40,10 +45,11 @@ Socket::Socket()
 :connectSocket(INVALID_SOCKET),
 writeOpen(false),
 readOpen(false),
+isUdpSlaveSocket(false),
 isUdpServerSocket(false)
 #ifdef WIN32
-,queuedReceiveBuffers(64)
-,queuedSendBuffers(64)
+,queuedReceiveBuffers(numConcurrentReceiveBuffers)
+,queuedSendBuffers(numConcurrentSendBuffers)
 #endif
 {
 	memset(&udpPeerName, 0, sizeof(udpPeerName));
@@ -64,10 +70,11 @@ Socket::Socket(SOCKET connection, const char *address, unsigned short port, Sock
 :connectSocket(connection), destinationAddress(address), destinationPort(port), 
 transport(transport_), maxSendSize(maxSendSize_),
 writeOpen(true), readOpen(true),
+isUdpSlaveSocket(false),
 isUdpServerSocket(isUdpServerSocket_)
 #ifdef WIN32
-,queuedReceiveBuffers(64)
-,queuedSendBuffers(64)
+,queuedReceiveBuffers(numConcurrentReceiveBuffers)
+,queuedSendBuffers(numConcurrentSendBuffers)
 #endif
 {
 	SetSendBufferSize(512 * 1024);
@@ -76,8 +83,8 @@ isUdpServerSocket(isUdpServerSocket_)
 
 Socket::Socket(const Socket &rhs)
 #ifdef WIN32
-:queuedReceiveBuffers(64),
-queuedSendBuffers(64)
+:queuedReceiveBuffers(numConcurrentReceiveBuffers)
+,queuedSendBuffers(numConcurrentSendBuffers)
 #endif
 {
 	*this = rhs;
@@ -129,6 +136,13 @@ OverlappedTransferBuffer *AllocateOverlappedTransferBuffer(int bytes)
 	buffer->buffer.len = bytes;
 #ifdef WIN32
 	buffer->overlapped.hEvent = WSACreateEvent();
+	if (buffer->overlapped.hEvent == WSA_INVALID_EVENT)
+	{
+		LOG(LogError, "Socket.cpp:AllocateOverlappedTransferBuffer: WSACreateEvent failed!");
+		delete[] buffer->buffer.buf;
+		delete buffer;
+		return 0;
+	}
 #endif
 
 	return buffer;
@@ -138,10 +152,12 @@ void DeleteOverlappedTransferBuffer(OverlappedTransferBuffer *buffer)
 {
 	if (!buffer)
 		return;
-	delete buffer->buffer.buf;
+	delete[] buffer->buffer.buf;
 #ifdef WIN32
-	WSACloseEvent(buffer->overlapped.hEvent);
-	buffer->overlapped.hEvent = NULL;
+	BOOL success = WSACloseEvent(buffer->overlapped.hEvent);
+	if (success == FALSE)
+		LOG(LogError, "Socket.cpp:DeleteOverlappedTransferBuffer: WSACloseEvent failed!");
+	buffer->overlapped.hEvent = WSA_INVALID_EVENT;
 #endif
 	delete buffer;
 }
@@ -149,20 +165,26 @@ void DeleteOverlappedTransferBuffer(OverlappedTransferBuffer *buffer)
 void Socket::SetSendBufferSize(int bytes)
 {
 	socklen_t len = sizeof(bytes);
-	setsockopt(connectSocket, SOL_SOCKET, SO_SNDBUF, (char*)&bytes, len);
+	if (setsockopt(connectSocket, SOL_SOCKET, SO_SNDBUF, (char*)&bytes, len))
+		LOG(LogError, "Socket::SetSendBufferSize: setsockopt failed with error %s(%d)!", Network::GetLastErrorString().c_str(), Network::GetLastError());
 }
 
 void Socket::SetReceiveBufferSize(int bytes)
 {
 	socklen_t len = sizeof(bytes);
-	setsockopt(connectSocket, SOL_SOCKET, SO_RCVBUF, (char*)&bytes, len);
+	if (setsockopt(connectSocket, SOL_SOCKET, SO_RCVBUF, (char*)&bytes, len))
+		LOG(LogError, "Socket::SetReceiveBufferSize: setsockopt failed with error %s(%d)!", Network::GetLastErrorString().c_str(), Network::GetLastError());
 }
 
 int Socket::SendBufferSize() const
 {
 	int bytes = 0;
 	socklen_t len = sizeof(bytes);
-	getsockopt(connectSocket, SOL_SOCKET, SO_SNDBUF, (char*)&bytes, &len);
+	if (getsockopt(connectSocket, SOL_SOCKET, SO_SNDBUF, (char*)&bytes, &len))
+	{
+		LOG(LogError, "Socket::SendBufferSize: getsockopt failed with error %s(%d)!", Network::GetLastErrorString().c_str(), Network::GetLastError());
+		return 0;
+	}
 	return bytes;
 }
 
@@ -170,7 +192,12 @@ int Socket::ReceiveBufferSize() const
 {
 	int bytes = 0;
 	socklen_t len = sizeof(bytes);
-	getsockopt(connectSocket, SOL_SOCKET, SO_RCVBUF, (char*)&bytes, &len);
+	if (getsockopt(connectSocket, SOL_SOCKET, SO_RCVBUF, (char*)&bytes, &len))
+	{
+		LOG(LogError, "Socket::ReceiveBufferSize: getsockopt failed with error %s(%d)!", Network::GetLastErrorString().c_str(), Network::GetLastError());
+		return 0;
+	}
+
 	return bytes;
 }
 
@@ -179,20 +206,26 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 {
 	if (!readOpen || queuedReceiveBuffers.CapacityLeft() == 0)
 	{
-		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0x%X)", buffer);
+//		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0x%X)", buffer);
 		DeleteOverlappedTransferBuffer(buffer); // buffer may be a zero pointer, but that is alright.
 		return;
 	}
 
 	if (!buffer)
 	{
-		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0)");
+//		LOG(LogVerbose, "Socket::EnqueueNewReceiveBuffer(0)");
 		const int receiveBufferSize = 4096;
 		buffer = AllocateOverlappedTransferBuffer(receiveBufferSize);
+		if (!buffer)
+		{
+			LOG(LogError, "Socket::EnqueueNewReceiveBuffer: Call to AllocateOverlappedTransferBuffer failed!");
+			return;
+		}
 	}
 
 #ifdef WIN32
-	WSAResetEvent(buffer->overlapped.hEvent);
+	if (WSAResetEvent(buffer->overlapped.hEvent) != TRUE)
+		LOG(LogError, "Socket::EnqueueNewReceiveBuffer: WSAResetEvent failed!");
 #endif
 
 	unsigned long flags = 0;
@@ -227,7 +260,7 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 	{
 		if (ret == 0 && buffer->bytesContains == 0)
 		{
-			LOG(LogInfo, "Socket::ReceiveOverlapped: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
+			LOG(LogInfo, "Socket::EnqueueNewReceiveBuffer: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
 			readOpen = false;
 			DeleteOverlappedTransferBuffer(buffer);
 			return;
@@ -257,6 +290,8 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 			LOG(LogError, "Socket::EnqueueNewReceiveBuffer: WSARecv failed in socket %s. Error %s(%d). Closing down socket.", ToString().c_str(), Network::GetErrorString(error).c_str(), error);
 			readOpen = false;
 			writeOpen = false;
+			if (isUdpServerSocket)
+				LOG(LogError, "Socket::EnqueueNewReceiveBuffer: Closed UDP server socket!");
 			Close();
 		}
 
@@ -323,6 +358,8 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 	{
 		LOG(LogInfo, "Socket::Receive: Received 0 bytes from network. Connection closed in socket %s.", ToString().c_str());
 		readOpen = false;
+		if (isUdpServerSocket)
+			LOG(LogError, "Socket::Receive: Closed UDP server socket!");
 		Disconnect();
 		return 0;
 	}
@@ -334,6 +371,8 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 			LOG(LogError, "recv/recvfrom failed in socket %s. Error %s(%d)", ToString().c_str(), Network::GetErrorString(error).c_str(), error);
 			readOpen = false;
 			writeOpen = false;
+			if (isUdpServerSocket)
+				LOG(LogError, "Socket::Receive: Closed UDP server socket!");
 			Close();
 		}
 		return 0;
@@ -414,8 +453,10 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 		{
 			EnqueueNewReceiveBuffer(receivedData);
 			if (readOpen)
-				LOG(LogInfo, "Socket::ReceiveOverlapped: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
+				LOG(LogInfo, "Socket::BeginReceive: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
 			readOpen = false;
+			if (isUdpServerSocket)
+				LOG(LogError, "Socket::BeginReceive: Closed UDP server socket!");
 			return 0;
 		}
 
@@ -427,18 +468,26 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 	{
 		DeleteOverlappedTransferBuffer(receivedData);
 		if (readOpen)
-			LOG(LogError, "Socket::ReceiveOverlapped: WSAEDISCON. Read connection closed in socket %s.", ToString().c_str());
+			LOG(LogError, "Socket::BeginReceive: WSAEDISCON. Read connection closed in socket %s.", ToString().c_str());
+		if (isUdpServerSocket)
+			LOG(LogError, "Socket::BeginReceive: Closed UDP server socket!");
 		readOpen = false;
 		return 0;
 	}
 	else if (error != WSA_IO_INCOMPLETE)
 	{
 		if (readOpen || writeOpen)
-			LOG(LogError, "WSAGetOverlappedResult failed with code %d when reading from an overlapped socket!", error);
+			LOG(LogError, "Socket::BeginReceive: WSAGetOverlappedResult failed with code %d when reading from an overlapped socket! Reason: %s.", error, Network::GetErrorString(error).c_str());
 		DeleteOverlappedTransferBuffer(receivedData);
 		queuedReceiveBuffers.PopFront();
-		readOpen = false;
-		writeOpen = false;
+		// Mark this socket closed, unless the read error was on a UDP server socket, in which case we must ignore
+		// the read error on this buffer (an error on a single client connection cannot shut down the whole server!)
+		if (!isUdpServerSocket && (readOpen || writeOpen))
+		{
+			readOpen = false;
+			writeOpen = false;
+			LOG(LogError, "Socket::BeginReceive: Closed TCP server socket!");
+		}
 	}
 	return 0;
 #else
@@ -509,6 +558,9 @@ void Socket::Close()
 	readOpen = false;
 	writeOpen = false;
 
+	if (isUdpServerSocket)
+		LOG(LogInfo, "Socket::Close: Closed UDP server socket!");
+
 	if (transport == SocketOverTCP)
 	{
 		int result = shutdown(connectSocket, SD_BOTH);
@@ -525,11 +577,8 @@ void Socket::Close()
 
 	// Each TCP Socket owns the SOCKET they contain. For UDP server, the same SOCKET is shared by 
 	// several Sockets, so closing one would close them all.
-	if (!isUdpServerSocket)
-	{
-//		CancelIo((SOCKET)connectSocket);
+	if (!isUdpServerSocket && !isUdpSlaveSocket)
 		closesocket(connectSocket);
-	}
 
 	connectSocket = INVALID_SOCKET;
 	destinationAddress = "";
@@ -550,7 +599,6 @@ void Socket::FreeOverlappedTransferBuffers()
 
 	while(queuedSendBuffers.Size() > 0)
 		DeleteOverlappedTransferBuffer(queuedSendBuffers.TakeFront());
-
 }
 #endif
 
@@ -561,7 +609,8 @@ void Socket::SetBlocking(bool isBlocking)
 
 	u_long nonBlocking = (isBlocking == false) ? 1 : 0;
 #ifdef WIN32
-	ioctlsocket(connectSocket, FIONBIO, &nonBlocking);	
+	if (ioctlsocket(connectSocket, FIONBIO, &nonBlocking))
+		LOG(LogError, "Socket::SetBlocking: ioctlsocket failed with error %s(%d)!", Network::GetLastErrorString().c_str(), Network::GetLastError());
 #else
 	int flags = fcntl(connectSocket, F_GETFL, 0);
 	fcntl(connectSocket, F_SETFL, flags | O_NONBLOCK);
@@ -696,7 +745,9 @@ OverlappedTransferBuffer *Socket::BeginSend()
 		}
 		if (ret == FALSE && error != WSA_IO_INCOMPLETE)
 		{
-			LOG(LogError, "WSAGetOverlappedResult failed with an error code != WSA_IO_INCOMPLETE. (%d)!", error);
+			LOG(LogError, "Socket::BeginSend: WSAGetOverlappedResult failed with an error %s, code %d != WSA_IO_INCOMPLETE!", 
+				Network::GetErrorString(error).c_str(), error);
+			writeOpen = false;
 			return 0;
 		}
 	}
@@ -732,7 +783,11 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	if (ret != 0 && error != WSA_IO_PENDING)
 	{
 		if (error != KNET_EWOULDBLOCK)
+		{
 			LOG(LogError, "Socket::EndSend() failed! Error: %s(%d).", Network::GetErrorString(error).c_str(), error);
+			if (!isUdpServerSocket)
+				writeOpen = false;
+		}
 		DeleteOverlappedTransferBuffer(sendBuffer);
 		return false;
 	}
@@ -791,7 +846,12 @@ void Socket::AbortSend(OverlappedTransferBuffer *send)
 {
 #ifdef WIN32
 	// Set the event flag so as to signal that this buffer is completed immediately.
-	WSASetEvent(send->overlapped.hEvent);
+	if (WSASetEvent(send->overlapped.hEvent) != TRUE)
+	{
+		LOG(LogError, "Socket::AbortSend: WSASetEvent failed!");
+		DeleteOverlappedTransferBuffer(send);
+		return;
+	}
 	bool success = queuedSendBuffers.Insert(send);
 	if (!success)
 	{
@@ -829,9 +889,9 @@ std::string Socket::ToString() const
 	EndPoint sockName = EndPoint::FromSockAddrIn(addr);
 
 	char str[256];
-	sprintf(str, "%s:%d (%s, connected=%s, maxSendSize=%d, sock: %s, peer: %s)", DestinationAddress(), (unsigned int)DestinationPort(), 
-		(transport == SocketOverTCP) ? "TCP" : "UDP", Connected() ? "true" : "false", maxSendSize,
-		sockRet == 0 ? sockName.ToString().c_str() : "(-)", peerRet == 0 ? peerName.ToString().c_str() : "(-)");
+	sprintf(str, "%s:%d (%s, connected=%s, maxSendSize=%d, sock: %s, peer: %s, socket: %d)", DestinationAddress(), (unsigned int)DestinationPort(), 
+		(transport == SocketOverTCP) ? "TCP" : (isUdpServerSocket ? "UDP server" : (isUdpSlaveSocket ? "UDP Slave" : "UDP")), Connected() ? "true" : "false", maxSendSize,
+		sockRet == 0 ? sockName.ToString().c_str() : "(-)", peerRet == 0 ? peerName.ToString().c_str() : "(-)", (int)connectSocket);
 
 	return std::string(str);
 }

@@ -229,6 +229,9 @@ public:
 
 	SOCKET &GetSocketHandle() { return connectSocket; }
 
+	void SetUDPSlaveMode(bool isUdpSlaveSocket_) { isUdpSlaveSocket = isUdpSlaveSocket_; }
+	bool IsUDPSlaveSocket() const { return isUdpSlaveSocket; }
+
 private:
 	SOCKET connectSocket;
 	sockaddr_in udpPeerName;
@@ -243,6 +246,11 @@ private:
 	/// to send and receive data to and from all client addresses. UDP client sockets
 	/// and TCP sockets are always bound to a peer.
 	bool isUdpServerSocket;
+
+	/// If true, this socket is a shared slave copy of a UDP server socket. This boolean is used to remember
+	/// that this Socket object is not authoritative over the OS socket object and should not close it when tearing
+	/// down this socket.
+	bool isUdpSlaveSocket;
 
 #ifdef WIN32
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
