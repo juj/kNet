@@ -119,17 +119,27 @@ void NetworkWorkerThread::MainLoop()
 
 	LOGNET("NetworkWorkerThread running main loop.");
 
+	std::vector<MessageConnection*> connectionList;
+	std::vector<NetworkServer*> serverList;
+
 	while(!workThread.ShouldQuit())
 	{
 		workThread.CheckHold();
 		if (workThread.ShouldQuit())
 			break;
-
-		Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
-		std::vector<Ptr(MessageConnection)> &connectionList = *lock;
-
-		Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
-		std::vector<Ptr(NetworkServer)> &serverList = *serverLock;
+	
+		{
+			Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
+			connectionList.clear();
+			for(size_t i = 0; i < lock->size(); ++i)
+				connectionList.push_back((*lock)[i].ptr());
+		}
+		{
+			Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
+			serverList.clear();
+			for(size_t i = 0; i < serverLock->size(); ++i)
+				serverList.push_back((*serverLock)[i].ptr());
+		}
 
 		// Inconveniency: Cannot wait for long time periods, since this will call select() or WSAWaitForMultipleObjects,
 		// which does not support aborting from the wait if the thread is signalled to interrupt and quit/join. To fix
