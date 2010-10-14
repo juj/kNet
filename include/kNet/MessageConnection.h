@@ -152,7 +152,7 @@ public:
 	/// @return If the connection was successfully opened, this function returns true. Otherwise returns false, and
 	///         either timeout was encountered and the other end has not acknowledged the connection,
 	///         or the connection is in ConnectionClosed state.
-	bool WaitToEstablishConnection(int maxMSecsToWait = 2000);
+	bool WaitToEstablishConnection(int maxMSecsToWait = 500);
 
 	/// Starts a benign disconnect procedure. Transitions ConnectionState to ConnectionDisconnecting. This 
 	/// function will block until the given period expires or the other end acknowledges and also closes 
@@ -165,7 +165,7 @@ public:
 	/// When this function returns, the connection may either be in ConnectionClosing or ConnectionClosed
 	/// state, depending on whether the other end has already acknowledged the disconnection.
 	/// \note You may not call this function in middle of StartNewMessage() - EndAndQueueMessage() function calls.
-	void Disconnect(int maxMSecsToWait = 2000);
+	void Disconnect(int maxMSecsToWait = 500);
 
 	/// Starts a forceful disconnect procedure.
 	/// @param maxMSecsToWait If a positive number, Disconnect message will be sent to the peer and if no response
@@ -174,7 +174,7 @@ public:
 	///                       and the function returns immediately. The other end will remain hanging and will timeout.
 	/// When this function returns, the connection is in ConnectionClosed state.
 	/// \note You may not call this function in middle of StartNewMessage() - EndAndQueueMessage() function calls.
-	void Close(int maxMSecsToWait = 2000);
+	void Close(int maxMSecsToWait = 500);
 
 	/// Stores all the statistics about the current connection.
 	Lockable<ConnectionStatistics> stats;
