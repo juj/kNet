@@ -496,7 +496,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	}
 
 	const size_t maxSendSize = (transport == SocketOverTCP ? cMaxTCPSendSize : cMaxUDPSendSize);
-	sockets.push_back(Socket(listenSocket, "", port, transport, maxSendSize, transport == SocketOverUDP ? true : false));
+	sockets.push_back(Socket(listenSocket, "", port, transport, maxSendSize, (transport == SocketOverUDP) ? true : false));
 	Socket *listenSock = &sockets.back();
 	listenSock->SetBlocking(false);
 
@@ -628,6 +628,10 @@ Socket *Network::StoreSocket(const Socket &cp)
 void Network::SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage)
 {
 	OverlappedTransferBuffer *sendData = socket.BeginSend();
+	if (!sendData)
+	{
+		LOG(LogError, "Network::SendUDPConnectDatagram: socket.BeginSend failed! Cannot send UDP connection datagram!");
+	}
 	if (connectMessage)
 	{
 		///\todo Craft the proper connection attempt datagram.

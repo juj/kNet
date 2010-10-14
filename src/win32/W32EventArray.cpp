@@ -44,7 +44,12 @@ void EventArray::AddEvent(const Event &e)
 {
 	if (e.IsNull())
 	{
-		LOGNET("Error: Tried to add a null event to event array at index %d!", numAdded);
+		LOG(LogError, "EventArray::AddEvent: Error! Tried to add a null event to event array at index %d!", numAdded);
+		return;
+	}
+	if (numAdded >= maxEvents)
+	{
+		LOG(LogError, "EventArray::AddEvent: Error! Tried to add too many events to event array! (max: %d)", numAdded);
 		return;
 	}
 	assert(numAdded < maxEvents);

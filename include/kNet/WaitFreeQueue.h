@@ -34,11 +34,12 @@ template<typename T>
 class WaitFreeQueue
 {
 public:
-	/// @param maxElements A power-of-2 number that specifies the size of the ring buffer to construct. The number of elements the queue can store is maxElements-1.
+	/// @param maxElements A power-of-2 number, > 2,  that specifies the size of the ring buffer to construct. The number of elements the queue can store is maxElements-1.
 	explicit WaitFreeQueue(size_t maxElements)
 	:head(0), tail(0)
 	{
 		assert(IS_POW2(maxElements)); // The caller really needs to round to correct pow2,
+		assert(maxElements > 2);
 		maxElements = (size_t)RoundUpToNextPow2((u32)maxElements); // but avoid any silliness in release anyways.
 
 		data = new T[maxElements];

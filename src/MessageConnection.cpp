@@ -321,6 +321,7 @@ void MessageConnection::SetPeerClosed()
 
 MessageConnection::~MessageConnection()
 {
+	LOG(LogObjectAlloc, "Deleting MessageConnection 0x%p.", this);
 	FreeMessageData();
 	eventMsgsOutAvailable.Close();
 }
@@ -724,8 +725,12 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
 
 //#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
-		LOG(LogWaits, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
-			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), inboundMessageQueue.Size());
+		if (timer.MSecsElapsed() >= 1000.f)
+		{
+				LOG(LogWaits, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
+				timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), inboundMessageQueue.Size());
+		}
+
 //#endif
 
 	}

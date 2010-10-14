@@ -294,6 +294,8 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 		return false;
 	}
 
+	socket->SetUDPSlaveMode(true);
+
 	UDPMessageConnection *udpConnection = new UDPMessageConnection(owner, this, socket, ConnectionOK);
 	Ptr(MessageConnection) connection(udpConnection);
 	udpConnection->SetUDPSlaveMode(true);
@@ -464,7 +466,7 @@ NetworkServer::ConnectionMap NetworkServer::GetConnections()
 	Lockable<ConnectionMap>::LockType lock = clients.Acquire();
 	if (timer.MSecsElapsed() > 50.f)
 	{
-		LOG(LogWaits, "NetworkServer::ConnectionClosed: Accessing the connection list took %f msecs.",
+		LOG(LogWaits, "NetworkServer::GetConnections: Accessing the connection list took %f msecs.",
 			timer.MSecsElapsed());
 	}
 	return *lock;
