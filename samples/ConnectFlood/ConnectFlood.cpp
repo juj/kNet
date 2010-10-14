@@ -40,17 +40,20 @@ public:
 	{
 		cout << "Starting connection flood.";
 
-		std::vector<MessageConnection*> connections;
+		std::vector<Ptr(MessageConnection)> connections;
 		int numConnectionAttempts = 0;
-		while(numConnectionAttempts < numTotalConnections && connections.size() > 0)
+		while(numConnectionAttempts < numTotalConnections || connections.size() > 0)
 		{
 			// Start new connections.
 			while((int)connections.size() < numConcurrentConnections && numConnectionAttempts < numTotalConnections)
 			{
 				++numConnectionAttempts;
-				MessageConnection *connection = network.Connect(address, port, transport, this);
-				if (connection)
+				Ptr(MessageConnection) connection = network.Connect(address, port, transport, this);
+				if (connection && connection->GetSocket())
+				{
+					LOG(LogUser, "Connecting from local port %d. Connection 0x%p", (int)connection->GetSocket()->LocalPort(), connection.ptr());
 					connections.push_back(connection);
+				}
 				else
 					break;
 			}
@@ -61,7 +64,8 @@ public:
 				if (connections[i]->GetConnectionState() == ConnectionOK ||
 					connections[i]->GetConnectionState() == ConnectionClosed)
 				{
-					connections[i]->Close();
+					LOG(LogUser, "Closing connection 0x%p.", connections[i].ptr());
+					connections[i]->Close(0);
 					connections.erase(connections.begin() + i);
 					--i;
 				}
