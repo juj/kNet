@@ -84,7 +84,7 @@ public:
 		{
 			server->Process();
 
-			Sleep(1);
+			Clock::Sleep(1);
 
 			if (statsPrintTimer.Test())
 			{
