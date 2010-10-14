@@ -17,13 +17,16 @@
 	@brief The Lock<T> and Lockable<T> template classes. */
 
 #ifdef KNET_USE_BOOST
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #elif WIN32
 #include <Windows.h>
 #else
 #error No Mutex implementation available!
 #endif
+
+#include "PolledTimer.h"
+#include "NetworkLogging.h"
 
 namespace kNet
 {
@@ -236,7 +239,7 @@ public:
 	}
 
 #ifdef KNET_USE_BOOST
-	mutable boost::mutex boostMutex;
+	mutable boost::recursive_mutex boostMutex;
 #elif WIN32
 	mutable CRITICAL_SECTION lockObject;
 #endif
