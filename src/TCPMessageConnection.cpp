@@ -95,8 +95,10 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 
 	// Update statistics about the connection.
 	if (totalBytesRead > 0)
+	{
 		lastHeardTime = Clock::Tick();
-	AddInboundStats(totalBytesRead, 0, 0);
+		AddInboundStats(totalBytesRead, 1, 0);
+	}
 
 	// Finally, try to parse any bytes we received to complete messages. Any bytes consisting a partial
 	// message will be left into the tcpInboundSocketData partial buffer to wait for more bytes to be received later.

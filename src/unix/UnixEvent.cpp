@@ -67,6 +67,16 @@ void Event::Create(EventWaitType type_)
 		LOGNET("fcntl call failed: %s(%d)!", strerror(errno), errno);
 		return;
 	}
+
+	///\todo Remove these, just a bit of immediate-mode testing here.
+	assert(Test() == false);
+	assert(Test() == false);
+	Set();
+	assert(Test() == true);
+	assert(Test() == true);
+	Reset();
+	assert(Test() == false);
+	assert(Test() == false);
 	Set();
 	assert(Test() == true);
 	assert(Test() == true);
@@ -101,8 +111,8 @@ void Event::Reset()
 
 	eventfd_t val = 0;
 	int ret = eventfd_read(fd, &val);
-	if (ret == -1)
-		LOGNET("Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
+	if (ret == -1 && errno != EAGAIN)
+		LOGNET("Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
 }
 
 void Event::Set()
@@ -125,7 +135,7 @@ bool Event::Test() const
 {
 	if (IsNull())
 	{
-		LOGNET("Event::Test() failed! Tried to test an uninitialized Event!");
+		LOG(LogError, "Event::Test() failed! Tried to test an uninitialized Event!");
 		return false;
 	}
 
@@ -135,14 +145,14 @@ bool Event::Test() const
 		int ret = eventfd_read(fd, &val);
 		if (ret == -1 && errno != EAGAIN)
 		{
-			LOGNET("Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
+			LOG(LogError, "Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
 			return false;
 		}
 		if (val != 0)
 		{
 			int ret = eventfd_write(fd, 1);
 			if (ret == -1)
-				LOGNET("Event::Test() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
+				LOG(LogError, "Event::Test() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
 		}
 		return val != 0;
 	}

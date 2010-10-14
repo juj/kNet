@@ -20,7 +20,9 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
+#include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "kNet/EventArray.h"
 #include "kNet/NetworkLogging.h"
@@ -31,8 +33,8 @@ namespace kNet
 {
 
 EventArray::EventArray()
-:numAdded(0)
 {
+	Clear();
 }
 
 int EventArray::Size() const
@@ -45,6 +47,8 @@ void EventArray::Clear()
 	FD_ZERO(&readfds);
 	FD_ZERO(&writefds);
 	nfds = -1;
+	numAdded = 0;
+	cachedEvents.clear();
 }
 
 void EventArray::AddEvent(const Event &e)
@@ -73,12 +77,16 @@ void EventArray::AddEvent(const Event &e)
 	// No need to add dummy events to select(), but need to add them to the cached events list to keep
 	// the indices matching.
 	cachedEvents.push_back(e);
+	++numAdded;
 }
 
 int EventArray::Wait(int msecs)
 {
 	if (numAdded == 0)
+	{
+		LOG(LogError, "EventArray::Wait failed! Tried to wait for an empty array of events! (EventArray=0x%p)", this);
 		return WaitFailed;
+	}
 
 	tv.tv_sec = msecs / 1000;
 	tv.tv_usec = (msecs - tv.tv_sec * 1000) * 1000;
@@ -88,20 +96,36 @@ int EventArray::Wait(int msecs)
 	int ret = select(nfds, &readfds, &writefds, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
-		LOGNET("EventArray::Wait: select() failed on an eventfd!");
+		LOG(LogError, "EventArray::Wait: select() failed: %s(%d)", strerror(errno), errno);
 		return WaitFailed;
 	}
 
+	// select returns the number of sockets in the descriptors that remained in triggered state.
+	// If 0, no sockets triggered, and the wait timed out.
 	if (ret == 0)
 		return WaitTimedOut;
+	else if (ret < 0)
+	{
+		LOG(LogError, "EventArray::Wait: select() returned a negative value, which it shouldn't!");
+		return WaitFailed;
+	}
 
 	for(int i = 0; i < cachedEvents.size(); ++i)
-		if (cachedEvents[i].Test())
+		switch(cachedEvents[i].Type())
 		{
-			return i;
+		case EventWaitRead:
+		case EventWaitSignal:
+			if (FD_ISSET(cachedEvents[i].fd, &readfds))
+				return i;
+			break;
+		case EventWaitWrite:
+			if (FD_ISSET(cachedEvents[i].fd, &writefds))
+				return i;
+		default:
+			break; // The dummy events are skipped over.
 		}
 
-	LOGNET("EventArray::Wait error! No events were set, but select() returned a positive value!");
+	LOG(LogError, "EventArray::Wait error! No events were set, but select() returned a positive value!");
 	return WaitFailed;
 }
 

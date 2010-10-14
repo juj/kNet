@@ -284,14 +284,6 @@ void NetworkWorkerThread::MainLoop()
 			}
 		}
 
-#ifdef LINUX ///\todo Remove this - add result list to WaitArray.
-		for(int i = 0; i < connectionList.size(); ++i)
-		{
-			connectionList[i]->ReadSocket();
-			connectionList[i]->SendOutPackets();
-		}
-#endif
-
 		// The UDP send throttle timers are not read through events. The writeWaitConnections list
 		// contains a list of UDP connections which are now, or will veru soon (in less than 1msec) be ready for writing. 
 		// Poll each and try to send a message.

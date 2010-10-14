@@ -314,7 +314,7 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 {
 	if (!readOpen)
 	{
-		LOG(LogError, "Trying to read data from a socket that is not open for reading!");
+//		LOG(LogError, "Trying to read data from a socket that is not open for reading!");
 		return 0;
 	}
 
