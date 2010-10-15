@@ -298,7 +298,6 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 	UDPMessageConnection *udpConnection = new UDPMessageConnection(owner, this, socket, ConnectionOK);
 	Ptr(MessageConnection) connection(udpConnection);
-	udpConnection->SetUDPSlaveMode(true);
 	{
 		PolledTimer timer;
 		Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();

@@ -354,8 +354,6 @@ public:
 
 	SocketReadResult ReadSocket() { size_t ignored = 0; return ReadSocket(ignored); }
 
-	NetworkWorkerThread *workerThread;
-
 	/// Sets the worker thread object that will handle this connection.
 	void SetWorkerThread(NetworkWorkerThread *thread) { workerThread = thread; }
 
@@ -364,6 +362,9 @@ protected:
 	Network *owner;
 	/// If this MessageConnection represents a client connection on the server side, this gives the owner. [main thread]
 	NetworkServer *ownerServer;
+	/// Stores the thread that manages the background processing of this connection. The same thread can manage multiple
+	/// connections and servers, and not just this one.
+	NetworkWorkerThread *workerThread;
 
 	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
 	/// [produced by main thread, consumed by worker thread]

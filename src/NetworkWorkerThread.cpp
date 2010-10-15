@@ -170,7 +170,7 @@ void NetworkWorkerThread::MainLoop()
 
 			// The event that is triggered when data is received on the socket.
 			Event readEvent = connection.GetSocket()->GetOverlappedReceiveEvent();
-			if (readEvent.IsNull() || (udpConnection && udpConnection->IsSlaveMode()))
+			if (readEvent.IsNull() || connection.GetSocket()->IsUDPSlaveSocket())
 				readEvent = falseEvent; // If this socket is not readable, add a false event to skip this event slot.
 			waitEvents.AddEvent(readEvent);
 

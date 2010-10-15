@@ -312,14 +312,14 @@ void DumpBuffer(const char *description, const char *data, int size)
 
 size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 {
-	if (!readOpen)
-	{
-//		LOG(LogError, "Trying to read data from a socket that is not open for reading!");
-		return 0;
-	}
-
 	if (connectSocket == INVALID_SOCKET)
 		return 0;
+
+	if (!readOpen)
+		return 0;
+
+	if (isUdpSlaveSocket) // UDP slave sockets are never read directly. Instead the UDP server socket is read for all client data.
+		return 0; // So, if we accidentally go read a UDP slave socket, act as if it never received any data.
 
 	if (isUdpServerSocket)
 	{

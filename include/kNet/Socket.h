@@ -229,7 +229,12 @@ public:
 
 	SOCKET &GetSocketHandle() { return connectSocket; }
 
+	/// Socket objects that represent UDP client connections on the server need to operate in a "slave" mode,
+	/// where socket reads are not performed through that socket, but through the single server UDP server socket.
+	/// Calling this function marks the Socket a slave socket, if isUdpSlaveSocket_==true.
 	void SetUDPSlaveMode(bool isUdpSlaveSocket_) { isUdpSlaveSocket = isUdpSlaveSocket_; }
+
+	/// Returns whether this socket is a UDP slave socket.
 	bool IsUDPSlaveSocket() const { return isUdpSlaveSocket; }
 
 private:

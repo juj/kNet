@@ -54,8 +54,7 @@ lastSentInOrderPacketID(0), datagramPacketIDCounter(0),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
 datagramInRatePerSecond(initialDatagramRatePerSecond),
 datagramSendRate(10),
-receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
-isSlaveSocket(false)
+receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024)
 {
 }
 
@@ -70,9 +69,6 @@ UDPMessageConnection::~UDPMessageConnection()
 UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &bytesRead)
 {
 	assert(socket->TransportLayer() == SocketOverUDP);
-
-	if (isSlaveSocket)
-		return SocketReadOK;
 
 	SocketReadResult readResult = SocketReadOK;
 		
@@ -156,11 +152,6 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 	}
 	else
 		return SocketReadOK;
-}
-
-void UDPMessageConnection::SetUDPSlaveMode(bool enabled)
-{
-	isSlaveSocket = enabled;
 }
 
 /// Checks whether any reliably sent packets have timed out.
