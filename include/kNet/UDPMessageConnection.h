@@ -76,7 +76,9 @@ private:
 	/// Parses bytes with have previously been read from the socket to actual application-level messages.
 	void ExtractMessages(const char *data, size_t numBytes);
 
-	/// Reads all available bytes from a datagram socket.
+	/// Reads all available bytes from a datagram socket. This function will read in multiple datagrams
+	/// as long as there are available ones to process.
+	/// @param bytesRead [out] Returns the total number of bytes containes in the datagrams that were read.
 	SocketReadResult UDPReadSocket(size_t &bytesRead);
 
 	// Congestion control and data rate management:

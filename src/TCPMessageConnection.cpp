@@ -281,7 +281,7 @@ void TCPMessageConnection::ExtractMessages()
 
 			++numMessagesReceived;
 		}
-		AddInboundStats(0, 1, numMessagesReceived);
+		AddInboundStats(0, 0, numMessagesReceived);
 	} catch(const NetException &e)
 	{
 		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught a networking exception: \"%s\"!", e.what());

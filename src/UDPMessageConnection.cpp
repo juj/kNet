@@ -142,9 +142,6 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 		socket->EndReceive(data);
 	}
 
-	if (totalBytesRead > 0)
-		AddInboundStats(totalBytesRead, 0, 0);
-
 	if (maxReads == 0)
 	{
 		LOGNET("Warning: Too many inbound messages: Datagram read loop throttled!");
@@ -684,7 +681,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	// Store the packetID for inbound packet loss statistics purposes.
 	AddReceivedPacketIDStats(packetID);
 	// Save general statistics (bytes, packets, messages rate).
-	AddInboundStats(0, 1, numMessagesReceived);
+	AddInboundStats(numBytes, 1, numMessagesReceived);
 }
 
 void UDPMessageConnection::PerformDisconnection()

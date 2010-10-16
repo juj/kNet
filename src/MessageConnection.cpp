@@ -856,7 +856,7 @@ void MessageConnection::ComputeStats()
 		totalMsgsOut += cs.traffic[i].messagesOut;
 	}
 	tick_t ticks = cs.traffic.back().tick - cs.traffic.front().tick;
-	float secs = (float)Clock::TicksToMillisecondsD(ticks) / 1000.f;
+	float secs = max(1.f, (float)Clock::TicksToMillisecondsD(ticks) / 1000.f);
 	bytesInPerSec = (float)totalBytesIn / secs;
 	bytesOutPerSec = (float)totalBytesOut / secs;
 	packetsInPerSec = (float)totalPacketsIn / secs;
