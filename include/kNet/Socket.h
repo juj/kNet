@@ -108,7 +108,7 @@ public:
 	Socket(const Socket &);
 	~Socket();
 
-	void operator=(const Socket &);
+	Socket &operator=(const Socket &);
 
 	/// Sets the underlying socket send buffer (SO_SNDBUF) size.
 	void SetSendBufferSize(int bytes);

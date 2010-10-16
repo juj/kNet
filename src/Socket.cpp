@@ -90,11 +90,16 @@ Socket::Socket(const Socket &rhs)
 	*this = rhs;
 }
 
-void Socket::operator=(const Socket &rhs)
+Socket &Socket::operator=(const Socket &rhs)
 {
 #ifdef WIN32
+	// We would be losing data if Socket is copied from old to new when data is present in the receive buffers,
+	// since the receive buffers are not moved or copied to the new Socket.
 	assert(queuedReceiveBuffers.Size() == 0);
 #endif
+
+	if (this == &rhs)
+		return *this;
 
 	connectSocket = rhs.connectSocket;
 	udpPeerName = rhs.udpPeerName;
@@ -105,6 +110,9 @@ void Socket::operator=(const Socket &rhs)
 	writeOpen = rhs.writeOpen;
 	readOpen = rhs.readOpen;
 	isUdpServerSocket = rhs.isUdpServerSocket;
+	isUdpSlaveSocket = rhs.isUdpSlaveSocket;
+
+	return *this;
 }
 
 bool Socket::Connected() const
