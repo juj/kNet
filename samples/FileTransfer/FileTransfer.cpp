@@ -54,6 +54,7 @@ class NetworkApp : public IMessageHandler, public INetworkServerListener
 	size_t nextFragment;
 	size_t totalFragments;
 	size_t bytesReceived;
+	std::string filename;
 	std::ofstream out;
 	tick_t transferStartTick;
 
@@ -61,6 +62,12 @@ class NetworkApp : public IMessageHandler, public INetworkServerListener
 	static const int printIntervalMSecs = 4000;
 public:
 
+	NetworkApp()
+	:nextFragment(0),
+	totalFragments(0),
+	bytesReceived(0)
+	{
+	}
 	/// Called to notify the listener that a new connection has been established.
 	void NewConnectionEstablished(MessageConnection *connection)
 	{
@@ -74,13 +81,13 @@ public:
 		case cFileTransferStartMessage:
 		{
 			DataDeserializer dd(data, numBytes);
-			std::string filename = dd.ReadString();
+			filename = dd.ReadString();
 			size_t fileSize = dd.Read<u32>();
 			totalFragments = dd.Read<u32>();
 			nextFragment = 0;
 			bytesReceived = 0;
 			statsPrintTimer.StartMSecs(printIntervalMSecs);
-			cout << "Starting receive of file \"" << filename << "\". File size: " << fileSize << "B, which is split into "
+			cout << "Starting receive of file \"" << filename << "\". File size: " << fileSize << "B bytes, which is split into "
 				<< totalFragments << " fragments." << endl;
 			char str[256];
 			sprintf(str, "received_%s", filename.c_str());
@@ -166,7 +173,7 @@ public:
 		while(server->GetConnections().size() == 0)
 		{
 			server->Process();
-			Clock::Sleep(2000);
+			Clock::Sleep(1);
 		}
 
 		Ptr(MessageConnection) clientConnection = server->GetConnections().begin()->second;
@@ -190,13 +197,23 @@ public:
 			{
 				const tick_t sendFinishTick = Clock::Tick();
 				double timespan = (float)Clock::TimespanToSecondsD(transferStartTick, sendFinishTick);
-				LOG(LogUser, "Have received fragment %d. Elapsed: %.2f seconds. Bytes received: %d. Transfer rate: %s/sec.", 
-					nextFragment-1, (float)timespan, bytesReceived, FormatBytes((size_t)(bytesReceived/timespan)).c_str());
+				LOG(LogUser, "Have received %d fragments (+%d out-of-order) (%.2f%%). Elapsed: %.2f seconds. Bytes received: %d. Transfer rate: %s/sec.", 
+					nextFragment, fragments.size(), (nextFragment + fragments.size()) * 100.f / totalFragments,
+					(float)timespan, bytesReceived, FormatBytes((size_t)(bytesReceived/timespan)).c_str());
 				clientConnection->DumpStatus();
 				statsPrintTimer.StartMSecs(printIntervalMSecs);
 			}
 		}
-		LOG(LogUser, "Finished file receive. Closing connection.");
+		if (nextFragment == totalFragments)
+		{
+			LOG(LogUser, "Finished receiving all fragments. File '%s' saved to disk, size: %d bytes. Closing connection.",
+				filename.c_str(), bytesReceived);
+		}
+		else
+		{
+			LOG(LogUser, "Error: Sender specified the file '%s' to contain %d fragments, but the connection was closed after "
+				"receiving %d fragments. Received a partial file of %d bytes.", filename.c_str(), totalFragments, nextFragment);
+		}
 		clientConnection->Close(15000);
 	}
 
@@ -260,6 +277,7 @@ public:
 		while(connection->IsWriteOpen())
 		{
 			connection->Process();
+			Clock::Sleep(1); // A simple throttle on the send loop to avoid using 100% CPU.
 
 			// Add new data fragments into the queue.
 			const int outboundMsgQueueSize = 200;
@@ -352,7 +370,7 @@ int main(int argc, char **argv)
 	EnableMemoryLeakLoggingAtExit();
 
 //	kNet::SetLogChannels((LogChannel)(-1) & ~(LogObjectAlloc | LogVerbose)); // Enable all log channels.
-	kNet::SetLogChannels(LogUser | LogInfo | LogError);
+	kNet::SetLogChannels(LogUser);
 
 	SocketTransportLayer transport = SocketOverUDP;
 	if (!_stricmp(argv[2], "tcp"))
