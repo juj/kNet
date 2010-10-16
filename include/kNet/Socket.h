@@ -127,6 +127,10 @@ public:
 	bool IsReadOpen() const { return IsOverlappedReceiveReady() || readOpen; }
 	/// Returns true if the connection is open for writing to.
 	bool IsWriteOpen() const { return writeOpen; }
+	/// Forces this socket to be treated as if it has been read-closed.
+	void MarkReadClosed() { readOpen = false; }
+	/// Forces this socket to be treated as if it has been write-closed.
+	void MarkWriteClosed() { writeOpen = false; }
 
 	/// If this function returns true, this socket represents a UDP server socket instance. For a UDP server,
 	/// the data for all clients is received through this same socket, and there are no individual sockets created for

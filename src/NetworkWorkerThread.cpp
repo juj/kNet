@@ -161,12 +161,7 @@ void NetworkWorkerThread::MainLoop()
 
 			connection.UpdateConnection();
 			if (connection.GetConnectionState() == ConnectionClosed || !connection.GetSocket() || !connection.GetSocket()->Connected()) // This does not need to be checked each iteration.
-			{
-				LOG(LogVerbose, "NetworkWorkerThread::MainLoop: Clearing connection 0x%p from connectionList.", &connection);
-				connectionList.erase(connectionList.begin() + i);
-				--i;
 				continue;
-			}
 
 			// The event that is triggered when data is received on the socket.
 			Event readEvent = connection.GetSocket()->GetOverlappedReceiveEvent();

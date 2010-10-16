@@ -98,6 +98,13 @@ outboundQueue(16 * 1024)
 	Initialize();
 }
 
+MessageConnection::~MessageConnection()
+{
+	LOG(LogObjectAlloc, "Deleting MessageConnection 0x%p.", this);
+	FreeMessageData();
+	eventMsgsOutAvailable.Close();
+}
+
 ConnectionState MessageConnection::GetConnectionState() const
 { 
 	// If we have now low-level socket at all, we have been already deinitialized.
@@ -132,7 +139,8 @@ bool MessageConnection::IsReadOpen() const
 
 bool MessageConnection::IsWriteOpen() const
 { 
-	return socket && socket->IsWriteOpen() && GetConnectionState() != ConnectionDisconnecting && GetConnectionState() != ConnectionClosed;
+	return socket && socket->IsWriteOpen() && 
+		GetConnectionState() != ConnectionDisconnecting && GetConnectionState() != ConnectionClosed;
 }
 
 bool MessageConnection::IsPending() const
@@ -174,29 +182,28 @@ bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 
 void MessageConnection::Disconnect(int maxMSecsToWait)
 {
-	if (!socket)
-	{
-		LOG(LogVerbose, "MessageConnection::Close() called on a connection with null socket!");
+	if (!socket || !socket->IsWriteOpen())
 		return;
-	}
-
-	LOG(LogInfo, "MessageConnection::Disconnect(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
-		maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
-		socket->IsWriteOpen() ? "true":"false");
-	assert(maxMSecsToWait >= 0);
-
+/*
 	// First, check the actual status of the Socket, and update the connectionState of this MessageConnection accordingly.
 	///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
-	assert(socket);
-	if (!socket)
-		return;
 	if (!socket->IsReadOpen() && !socket->IsWriteOpen())
 		connectionState = ConnectionClosed;
 	if (!socket->IsReadOpen() && connectionState != ConnectionClosed)
 		connectionState = ConnectionPeerClosed;
 	if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
 		connectionState = ConnectionDisconnecting;
+*/
+	if (connectionState == ConnectionClosed || connectionState == ConnectionDisconnecting)
+		return;
 
+	LOG(LogInfo, "MessageConnection::Disconnect(%d msecs): Write-closing connection. connectionState = %s, socket readOpen:%s, socket writeOpen:%s.", 
+		maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
+		socket->IsWriteOpen() ? "true":"false");
+	assert(maxMSecsToWait >= 0);
+
+	PerformDisconnection();
+/*
 	switch(connectionState)
 	{
 	case ConnectionPending:
@@ -204,16 +211,14 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 		// Intentional fall-through.
 	case ConnectionOK:
 		LOG(LogInfo, "MessageConnection::Disconnect. Write-closing connection %s.", ToString().c_str());
-		if (socket)
-			PerformDisconnection();
+		PerformDisconnection();
 		connectionState = ConnectionDisconnecting;
 		break;
 	case ConnectionDisconnecting:
 		LOG(LogVerbose, "MessageConnection::Disconnect. Already disconnecting. %s", ToString().c_str());
 		break;
 	case ConnectionPeerClosed: // The peer has already signalled it will not send any more data.
-		if (socket)
-			PerformDisconnection();
+		PerformDisconnection();
 		connectionState = ConnectionClosed;
 		break;
 	case ConnectionClosed:
@@ -224,14 +229,14 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 		connectionState = ConnectionClosed;
 		break;
 	}
-
-	if (maxMSecsToWait > 0 && GetConnectionState() != ConnectionClosed)
+*/
+	if (maxMSecsToWait > 0)
 	{
 		PolledTimer timer((float)maxMSecsToWait);
-		while(GetConnectionState() != ConnectionClosed && !timer.Test())
+		while(socket && socket->IsWriteOpen() && !timer.Test())
 		{
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
-
+/*
 			///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
 			if (!socket->IsReadOpen() && !socket->IsWriteOpen())
 				connectionState = ConnectionClosed;
@@ -239,13 +244,13 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 				connectionState = ConnectionPeerClosed;
 			if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
 				connectionState = ConnectionDisconnecting;
+*/
 		}
 
 //#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
 		LOG(LogWaits, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
 			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
 //#endif
-
 	}
 
 	if (GetConnectionState() == ConnectionClosed)
@@ -254,15 +259,13 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 
 void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 {
-	if (!socket)
-	{
-		LOG(LogError, "MessageConnection::Close() called on a connection with null socket!");
+	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
 		return;
-	}
+
 	LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
 		maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
 		socket->IsWriteOpen() ? "true":"false");
-
+/*
 	// First, check the actual status of the Socket, and update the connectionState of this MessageConnection accordingly.
 	///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
 	if (!socket->IsReadOpen() && !socket->IsWriteOpen())
@@ -271,11 +274,11 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 		connectionState = ConnectionPeerClosed;
 	if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
 		connectionState = ConnectionDisconnecting;
-
+*/
 	if (maxMSecsToWait > 0)
 		Disconnect(maxMSecsToWait);
 
-	LOG(LogInfo, "Closed connection to %s.", ToString().c_str());
+	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
 
 	if (owner)
 		owner->CloseConnection(this);
@@ -331,13 +334,6 @@ void MessageConnection::SetPeerClosed()
 		LOG(LogError, "SetPeerClosed() called at an unexpected time: connectionState=%d.", connectionState); 
 		break;
 	}
-}
-
-MessageConnection::~MessageConnection()
-{
-	LOG(LogObjectAlloc, "Deleting MessageConnection 0x%p.", this);
-	FreeMessageData();
-	eventMsgsOutAvailable.Close();
 }
 
 void MessageConnection::FreeMessageData() // [main thread ONLY]

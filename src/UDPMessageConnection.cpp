@@ -350,6 +350,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		writer.AddVLE<VLE16_32>(smallestReliableMessageNumber);
 	}
 
+	bool sentDisconnectMessage = false;
 	bool sentDisconnectAckMessage = false;
 
 	// Write all the messages in this UDP packet.
@@ -362,7 +363,9 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		const size_t messageContentSize = msg->dataSize + encodedMsgIdLength; // 1/2/4 bytes: Message ID. X bytes: Content.
 		assert(messageContentSize < (1 << 11));
 
-		if (msg->id == MsgIdDisconnectAck)
+		if (msg->id == MsgIdDisconnect)
+			sentDisconnectMessage = true;
+		else if (msg->id == MsgIdDisconnectAck)
 			sentDisconnectAckMessage = true;
 
 		const u16 reliable = (msg->reliable ? 1 : 0) << 12;
@@ -449,11 +452,28 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			FreeMessage(datagramSerializedMessages[i]);
 	}
 
-	// If we sent out the DisconnectAck message, we can close down the connection right now.
+	// If we sent out the Disconnect message, it means we have closed our write connection, but are still
+	// half-open to receive data.
+	if (sentDisconnectMessage)
+	{
+		if (connectionState != ConnectionClosed && connectionState != ConnectionPeerClosed)
+			connectionState = ConnectionDisconnecting;
+		if (connectionState == ConnectionPeerClosed)
+			connectionState = ConnectionClosed;
+		if (socket)
+			socket->MarkWriteClosed();
+		LOG(LogInfo, "UDPMessageConnection::SendOutPacket: Send Disconnect from connection %s.", ToString().c_str());
+	}
+	// If we sent out the DisconnectAck message, we can tear down the connection right now - we're finished.
 	if (sentDisconnectAckMessage)
 	{
+		if (socket)
+		{
+			socket->MarkReadClosed();
+			socket->MarkWriteClosed();
+		}
 		connectionState = ConnectionClosed;
-		LOGNET("Connection closed by peer: %s.", ToString().c_str());
+		LOG(LogInfo, "UDPMessageConnection::SendOutPacket: Send DisconnectAck from connection %s.", ToString().c_str());
 	}
 
 	LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Socket::EndSend succeeded with %d bytes.", writer.BytesFilled());
@@ -931,19 +951,25 @@ void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBy
 
 void UDPMessageConnection::HandleDisconnectMessage()
 {
+	if (socket)
+		socket->MarkReadClosed();
+
 	if (connectionState != ConnectionClosed)
-	{
 		connectionState = ConnectionDisconnecting;
-		SendDisconnectAckMessage();
-	}
 	else
-	{
 		LOG(LogError, "UDPMessageConnection::HandleDisconnectMessage: Received Disconnect message when in ConnectionClosed state!");
-	}
+
+	SendDisconnectAckMessage();
 }
 
 void UDPMessageConnection::HandleDisconnectAckMessage()
 {
+	if (socket)
+	{
+		socket->MarkReadClosed();
+		socket->MarkWriteClosed();
+	}
+
 	if (connectionState != ConnectionDisconnecting)
 		LOG(LogInfo, "Received DisconnectAck message on a MessageConnection not in ConnectionDisconnecting state! (state was %d)",
 		connectionState);
