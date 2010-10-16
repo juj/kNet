@@ -100,6 +100,20 @@ outboundQueue(16 * 1024)
 
 ConnectionState MessageConnection::GetConnectionState() const
 { 
+	// If we have now low-level socket at all, we have been already deinitialized.
+	if (!socket)
+		return ConnectionClosed;
+	// If the connection is still pending, socket is not read or write open, but we should not think
+	// the connection is closed though.
+	if (connectionState == ConnectionPending)
+		return ConnectionPending;
+	if (!socket->IsReadOpen() && !socket->IsWriteOpen())
+		return ConnectionClosed;
+	if (!socket->IsReadOpen())
+		return ConnectionPeerClosed;
+	if (!socket->IsWriteOpen())
+		return ConnectionDisconnecting;
+
 	return connectionState;
 }
 
@@ -189,7 +203,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 		LOG(LogVerbose, "MessageConnection::Disconnect called when in ConnectionPending state! %s", ToString().c_str());
 		// Intentional fall-through.
 	case ConnectionOK:
-		LOG(LogInfo, "MessageConnection::Disconnect. Sending Disconnect Message. %s", ToString().c_str());
+		LOG(LogInfo, "MessageConnection::Disconnect. Write-closing connection %s.", ToString().c_str());
 		if (socket)
 			PerformDisconnection();
 		connectionState = ConnectionDisconnecting;
@@ -959,7 +973,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	// Pass the message to TCP/UDP -specific message handler.
 	bool childHandledMessage = HandleMessage(packetID, messageID, data + reader.BytePos(), reader.BytesLeft());
 	if (childHandledMessage)
-		return;
+		return; // If the derived class handled the message, no need to propagate it further.
 
 	switch(messageID)
 	{
@@ -977,7 +991,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 			memcpy(msg->data, data + reader.BytePos(), reader.BytesLeft());
 			msg->dataSize = reader.BytesLeft();
 			msg->id = messageID;
-			msg->contentID = 0;
+ 			msg->contentID = 0;
 			bool success = inboundMessageQueue.Insert(msg);
 			if (!success)
 			{

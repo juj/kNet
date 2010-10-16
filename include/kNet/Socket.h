@@ -175,7 +175,7 @@ public:
 
 	/// Waits for the max given amount of time for new data to be received from the socket.
 	/// @return True if new data was received, false if the timeout period elapsed.
-	bool WaitForData(int msecs);
+//	bool WaitForData(int msecs); // this will be removed completely.
 
 	/// Reads in data from the socket. If there is no data available, this function will not block, but will immediately
 	/// return 0.

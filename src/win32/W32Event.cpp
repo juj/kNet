@@ -83,7 +83,8 @@ bool Event::Test() const
 bool Event::Wait(unsigned long msecs) const
 {
 	if (wsaEvent == NULL)
-		LOG(LogError, "Event::Wait called on a null event!");
+		return false;
+
 	DWORD ret = WSAWaitForMultipleEvents(1, &wsaEvent, TRUE, msecs, TRUE);
 	return ret == WSA_WAIT_EVENT_0;
 }

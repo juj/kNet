@@ -135,7 +135,7 @@ bool Event::Test() const
 {
 	if (IsNull())
 	{
-		LOG(LogError, "Event::Test() failed! Tried to test an uninitialized Event!");
+//		LOG(LogError, "Event::Test() failed! Tried to test an uninitialized Event!");
 		return false;
 	}
 
@@ -167,7 +167,7 @@ bool Event::Wait(unsigned long msecs) const
 {
 	if (IsNull())
 	{
-		LOGNET("Event::Wait() failed! Tried to wait on an uninitialized Event!");
+//		LOGNET("Event::Wait() failed! Tried to wait on an uninitialized Event!");
 		return false;
 	}
 
