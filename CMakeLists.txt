@@ -36,6 +36,7 @@ if(USE_BOOST)
 endif()
 
 if (USE_TINYXML)
+   add_definitions(-DKNET_USE_TINYXML)
    include_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT}/Release)
