@@ -27,22 +27,22 @@
 
 __forceinline static void *operator new(size_t size, const char *file, int line)
 {
-	return _malloc_dbg(size, _CLIENT_BLOCK, file, line);
+	return _malloc_dbg(size, _NORMAL_BLOCK, file, line);
 }
 
 __forceinline static void *operator new[](size_t size, const char *file, int line)
 {
-	return _malloc_dbg(size, _CLIENT_BLOCK, file, line);
+	return _malloc_dbg(size, _NORMAL_BLOCK, file, line);
 }
 
 __forceinline static void operator delete(void *ptr, const char *, int)
 {
-	_free_dbg(ptr, _CLIENT_BLOCK);
+	_free_dbg(ptr, _NORMAL_BLOCK);
 }
 
 __forceinline static void operator delete[](void *ptr, const char *, int)
 {
-	_free_dbg(ptr, _CLIENT_BLOCK);
+	_free_dbg(ptr, _NORMAL_BLOCK);
 }
 
 #define new new (__FILE__, __LINE__)
