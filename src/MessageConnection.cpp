@@ -88,7 +88,7 @@ outboundAcceptQueue(256*1024), inboundMessageQueue(512*1024),
 rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0), 
 msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
 lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
-outboundQueue(16 * 1024)
+outboundQueue(16 * 1024), workerThread(0)
 {
 	connectionState = startingState;
 
@@ -259,12 +259,8 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 
 void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 {
-	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
-		return;
-
-	LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
-		maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
-		socket->IsWriteOpen() ? "true":"false");
+//	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
+//		return;
 /*
 	// First, check the actual status of the Socket, and update the connectionState of this MessageConnection accordingly.
 	///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
@@ -275,13 +271,26 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 	if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
 		connectionState = ConnectionDisconnecting;
 */
-	if (maxMSecsToWait > 0)
+	if (maxMSecsToWait > 0 && socket && socket->IsWriteOpen())
+    {
 		Disconnect(maxMSecsToWait);
+	    LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
+		    maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
+		    socket->IsWriteOpen() ? "true":"false");
+    }
 
-	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
-
-	if (owner)
+    if (owner)
+    {
+    	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
 		owner->CloseConnection(this);
+        owner = 0;
+    }
+
+    if (socket && socket->IsReadOpen())
+    {
+        socket->Close();
+        socket = 0;
+    }
 
 	connectionState = ConnectionClosed;
 
@@ -585,7 +594,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Discarded message with ID 0x%X and size %d bytes. "
 			"msg->obsolete: %d. socket ptr: 0x%p. ConnectionState: %s. socket->IsWriteOpen(): %s. msgconn->IsWriteOpen: %s. "
 			"internalQueue: %s.",
-			msg->id, numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), socket->IsWriteOpen() ? "true" : "false",
+			msg->id, numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), (socket && socket->IsWriteOpen()) ? "true" : "false",
 			IsWriteOpen() ? "true" : "false", internalQueue ? "true" : "false");
 		FreeMessage(msg);
 		return;
