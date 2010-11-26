@@ -17,9 +17,10 @@
 
 #include <cassert>
 
+#include "kNet/SerializedDataIterator.h"
+
 #include "kNet/DebugMemoryLeakCheck.h"
 
-#include "kNet/SerializedDataIterator.h"
 
 namespace kNet
 {

@@ -26,11 +26,11 @@
 #include <cassert>
 #include <cstring>
 
-#include "kNet/DebugMemoryLeakCheck.h"
-
 #include "kNet/NetworkLogging.h"
 #include "kNet/MessageListParser.h"
 #include "kNet/NetException.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
 
 #ifdef LINUX
 #define _stricmp strcasecmp
