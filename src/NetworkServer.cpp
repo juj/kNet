@@ -153,8 +153,7 @@ void NetworkServer::Process()
 				Ptr(MessageConnection) clientConnection;
 				assert(listen->TransportLayer() == SocketOverTCP);
 				clientConnection = new TCPMessageConnection(owner, this, client, ConnectionOK);
-				assert(owner->WorkerThread());
-				owner->WorkerThread()->AddConnection(clientConnection);
+				owner->AssignConnectionToWorkerThread(clientConnection);
 
 				if (networkServerListener)
 					networkServerListener->NewConnectionEstablished(clientConnection);
@@ -313,7 +312,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 	connection->SendPingRequestMessage();
 
-	owner->WorkerThread()->AddConnection(connection);
+	owner->AssignConnectionToWorkerThread(connection);
 
 	LOG(LogInfo, "Accepted new UDP connection.");
 	return true;

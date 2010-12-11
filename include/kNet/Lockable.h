@@ -94,7 +94,7 @@ class ConstLock
 {
 public:
 	explicit ConstLock(const Lockable<T> *lockedObject_)
-	:lockedObject(lockedObject_), value(&lockedObject->Lock())
+	:lockedObject(lockedObject_), value(&lockedObject->LockGet())
 	{
 	}
 
