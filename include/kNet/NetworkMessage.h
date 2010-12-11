@@ -17,6 +17,7 @@
 	@brief The class NetworkMessage. Stores an outbound network message. */
 
 #include "LockFreePoolAllocator.h"
+#include "FragmentedTransferManager.h"
 
 namespace kNet
 {
@@ -51,25 +52,12 @@ inline packet_id_t SubPacketID(packet_id_t id, int sub)
 }
 
 /// NetworkMessage stores the serialized byte data of a single outbound network message, along
-/// with fields that specify how it is treated by the network connection.
+/// with fields that specify how itreated by the network connection.
 class NetworkMessage : public PoolAllocatable<NetworkMessage>
 {
 public:
 	/// To create a NetworkMessage, call MessageConnection::StartNewMessage();
-	NetworkMessage()
-	:messageNumber(0),
-	reliableMessageNumber(0),
-	sendCount(0),
-	fragmentIndex(0),
-	dataCapacity(0),
-	dataSize(0),
-	data(0),
-	contentID(0),
-	obsolete(false),
-	priority(0),
-	transfer(0)
-	{
-	}
+	NetworkMessage();
 
 	/// Stores the actual data of the message. 
 	/// When writing a new message, fill in the data bytes here. This buffer can hold Capacity() amount of bytes. If you need more,
@@ -87,22 +75,7 @@ public:
 	///                bytes left uninitialized. If false, this function preserves any old partially filled data and works
 	///                like std::vector::resize(). The intended purpose of this function is to be called prior to filling
 	///                in any data, and so the default value is true.
-	void Resize(size_t newBytes, bool discard = true)
-	{
-		// Remember how much data is actually being used.
-		dataSize = newBytes;
-
-		if (newBytes <= dataCapacity)
-			return; // No need to reallocate, we can fit the requested amount of bytes.
-
-		char *newData = new char[newBytes];
-		if (!discard)
-			memcpy(newData, data, dataCapacity);
-
-		delete[] data;
-		data = newData;
-		dataCapacity = newBytes;
-	}
+	void Resize(size_t newBytes, bool discard = true);
 
 	/// The send priority of this message with respect to other messages. Priority 0 is the lowest, and 
 	/// priority 0xFFFFFFFE is the highest. Priority 0xFFFFFFFF is a special one that means 'don't send this message'.

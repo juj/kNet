@@ -28,6 +28,26 @@ using namespace std;
 namespace kNet
 {
 
+DataDeserializer::DataDeserializer(const char *data_, size_t size_)
+:data(data_), size(size_)
+{
+	assert(data);
+	assert(size > 0);
+	ResetTraversal();
+}
+
+DataDeserializer::DataDeserializer(const char *data_, size_t size_, const SerializedMessageDesc *msgTemplate)
+:data(data_), size(size_)
+{
+	assert(data);
+	assert(size > 0);
+	assert(msgTemplate);
+
+	iter = new SerializedDataIterator(*msgTemplate);
+
+	ResetTraversal();
+}
+
 void DataDeserializer::ResetTraversal()
 {
 	elemOfs = 0;
