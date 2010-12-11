@@ -56,8 +56,15 @@ inline packet_id_t SubPacketID(packet_id_t id, int sub)
 class NetworkMessage : public PoolAllocatable<NetworkMessage>
 {
 public:
-	/// To create a NetworkMessage, call MessageConnection::StartNewMessage();
+	/// To create a NetworkMessage, call MessageConnection::StartNewMessage() instead of directly instantiating
+	/// a message structure. This is because each MessageConnection implements an internal pool of NetworkMessage
+	/// structures which are reused between messages, to avoid excessive dynamic memory allocation.
 	NetworkMessage();
+
+	NetworkMessage &operator=(const NetworkMessage &rhs);
+	NetworkMessage(const NetworkMessage &rhs);
+
+	~NetworkMessage();
 
 	/// Stores the actual data of the message. 
 	/// When writing a new message, fill in the data bytes here. This buffer can hold Capacity() amount of bytes. If you need more,
@@ -118,9 +125,6 @@ public:
 	unsigned long MessageNumber() const { return messageNumber; }
 
 private:
-//	void operator=(const NetworkMessage &); ///< Noncopyable, N/I.
-//	NetworkMessage(const NetworkMessage &); ///< Noncopyable, N/I.
-
 	friend class MessageConnection;
 	friend class UDPMessageConnection;
 	friend class TCPMessageConnection;

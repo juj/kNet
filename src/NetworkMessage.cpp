@@ -36,6 +36,37 @@ transfer(0)
 {
 }
 
+NetworkMessage::NetworkMessage(const NetworkMessage &rhs)
+{
+	*this = rhs;
+}
+
+NetworkMessage &NetworkMessage::operator=(const NetworkMessage &rhs)
+{
+	if (this == &rhs)
+		return *this;
+
+	Resize(rhs.Size());
+	memcpy(data, rhs.data, rhs.Size());
+	priority = rhs.priority;
+	id = rhs.id;
+	contentID = rhs.contentID;
+	reliable = rhs.reliable;
+	inOrder = rhs.inOrder;
+	obsolete = rhs.obsolete;
+
+	// We could also copy the remaining fields messageNumber, reliableMessageNumber, sendCount and fragmentIndex,
+	// but those don't have a specified meaning at the moment the message is being crafted, so don't.
+	// Once the message has been queued for sending, deep copies of it will not be performed.
+
+	return *this;
+}
+
+NetworkMessage::~NetworkMessage()
+{
+	delete[] data;
+}
+
 void NetworkMessage::Resize(size_t newBytes, bool discard)
 {
 	// Remember how much data is actually being used.
