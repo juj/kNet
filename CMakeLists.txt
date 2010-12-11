@@ -15,11 +15,21 @@
 cmake_minimum_required(VERSION 2.6)
 project(kNet)
 
-set(USE_BOOST TRUE)
-set(BOOST_ROOT "C:/boost")
+# This macro adds to each .cpp file listed in the parameter 'cppFiles' a #define DEBUG_CPP_NAME "thisCppFileName"
+#macro(AddCompilationUnitNameDefines cppFiles)
+#  message("cppFiles ${cppFiles} ${${cppFiles}}")
+#      foreach(srcFile ${cppFiles})
+#         get_filename_component(baseName ${srcFile} NAME)
+#         set_source_files_properties(${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
+#        message("${srcFile} with ${baseName}")
+#      endforeach()
+#endmacro()
+
+#set(USE_BOOST TRUE)
+#set(BOOST_ROOT "C:/boost_1_44_0")
 
 set(USE_TINYXML TRUE)
-set(TINYXML_ROOT "../tinyxml")
+set(TINYXML_ROOT "C:/Projects/3rdParty/tinyxml_2_6_1")
 
 if(USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
@@ -36,6 +46,8 @@ if(USE_BOOST)
 endif()
 
 if (USE_TINYXML)
+   add_definitions(-DKNET_USE_TINYXML)
+   
    include_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT}/Release)
@@ -72,6 +84,13 @@ elseif(UNIX)
 
    add_definitions(-DLINUX)
 endif()
+
+#AddCompilationUnitNameDefines(kNetSourceFiles)
+#TODO: To clean up, move the lines of code below into a macro, like shown above. Disabled for now since passing a list to a CMake macro was problematic.
+foreach(srcFile ${kNetSourceFiles})
+   get_filename_component(baseName ${srcFile} NAME)
+   set_source_files_properties(${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
+endforeach()
 
 add_library(kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
 
