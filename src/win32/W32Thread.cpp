@@ -101,7 +101,7 @@ void Thread::Stop()
 	if (threadHandle != NULL)
 	{
 		TerminateThread(threadHandle, -1);
-		CloseHandle(threadHandle);
+//		CloseHandle(threadHandle);
 		LOGNET("Warning: Had to forcibly terminate thread!");
 	}
 
