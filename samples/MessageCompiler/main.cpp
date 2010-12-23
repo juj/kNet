@@ -60,6 +60,8 @@ int main(int argc, char **argv)
 		const SerializedMessageDesc &msg = *iter;
 		SerializationStructCompiler compiler;	
 		string messageName = compiler.ParseToValidCSymbolName(msg.name.c_str()) + ".h";
+		if (!!strncmp(messageName.c_str(), "Msg", 3))
+			messageName = "Msg" + messageName; // Adjust the form of each generated message header file to be of the form Msgxxx.h
 		compiler.CompileMessage(msg, messageName.c_str());
 	}
 }
