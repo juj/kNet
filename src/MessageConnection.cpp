@@ -19,9 +19,9 @@
 #include <iostream>
 #include <cassert>
 
-#include "kNet/MessageConnection.h"
-
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/MessageConnection.h"
 
 #include "kNet/PolledTimer.h"
 #include "kNet/Sort.h"

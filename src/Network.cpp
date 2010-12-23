@@ -265,20 +265,32 @@ void Network::Init()
 	gethostname(str, 256);
 	machineIP = str;
 	LOGNET("gethostname returned %s", str);
+}
 
-	workerThread = new NetworkWorkerThread();
+NetworkWorkerThread *Network::GetOrCreateWorkerThread()
+{
+	static const int maxConnectionsPerThread = 1;
+
+	// Find an existing thread with sufficiently low load.
+	for(size_t i = 0; i < workerThreads.size(); ++i)
+		if (workerThreads[i]->NumConnections() + workerThreads[i]->NumServers() < maxConnectionsPerThread)
+			return workerThreads[i];
+
+	// No appropriate thread found. Create a new one.
+	NetworkWorkerThread *workerThread = new NetworkWorkerThread();
 	workerThread->StartThread();
+	workerThreads.push_back(workerThread);
+	LOG(LogInfo, "Created a new NetworkWorkerThread. There are now %d worker threads.", workerThreads.size());
+	return workerThread;
+}
+
+void Network::AssignConnectionToWorkerThread(Ptr(MessageConnection) connection)
+{
+	GetOrCreateWorkerThread()->AddConnection(connection);
 }
 
 NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener)
 {
-	assert(workerThread);
-	if (!workerThread)
-	{
-		LOGNET("Cannot start server! NetworkWorkerThread is not running!");
-		return 0;
-	}
-
 	Socket *listenSock = OpenListenSocket(port, transport);
 	if (listenSock == 0)
 	{
@@ -293,7 +305,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 	server = new NetworkServer(this, listenSockets);
 	server->RegisterServerListener(serverListener);
 
-	workerThread->AddServer(server);
+	GetOrCreateWorkerThread()->AddServer(server);
 
 	LOGNET("Server up (%s). Waiting for client to connect...", listenSock->ToString().c_str());
 
@@ -303,13 +315,6 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, SocketTransportLayer> > &listenPorts, 
 	INetworkServerListener *serverListener)
 {
-	assert(workerThread);
-	if (!workerThread)
-	{
-		LOGNET("Cannot start server! NetworkWorkerThread is not running!");
-		return 0;
-	}
-
 	if (listenPorts.size() == 0)
 	{
 		LOGNET("Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
@@ -334,7 +339,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 	server = new NetworkServer(this, listenSockets);
 	server->RegisterServerListener(serverListener);
 
-	workerThread->AddServer(server);
+	GetOrCreateWorkerThread()->AddServer(server);
 
 	LOGNET("Server up and listening on the following ports: ");
 	{
@@ -359,7 +364,9 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 void Network::StopServer()
 {
-	workerThread->RemoveServer(server);
+	for(size_t i = 0; i < workerThreads.size(); ++i)
+		workerThreads[i]->RemoveServer(server);
+
 	///\todo This is a forceful stop. Perhaps have a benign teardown as well?
 	server = 0;
 	LOG(LogVerbose, "Network::StopServer: Deinitialized NetworkServer.");
@@ -392,8 +399,8 @@ void Network::CloseConnection(Ptr(MessageConnection) connection)
 	if (!connection)
 		return;
 
-	if (workerThread)
-		workerThread->RemoveConnection(connection);
+	for(size_t i = 0; i < workerThreads.size(); ++i)
+		workerThreads[i]->RemoveConnection(connection);
 
 	CloseSocket(connection->socket);
 	connection->socket = 0;
@@ -404,12 +411,12 @@ void Network::DeInit()
 	LOG(LogVerbose, "Network::DeInit: Closing down network worker thread.");
 	PolledTimer timer;
 
-	if (workerThread)
+	for(size_t i = 0; i < workerThreads.size(); ++i)
 	{
-		workerThread->StopThread();
-		delete workerThread;
-		workerThread = 0;
+		workerThreads[i]->StopThread();
+		delete workerThreads[i];
 	}
+	workerThreads.clear();
 
 	while(sockets.size() > 0)
 	{
@@ -594,10 +601,8 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 	else
 		connection = new UDPMessageConnection(this, 0, socket, ConnectionPending);
 
-
 	connection->RegisterInboundMessageHandler(messageHandler);
-	assert(workerThread);
-	workerThread->AddConnection(connection);
+	GetOrCreateWorkerThread()->AddConnection(connection);
 
 	return connection;
 }

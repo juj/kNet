@@ -41,6 +41,9 @@ public:
 	void StartThread();
 	void StopThread();
 
+	int NumConnections() const;
+	int NumServers() const;
+
 private:
 	Lockable<std::vector<Ptr(MessageConnection)> > connections;
 	Lockable<std::vector<Ptr(NetworkServer)> > servers;

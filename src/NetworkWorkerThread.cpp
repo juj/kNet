@@ -60,7 +60,7 @@ void NetworkWorkerThread::RemoveConnection(Ptr(MessageConnection) connection)
 			workThread.Resume();
 			return;
 		}
-	LOGNET("NetworkWorkerThread::RemoveConnection called for a nonexisting connection 0x%8X!", connection.ptr());
+//	LOGNET("NetworkWorkerThread::RemoveConnection called for a nonexisting connection 0x%8X!", connection.ptr());
 	workThread.Resume();
 }
 
@@ -92,7 +92,7 @@ void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 			workThread.Resume();
 			return;
 		}
-	LOGNET("NetworkWorkerThread::RemoveServer called for a nonexisting server 0x%8X!", server.ptr());
+//	LOGNET("NetworkWorkerThread::RemoveServer called for a nonexisting server 0x%8X!", server.ptr());
 	workThread.Resume();
 }
 
@@ -104,6 +104,16 @@ void NetworkWorkerThread::StartThread()
 void NetworkWorkerThread::StopThread()
 {
 	workThread.Stop();
+}
+
+int NetworkWorkerThread::NumConnections() const
+{
+	return connections.Acquire()->size();
+}
+
+int NetworkWorkerThread::NumServers() const
+{
+	return servers.Acquire()->size();
 }
 
 void NetworkWorkerThread::MainLoop()

@@ -26,10 +26,10 @@ namespace
 {
 const LogChannel LogUser = 1;        ///< This log channel is free to use for user-level application messages.
 const LogChannel LogInfo = 2;        ///< Successful connects and disconnects.
-const LogChannel LogError = 4;       ///< Successful connects and disconnects.
-const LogChannel LogObjectAlloc = 8; ///< Successful connects and disconnects.
-const LogChannel LogData = 16;       ///< Successful connects and disconnects.
-const LogChannel LogVerbose = 32;    ///< Print all information for debugging purposes.
+const LogChannel LogError = 4;       ///< All connection-related errors.
+const LogChannel LogObjectAlloc = 8; ///< For debugging: prints information about object allocations an deallocations.
+const LogChannel LogData = 16;       ///< For debugging: dumps information about in- and outbound packet data.
+const LogChannel LogVerbose = 32;    ///< For debugging: Print detailed internal information.
 const LogChannel LogWaits = 64;      ///< Logs all long performance-related waits (thread/mutex blocks) that occur in the system.
 }
 
