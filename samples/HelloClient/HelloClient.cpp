@@ -35,7 +35,7 @@ public:
          DataDeserializer dd(data, numBytes);
          std::cout << "Server says: " << dd.ReadString() << std::endl;
          
-         source->Close();
+         source->Close(0);
       } 
    }
 };
@@ -48,12 +48,14 @@ int main(int argc, char **argv)
       return 0;
    }
 
+	kNet::SetLogChannels(LogUser | LogInfo | LogError);
+
 	EnableMemoryLeakLoggingAtExit();
 
    Network network;
    MessageListener listener;
 	const unsigned short cServerPort = 1234;
-   Ptr(MessageConnection) connection = network.Connect(argv[1], cServerPort, SocketOverUDP, &listener);
+   Ptr(MessageConnection) connection = network.Connect(argv[1], cServerPort, SocketOverUDP,  &listener);
 
 	if (connection)
 	{

@@ -171,7 +171,7 @@ public:
 	
 	VLE8_16_Action()
 	{
-		value = randu32();
+		value = (u16)randu32();
 		if (value > VLE8_16::maxValue)
 			value = VLE8_16::maxValue;
 	}

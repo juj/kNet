@@ -86,7 +86,7 @@ public:
 			totalFragments = dd.Read<u32>();
 			nextFragment = 0;
 			bytesReceived = 0;
-			statsPrintTimer.StartMSecs(printIntervalMSecs);
+			statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 			cout << "Starting receive of file \"" << filename << "\". File size: " << fileSize << "B bytes, which is split into "
 				<< totalFragments << " fragments." << endl;
 			char str[256];
@@ -117,7 +117,7 @@ public:
 					double timespan = (float)Clock::TimespanToSecondsD(transferStartTick, sendFinishTick);
 					LOG(LogUser, "Received fragment %d. Elapsed: %.2f seconds. Bytes received: %d. Transfer rate: %s/sec.", 
 						nextFragment-1, (float)timespan, bytesReceived, FormatBytes((size_t)(bytesReceived/timespan)).c_str());
-					statsPrintTimer.StartMSecs(printIntervalMSecs);
+					statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 				}
 				
 			}
@@ -183,7 +183,7 @@ public:
 
 		clientConnection->WaitToEstablishConnection(10000);
 
-		statsPrintTimer.StartMSecs(printIntervalMSecs);
+		statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 
 		transferStartTick = Clock::Tick();
 
@@ -201,7 +201,7 @@ public:
 					nextFragment, fragments.size(), (nextFragment + fragments.size()) * 100.f / totalFragments,
 					(float)timespan, bytesReceived, FormatBytes((size_t)(bytesReceived/timespan)).c_str());
 				clientConnection->DumpStatus();
-				statsPrintTimer.StartMSecs(printIntervalMSecs);
+				statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 			}
 		}
 		if (nextFragment == totalFragments)
@@ -272,7 +272,7 @@ public:
 
 		LOG(LogUser, "Starting file transfer. File size: %dB, number of fragments: %d.",
 			fileSize, numFragments);
-		statsPrintTimer.StartMSecs(printIntervalMSecs);
+		statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 
 		while(connection->IsWriteOpen())
 		{
@@ -282,7 +282,7 @@ public:
 			// Add new data fragments into the queue.
 			const int outboundMsgQueueSize = 200;
 			int i = 100;
-			while(i-- > 0 && connection->IsWriteOpen() && connection->NumOutboundMessagesPending() < outboundMsgQueueSize && bytesSent < fileSize)
+			while(i-- > 0 && connection->IsWriteOpen() && connection->NumOutboundMessagesPending() < outboundMsgQueueSize && bytesSent < (size_t)fileSize)
 			{
 				// File payload data bytes in this message.
 				const size_t bytesInThisFragment = min((int)fragmentSize, (int)(fileSize - bytesSent));
@@ -311,7 +311,7 @@ public:
 			}
 
 			// If we've put out all file fragments to the network, close the connection down.
-			if (connection->IsWriteOpen() && bytesSent >= fileSize && connection->NumOutboundMessagesPending() == 0)
+			if (connection->IsWriteOpen() && bytesSent >= (size_t)fileSize && connection->NumOutboundMessagesPending() == 0)
 			{
 				LOG(LogUser, "All data sent. Disconnecting.");
 				connection->Disconnect(15000);
@@ -324,7 +324,7 @@ public:
 				LOG(LogUser, "Sending fragment %d. Elapsed: %.2f seconds. Bytes sent: %d. Transfer rate: %s/sec.", 
 					nextFragment-1, (float)timespan, bytesSent, FormatBytes((size_t)(bytesSent/timespan)).c_str());
 				connection->DumpStatus();
-				statsPrintTimer.StartMSecs(printIntervalMSecs);
+				statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 			}
 		}
 		
@@ -337,7 +337,7 @@ public:
 			if (statsPrintTimer.TriggeredOrNotRunning())
 			{
 				connection->DumpStatus();
-				statsPrintTimer.StartMSecs(printIntervalMSecs);
+				statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 			}
 		}
 
@@ -369,8 +369,7 @@ int main(int argc, char **argv)
 
 	EnableMemoryLeakLoggingAtExit();
 
-//	kNet::SetLogChannels((LogChannel)(-1) & ~(LogObjectAlloc | LogVerbose)); // Enable all log channels.
-	kNet::SetLogChannels(LogUser);
+	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
 	SocketTransportLayer transport = SocketOverUDP;
 	if (!_stricmp(argv[2], "tcp"))

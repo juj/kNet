@@ -211,7 +211,8 @@ int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::LowestPriorityIndex
 template<typename T, typename PriorityCmp, typename EqualCmp, typename LookupNotify, typename AllocT>
 int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::Search(const T &value, int index)
 {
-	if (index >= data.size())
+	assert(index >= 0);
+	if (index >= (int)data.size())
 		return -1;
 
 	int order = cmp(value, data[index]);
@@ -222,7 +223,8 @@ int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::Search(const T &val
 
 	// case order < 0:
 	int child = LeftChildIndex(index);
-	if (child >= data.size()) // No left child, so no right child either, return not found.
+	assert(child >= 0);
+	if (child >= (int)data.size()) // No left child, so no right child either, return not found.
 		return -1;
 
 	int result = Search(value, child);
@@ -230,7 +232,8 @@ int MaxHeap<T, PriorityCmp, EqualCmp, LookupNotify, AllocT>::Search(const T &val
 		return result;
 
 	child = RightChildIndex(index);
-	if (child < data.size()) // If right child exists, search there too.
+	assert(child >= 0);
+	if (child < (int)data.size()) // If right child exists, search there too.
 		return Search(value, child);
 	else
 		return -1;

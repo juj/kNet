@@ -42,6 +42,11 @@ public:
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
 		LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
 	}
+
+	void ClientDisconnected(MessageConnection *connection)
+	{
+		connection->Disconnect();
+	}
 };
 
 int main()
@@ -50,6 +55,8 @@ int main()
 
 	Network network;
 	ServerListener listener;
+
+	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
 	LOG(LogUser, "Starting server.");
 	// Start listening on a port.
