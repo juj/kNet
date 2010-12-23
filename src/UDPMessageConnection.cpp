@@ -26,6 +26,7 @@
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"
 #include "kNet/VLEPacker.h"
+#include "kNet/NetException.h"
 
 #include "kNet/Sort.h"
 
@@ -559,7 +560,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	if (numBytes < 3)
 	{
 		LOGNET("Malformed UDP packet when reading packet header! Size = %d bytes, no space for packet header, which is at least 3 bytes.", numBytes);
-		return;
+		throw NetException("Malformed UDP packet received! No packed header present.");
 	}
 
 	DataDeserializer reader(data, numBytes);
@@ -593,12 +594,11 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	packet_id_t inOrderID = 0;
 	if (inOrder)
 	{
-
 //		inOrderID = reader.ReadVLE<VLE8_16>();
 		if (inOrderID == DataDeserializer::VLEReadError)
 		{
 			LOGNET("Malformed UDP packet! Size = %d bytes, no space for packet header field 'inOrder'!", numBytes);
-			return;
+			throw NetException("Malformed UDP packet received! The inOrder field was invalid.");
 		}
 	}
 
@@ -609,7 +609,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		{
 			LOGNET("Malformed UDP packet! Parsed %d messages ok, but after that there's not enough space for UDP message header! BytePos %d, total size %d",
 				reader.BytePos(), numBytes);
-			return;
+			throw NetException("Malformed UDP packet received! Message header was not present.");
 		}
 
 		// Read the message header (2 bytes at least).
@@ -638,7 +638,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		if (contentLength == 0)
 		{
 			LOGNET("Malformed UDP packet! Byteofs %d, Packet length %d. Message had zero length (Length must be at least one byte)!", reader.BytePos(), numBytes);
-			return;
+			throw NetException("Malformed UDP packet received! Messages with zero content length are not valid.");
 		}
 
 		u32 numTotalFragments = (fragmentStart ? reader.ReadVLE<VLE8_16_32>() : 0);
@@ -649,7 +649,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		{
 			LOGNET("Malformed UDP packet! Byteofs %d, Packet length %d. Expected %d bytes of message content, but only %d bytes left!",
 				reader.BytePos(), numBytes, contentLength, reader.BytesLeft());
-			return;
+			throw NetException("Malformed UDP packet received! Message payload missing.");
 		}
 
 		// If we received the start of a new fragment, start tracking a new fragmented transfer.
@@ -658,7 +658,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 			if (numTotalFragments == DataDeserializer::VLEReadError || numTotalFragments <= 1)
 			{
 				LOGNET("Malformed UDP packet! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
-				return;
+				throw NetException("Malformed UDP packet received! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
 			}
 
 			if (!duplicateMessage)
@@ -671,7 +671,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 			if (fragmentNumber == DataDeserializer::VLEReadError)
 			{
 				LOGNET("Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
-				return;
+				throw NetException("Malformed UDP packet received! This packet has fragment flag on, but parsing the fragment number failed!");
 			}
 
 			bool messageReady = fragmentedReceives.NewFragmentReceived(fragmentTransferID, fragmentNumber, &data[reader.BytePos()], contentLength);
@@ -931,7 +931,7 @@ void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBy
 	if (numBytes != 7)
 	{
 		LOGNET("Malformed PacketAck message received! Size was %d bytes, expected 7 bytes!", numBytes);
-		return;
+		throw NetException("Received a PacketAck message of wrong size! (expected 7 bytes)");
 	}
 
 	DataDeserializer mr(data, numBytes);
@@ -1100,6 +1100,8 @@ bool UDPMessageConnection::HandleMessage(packet_id_t packetID, u32 messageID, co
 		HandleDisconnectAckMessage();
 		return true;
 	default:
+		// For each application-level message received, ask the application to extract the Content ID of the message from the
+		// message to us, so that we can track obsolete data receivals and discard such messages.
 		if (!inboundMessageHandler)
 			return false;
 		else
