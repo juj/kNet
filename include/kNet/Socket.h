@@ -261,6 +261,12 @@ private:
 	/// down this socket.
 	bool isUdpSlaveSocket;
 
+    // On UDP server side, there is a single UDP server socket with isUdpServerSocket == true (isUdpSlaveSocket == false), 
+    // and all client sockets that represent connections to that server have isUdpServerSocket == false and isUdpSlaveSocket == true.
+    // On UDP client side, both isUdpServerSocket and isUdpSlaveSocket are always false.
+    ///\todo Perhaps simplify and convert the above booleans to enum UDPSocketMode { UDPServerMasterSocket, UDPServerSlaveSocket, UDPClientSocket };
+    /// or enum SocketType { TCPServerListenSocket, TCPServerClientSocket, TCPClientSocket, UDPServerMasterSocket, UDPServerSlaveSocket, UDPClientSocket };
+
 #ifdef WIN32
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedSendBuffers;

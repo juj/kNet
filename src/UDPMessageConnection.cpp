@@ -273,7 +273,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	// If true, the packet contains in-order deliverable messages.
 	bool inOrder = false;
 
-	int packetSizeInBytes = 3; // PacketID + Flags take at least three bytes to start with.
+	int packetSizeInBytes = 7; // The datagram header takes up 3-7 bytes. (PacketID + Flags take at least three bytes to start with)
 	const int cBytesForInOrderDeltaCounter = 2;
 
 	unsigned long smallestReliableMessageNumber = 0xFFFFFFFF;
@@ -312,7 +312,9 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		}
 
 		// We need to add extra 2 bytes for the VLE-encoded InOrder PacketID delta counter.
-		int totalMessageSize = msg->GetTotalDatagramPackedSize() + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
+        // Estimate the size the per-message header consumes at most.
+        // This computation is not exact, but as it only needs to be an upper bound, keeping it simple is good. \todo Can be more precise here.
+		int totalMessageSize = msg->GetTotalDatagramPackedSize();// + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
 
 		// If this message won't fit into the buffer, send out all the previously gathered messages.
 		if ((size_t)packetSizeInBytes >= minSendSize && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)

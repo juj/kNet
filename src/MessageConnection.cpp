@@ -794,14 +794,16 @@ bool EraseReliableIfObsoleteCmp(const NetworkMessage *msg)
 
 int NetworkMessage::GetTotalDatagramPackedSize() const
 {
-	const int idLength = (transfer == 0 || fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(id)/8 : 0;
-	const int headerLength = 2;
+//	const int idLength = (transfer == 0 || fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(id)/8 : 0;
+//	const int headerLength = 2;
+    const int headerLength = 30; ///\todo This is loose, but since it only needs to be an upper bound, it is safe now.
 	const int contentLength = dataSize;
-	const int fragmentStartLength = (transfer && fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(transfer->totalNumFragments)/8 : 0;
-	const int fragmentLength = (transfer ? 1 : 0) + ((transfer && fragmentIndex != 0) ? VLE8_16_32::GetEncodedBitLength(fragmentIndex)/8 : 0);
+    return headerLength + contentLength;
+//	const int fragmentStartLength = (transfer && fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(transfer->totalNumFragments)/8 : 0;
+//	const int fragmentLength = (transfer ? 1 : 0) + ((transfer && fragmentIndex != 0) ? VLE8_16_32::GetEncodedBitLength(fragmentIndex)/8 : 0);
 
 	///\todo Take into account the inOrder field.
-	return idLength + headerLength + contentLength + fragmentStartLength + fragmentLength;
+//	return idLength + headerLength + contentLength + fragmentStartLength + fragmentLength;
 }
 
 void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)

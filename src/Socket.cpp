@@ -435,10 +435,18 @@ Event Socket::GetOverlappedSendEvent()
 
 OverlappedTransferBuffer *Socket::BeginReceive()
 {
+    // UDP 'slave socket' is a socket descriptor on the server side that is a copy of the single UDP server listen socket.
+    // The slave sockets don't receive data directly, but the server socket is used instead to receive data for them.
+    if (isUdpSlaveSocket)
+    {
+        assert(queuedReceiveBuffers.Size() == 0); // We shouldn't ever have queued a single receive buffer for this Socket.
+        return 0;
+    }
+
 #ifdef WIN32
-	if (readOpen && !isUdpSlaveSocket)
+	if (readOpen)
 	{
-		/// Prime the receive buffers to the full capacity if they weren't so yet.
+		// Insert new empty receive buffers to the Overlapped Transfer receive queue until we have a full capacity queue primed.
 		const int capacityLeft = queuedReceiveBuffers.CapacityLeft();
 		for(int i = 0; i < capacityLeft; ++i)
 			EnqueueNewReceiveBuffer();
@@ -493,7 +501,8 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 		DeleteOverlappedTransferBuffer(receivedData);
 		// Mark this socket closed, unless the read error was on a UDP server socket, in which case we must ignore
 		// the read error on this buffer (an error on a single client connection cannot shut down the whole server!)
-		if (!isUdpServerSocket && (readOpen || writeOpen))
+//		if (!isUdpServerSocket && (readOpen || writeOpen))
+		if (readOpen || writeOpen)
 		{
 			readOpen = false;
 			writeOpen = false;
