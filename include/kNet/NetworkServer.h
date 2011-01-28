@@ -46,6 +46,9 @@ public:
 	/// Enables or disables whether new connection attempts are allowed.
 	void SetAcceptNewConnections(bool acceptNewConnections);
 
+	// Returns whether this server is handling new connection attempts.
+	bool AcceptsNewConnections() const { return acceptNewConnections; }
+
 	/// Enables or disables whether rejected connection attempts are messages back to the client (UDP only).
 	/// i.e. whether to message "Connection rejected" back to the peer.
 	void SetStealthMode(bool stealthModeEnabled);
@@ -99,6 +102,9 @@ public:
 
 	/// Returns all the currently tracked connections.
 	ConnectionMap GetConnections();
+
+	/// Returns a one-liner textual summary of this server.
+	std::string ToString() const;
 
 private:
 	/// Private ctor - NetworkServer instances are created by the Network class.

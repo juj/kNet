@@ -22,6 +22,11 @@
 #include <string.h>
 #include <utility>
 
+#ifdef KNET_USE_QT
+#include <QApplication>
+#include <QThread>
+#endif
+
 #include "kNet.h"
 #include "kNet/DebugMemoryLeakCheck.h"
 
@@ -46,8 +51,6 @@ struct Fragment
 
 class NetworkApp : public IMessageHandler, public INetworkServerListener
 {
-	Network network;
-
 	// Used by the receiver to store partial received data.
 	std::map<size_t, Fragment> fragments;
 
@@ -61,6 +64,7 @@ class NetworkApp : public IMessageHandler, public INetworkServerListener
 	PolledTimer statsPrintTimer;
 	static const int printIntervalMSecs = 4000;
 public:
+	Network network;
 
 	NetworkApp()
 	:nextFragment(0),
@@ -68,6 +72,8 @@ public:
 	bytesReceived(0)
 	{
 	}
+
+
 	/// Called to notify the listener that a new connection has been established.
 	void NewConnectionEstablished(MessageConnection *connection)
 	{
@@ -359,7 +365,48 @@ void PrintUsage()
 	cout << "       send tcp|udp <hostname> <port> <filename>" << endl;
 }
 
+int run(NetworkApp &app, int argc, char **argv);
+
+#ifdef KNET_USE_QT
+
+class MyThread : public QThread
+{
+	NetworkApp *app;
+	int argc;
+	char **argv;
+public:
+	MyThread(NetworkApp *app_, int argc_, char **argv_)
+	:app(app_), argc(argc_), argv(argv_) {}
+
+   void run();
+};
+
+void MyThread::run()
+{
+	::run(*app, argc, argv);
+}
+#endif
+
 int main(int argc, char **argv)
+{
+	NetworkApp app;
+
+#ifndef KNET_USE_QT
+	run(app, argc, argv);
+#else
+	QApplication qapp(argc, argv);
+
+	NetworkDialog *dialog = new NetworkDialog(0, &app.network);
+	dialog->show();
+
+	MyThread t(&app, argc, argv);
+	t.start();
+
+	return qapp.exec();
+#endif
+}
+
+int run(NetworkApp &app, int argc, char **argv)
 {
 	if (argc < 4)
 	{
@@ -379,7 +426,6 @@ int main(int argc, char **argv)
 		cout << "The second parameter is either 'tcp' or 'udp'!" << endl;
 		return 0;
 	}
-	NetworkApp app;
 	if (!_stricmp(argv[1], "receive"))
 	{
 		unsigned short port = atoi(argv[3]);
@@ -402,4 +448,5 @@ int main(int argc, char **argv)
 		cout << "The second parameter is either 'send' or 'receive'!" << endl;
 		return 0;
 	}
+	return 0;
 }

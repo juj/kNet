@@ -83,6 +83,11 @@ public:
 	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
 	void AssignConnectionToWorkerThread(Ptr(MessageConnection) connection);
 
+	/// Returns the amount of currently executing background network worker threads.
+	int NumWorkerThreads() const { return workerThreads.size(); }
+
+	Ptr(NetworkServer) GetServer() { return server; }
+
 private:
 	std::string machineIP;
 

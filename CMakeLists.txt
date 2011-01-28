@@ -31,7 +31,9 @@ project(kNet)
 set(USE_TINYXML TRUE)
 set(TINYXML_ROOT "C:/Projects/3rdParty/tinyxml_2_6_1")
 
-if(USE_BOOST)
+set(USE_QT TRUE)
+
+if (USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
 
    if (WIN32)
@@ -56,16 +58,51 @@ endif()
 file(GLOB kNetSourceFiles ./src/*.cpp)
 file(GLOB kNetHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/*.inl)
 
-if(USE_BOOST)
+if (USE_QT)
+   add_definitions(-DKNET_USE_QT)
+   
+   set(QT_USE_QTMAIN TRUE)
+   set(QT_USE_QTUITOOLS TRUE)
+   find_package(Qt4 REQUIRED)
+   
+   file(GLOB kNetMocHeaderFiles ./include/kNet/qt/*.h)
+   file(GLOB kNetQtSourceFiles ./src/qt/*.cpp)
+   QT4_WRAP_CPP(kNetMocSrcFiles ${kNetMocHeaderFiles})
+   set(QT4_UI_OUTPUT_DIR ./include/kNet/generatedui)
+   
+   MACRO(QT4_WRAP_UI_CUSTOM_OUTPUT outfiles)
+     QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+     FOREACH(it ${ui_files})
+       GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+       GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+       SET(outfile ${QT4_UI_OUTPUT_DIR}/ui_${outfile}.h) # Here we set output
+       ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
+         COMMAND ${QT_UIC_EXECUTABLE}
+         ARGS ${ui_options} -o ${outfile} ${infile}
+         MAIN_DEPENDENCY ${infile})
+       SET(${outfiles} ${${outfiles}} ${outfile})
+     ENDFOREACH()    
+   ENDMACRO()   
+   
+#   QT4_WRAP_UI(kNetUiHeaderFiles ./ui/*.ui)
+   set(kNetSourceFiles ${kNetSourceFiles} ${kNetMocSrcFiles} ${kNetQtSourceFiles})
+   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles})
+#   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles} ${kNetUiHeaderFiles})
+   include(${QT_USE_FILE})
+   set(kNetLinkLibraries ${kNetLinkLibraries} ${QT_LIBRARIES})
+#   include_directories(${QT4_UI_OUTPUT_DIR})
+endif()
+
+if (USE_BOOST)
    file(GLOB kNetBoostSourceFiles ./src/boost/*.cpp)
    set(kNetSourceFiles ${kNetSourceFiles} ${kNetBoostSourceFiles})
 endif()
 
-if(WIN32)
+if (WIN32)
    file(GLOB kNetWin32SourceFiles ./src/win32/*.cpp)
    file(GLOB kNetWin32HeaderFiles ./include/kNet/win32/*.h)
 
-   if(USE_BOOST)
+   if (USE_BOOST)
       list(REMOVE_ITEM kNetWin32SourceFiles ${PROJECT_SOURCE_DIR}/./src/win32/W32Thread.cpp)
    endif()
 
@@ -75,7 +112,10 @@ if(WIN32)
    add_definitions(-D_WINSOCKAPI_)
    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
    add_definitions(-DKNET_MEMORY_LEAK_CHECK)
-elseif(UNIX)
+   
+   set(kNetLinkLibraries ${kNetLinkLibraries} ws2_32.lib)
+   
+elseif (UNIX)
    file(GLOB kNetUnixSourceFiles ./src/unix/*.cpp)
    file(GLOB kNetUnixHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/unix/*.h)
 
@@ -109,29 +149,29 @@ if (USE_BOOST)
    else()
       message(FATAL_ERROR "Boost not found!")
    endif()
+   
+   set(kNetLinkLibraries ${kNetLinkLibraries} ${Boost_LIBRARIES})   
 endif()
 
-if (WIN32)
-   target_link_libraries(kNet ws2_32.lib ${Boost_LIBRARIES})
-elseif (UNIX)
-   target_link_libraries(kNet ${Boost_LIBRARIES})
-endif()
+target_link_libraries(kNet ${kNetLinkLibraries})
 
-add_subdirectory(samples/ConnectFlood)
+#add_subdirectory(samples/ConnectFlood)
 add_subdirectory(samples/FileTransfer)
-add_subdirectory(samples/FirewallTest)
-add_subdirectory(samples/HelloClient)
-add_subdirectory(samples/HelloServer)
-add_subdirectory(samples/LatencyTest)
-add_subdirectory(samples/MessageCompiler)
-add_subdirectory(samples/SilenceTest)
-add_subdirectory(samples/SimpleChat)
-add_subdirectory(samples/SpeedTest)
-add_subdirectory(samples/TrashTalk)
+#add_subdirectory(samples/FirewallTest)
+#add_subdirectory(samples/HelloClient)
+#add_subdirectory(samples/HelloServer)
+#add_subdirectory(samples/LatencyTest)
+#add_subdirectory(samples/MessageCompiler)
+#add_subdirectory(samples/SilenceTest)
+#add_subdirectory(samples/SimpleChat)
+#add_subdirectory(samples/SpeedTest)
+#add_subdirectory(samples/TrashTalk)
 
-add_subdirectory(tests)
+#add_subdirectory(tests)
 
-set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
+#set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
+
+set_target_properties(kNet FileTransfer PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
