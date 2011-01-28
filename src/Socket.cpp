@@ -499,16 +499,16 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 	{
 		queuedReceiveBuffers.PopFront();
 		if (readOpen || writeOpen)
-			LOG(LogError, "Socket::BeginReceive: WSAGetOverlappedResult failed with code %d when reading from an overlapped socket! Reason: %s.", error, Network::GetErrorString(error).c_str());
+            if (!(isUdpServerSocket && error == 10054)) // If we are running both UDP server and client on localhost, we can receive 10054 (Peer closed connection) on the server side, in which case, we ignore this error print.
+			    LOG(LogError, "Socket::BeginReceive: WSAGetOverlappedResult failed with code %d when reading from an overlapped socket! Reason: %s.", error, Network::GetErrorString(error).c_str());
 		DeleteOverlappedTransferBuffer(receivedData);
 		// Mark this socket closed, unless the read error was on a UDP server socket, in which case we must ignore
 		// the read error on this buffer (an error on a single client connection cannot shut down the whole server!)
-//		if (!isUdpServerSocket && (readOpen || writeOpen))
-		if (readOpen || writeOpen)
+		if (!isUdpServerSocket && (readOpen || writeOpen))
 		{
 			readOpen = false;
 			writeOpen = false;
-			LOG(LogError, "Socket::BeginReceive: Closed TCP socket!");
+			LOG(LogError, "Socket::BeginReceive: Closed socket due to read error!");
 			// Close(); ///\todo Should call this?
 		}
 	}

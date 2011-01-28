@@ -15,8 +15,8 @@
 /** @file NetworkMessage.cpp
 	@brief Represents a serializable network message. */
 
-#include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/NetworkMessage.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 namespace kNet
 {
