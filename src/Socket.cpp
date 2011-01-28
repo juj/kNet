@@ -439,7 +439,9 @@ OverlappedTransferBuffer *Socket::BeginReceive()
     // The slave sockets don't receive data directly, but the server socket is used instead to receive data for them.
     if (isUdpSlaveSocket)
     {
+#ifdef WIN32
         assert(queuedReceiveBuffers.Size() == 0); // We shouldn't ever have queued a single receive buffer for this Socket.
+#endif
         return 0;
     }
 
