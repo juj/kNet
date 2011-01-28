@@ -35,7 +35,7 @@ template<typename T>
 class Lockable;
 
 /// @internal Wraps mutex-lock acquisition and releasing into a RAII-style object that automatically releases the lock when the scope
-/// is exited.
+/// is exited. Lock operates in an std::auto_ptr style in deciding which object has the ownership of the lock.
 template<typename T>
 class Lock
 {
@@ -77,14 +77,16 @@ public:
 		}
 	}
 
-	void TearDown() const { lockedObject = 0; value = 0; }
-
 	T *operator ->() const { return value; }
 	T &operator *() { return *value; }
 
 private:
 	mutable Lockable<T> *lockedObject;
 	mutable T *value;
+
+	/// Clears the pointer to the object this Lock points to. This function is const to allow std::auto_ptr -like
+	/// lock ownership passing in copy-ctor.
+	void TearDown() const { lockedObject = 0; value = 0; }
 };
 
 /// @internal Wraps mutex-lock acquisition and releasing to const data into a RAII-style object 
@@ -126,10 +128,12 @@ public:
 	const T &operator *() const { return *value; }
 
 private:
-	const Lockable<T> *lockedObject;
-	const T *value;
+	mutable const Lockable<T> *lockedObject;
+	mutable const T *value;
 
-	void TearDown() { lockedObject = 0; value = 0; }
+	/// Clears the pointer to the object this Lock points to. This function is const to allow std::auto_ptr -like
+	/// lock ownership passing in copy-ctor.
+	void TearDown() const { lockedObject = 0; value = 0; }
 };
 
 /// Stores an object of type T behind a mutex-locked shield. To access the object, one has to acquire a lock to it first, and remember

@@ -19,8 +19,6 @@
 #include <iostream>
 #include <cassert>
 
-#include "kNet/DebugMemoryLeakCheck.h"
-
 #include "kNet/MessageConnection.h"
 
 #include "kNet/PolledTimer.h"
@@ -35,6 +33,8 @@
 #include "kNet/FragmentedTransferManager.h"
 #include "kNet/NetworkServer.h"
 #include "kNet/Clock.h"
+
+#include "kNet/DebugMemoryLeakCheck.h"
 
 using namespace std;
 
