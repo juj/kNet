@@ -25,13 +25,13 @@ project(kNet)
 #      endforeach()
 #endmacro()
 
-#set(USE_BOOST TRUE)
-#set(BOOST_ROOT "C:/boost_1_44_0")
+set(USE_BOOST TRUE)
+#set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
-set(USE_TINYXML TRUE)
-set(TINYXML_ROOT "C:/Projects/3rdParty/tinyxml_2_6_1")
+#set(USE_TINYXML TRUE)
+#set(TINYXML_ROOT "TODO_SpecifyYourTinyXMLRootHereIfUsingTinyXML")
 
-set(USE_QT TRUE)
+#set(USE_QT TRUE)
 
 if (USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
@@ -156,7 +156,7 @@ endif()
 target_link_libraries(kNet ${kNetLinkLibraries})
 
 #add_subdirectory(samples/ConnectFlood)
-add_subdirectory(samples/FileTransfer)
+#add_subdirectory(samples/FileTransfer)
 #add_subdirectory(samples/FirewallTest)
 #add_subdirectory(samples/HelloClient)
 #add_subdirectory(samples/HelloServer)
@@ -171,7 +171,7 @@ add_subdirectory(samples/FileTransfer)
 
 #set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
 
-set_target_properties(kNet FileTransfer PROPERTIES 
+set_target_properties(kNet PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
