@@ -71,8 +71,6 @@ public:
 	/// @return Local machine IP.
 	const char *MachineIP() const { return machineIP.c_str(); }
 
-	NetworkWorkerThread *WorkerThread() { return workerThread; }
-
 	/// Returns the error string associated with the given networking error id.
 	static std::string GetErrorString(int error);
 
@@ -82,12 +80,21 @@ public:
 	/// Returns the error id corresponding to the last error that occurred in the networking library.
 	static int GetLastError();
 
+	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
+	void AssignConnectionToWorkerThread(Ptr(MessageConnection) connection);
+
+	/// Returns the amount of currently executing background network worker threads.
+	int NumWorkerThreads() const { return workerThreads.size(); }
+
+	Ptr(NetworkServer) GetServer() { return server; }
+
 private:
 	std::string machineIP;
 
 	/// Maintains the server-related data structures if this computer
 	/// is acting as a server. Otherwise this data is not used.
 	Ptr(NetworkServer) server;
+
 	/// Contains all active sockets in the system.
 	std::list<Socket> sockets;
 
@@ -106,7 +113,15 @@ private:
 	/// Opens a new socket that listens on the given port using the given transport.
 	Socket *OpenListenSocket(unsigned short port, SocketTransportLayer transport);
 
-	NetworkWorkerThread *workerThread;
+	/// Stores all the currently running network worker threads. Each thread is assigned
+	/// a list of MessageConnections and NetworkServers to oversee. The worker threads
+	/// then manage the socket reads and writes on these connections.
+	std::vector<NetworkWorkerThread*> workerThreads;
+
+	/// Examines each currently running worker thread and returns one that has sufficiently low load,
+	/// or creates a new thread and returns it if no such thread exists. The thread is added and maintained
+	/// in the workerThreads list.
+	NetworkWorkerThread *GetOrCreateWorkerThread();
 
 	void Init();
 	void DeInit();

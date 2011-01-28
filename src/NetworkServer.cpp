@@ -28,6 +28,7 @@
 #include "kNet/Clock.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace kNet
 {
@@ -154,8 +155,7 @@ void NetworkServer::Process()
 				Ptr(MessageConnection) clientConnection;
 				assert(listen->TransportLayer() == SocketOverTCP);
 				clientConnection = new TCPMessageConnection(owner, this, client, ConnectionOK);
-				assert(owner->WorkerThread());
-				owner->WorkerThread()->AddConnection(clientConnection);
+				owner->AssignConnectionToWorkerThread(clientConnection);
 
 				if (networkServerListener)
 					networkServerListener->NewConnectionEstablished(clientConnection);
@@ -314,7 +314,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 	connection->SendPingRequestMessage();
 
-	owner->WorkerThread()->AddConnection(connection);
+	owner->AssignConnectionToWorkerThread(connection);
 
 	LOG(LogInfo, "Accepted new UDP connection.");
 	return true;
@@ -470,6 +470,60 @@ NetworkServer::ConnectionMap NetworkServer::GetConnections()
 			timer.MSecsElapsed());
 	}
 	return *lock;
+}
+
+std::string NetworkServer::ToString() const
+{
+	bool isUdp = false;
+	bool isTcp = false;
+	for(size_t i = 0; i < listenSockets.size(); ++i)
+		if (listenSockets[i]->TransportLayer() == SocketOverUDP)
+			isUdp = true;
+		else
+			isTcp = true;
+
+	std::stringstream ss;
+	if (isUdp && isTcp)
+		ss << "TCP+UDP server";
+	else if (isUdp)
+		ss << "UDP server";
+	else if (isTcp)
+		ss << "TCP server";
+	else ss << "Server (no listen sockets open)";
+
+	if (listenSockets.size() == 1)
+	{
+		int port = (int)listenSockets[0]->LocalPort();
+		ss << " at local port " << port;
+	}
+	else if (listenSockets.size() > 1)
+	{
+		ss << " (" << (int)listenSockets.size() << " listen sockets at local ports ";
+		for(size_t i = 0; i < listenSockets.size() && i < 3; ++i)
+		{
+			if (i > 0)
+				ss << ", ";
+			ss << listenSockets[i]->LocalPort();
+		}
+		if (listenSockets.size() > 3)
+			ss << ", ...";
+		ss << ")";
+	}
+	ss << ": ";
+
+	int numConnections = 0;
+	{
+		Lockable<ConnectionMap>::ConstLockType lock = clients.Acquire();
+		numConnections = lock->size();
+	}
+	ss << numConnections << " connections.";
+
+	if (!acceptNewConnections)
+		ss << " (not accepting new connections)";
+
+	///\todo Add note about stealth mode.
+
+	return ss.str();
 }
 
 } // ~kNet

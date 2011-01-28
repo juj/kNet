@@ -59,7 +59,7 @@ void RunServer(short int port, SocketTransportLayer transport)
 	server->Close(2000);
 }
 
-void RunClient(const char *address, unsigned short port, SocketTransportLayer transport, int msecsToWait)
+void RunClient(const char *address, unsigned short port, SocketTransportLayer transport, float msecsToWait)
 {
 	Network network;
 	Ptr(MessageConnection) connection = network.Connect(address, port, transport, 0);
@@ -84,7 +84,7 @@ void RunClient(const char *address, unsigned short port, SocketTransportLayer tr
 		else
 			Clock::Sleep(10);
 	}
-	Clock::Sleep(msecsToWait);
+	Clock::Sleep((int)msecsToWait);
 	connection->Disconnect();
 	connection->Close();
 }
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	{
 		unsigned short port = atoi(argv[4]);
 		int msecsToWait = atoi(argv[5]);
-		RunClient(argv[3], port, transport, msecsToWait);
+		RunClient(argv[3], port, transport, (float)msecsToWait);
 	}
 	else
 	{

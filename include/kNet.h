@@ -14,10 +14,11 @@
 #pragma once
 
 ///\todo Remove this in favor of pimpl.
+/*
 #ifndef KNET_USE_BOOST
 #define KNET_USE_BOOST
 #endif
-
+*/
 /** @file kNet.h
 	@brief The main file of KristalliNet that #includes all the commonly used headers for the the 
 	       client application. This file is ideal to be added to a PCH. If you are not using a PCH,
@@ -56,3 +57,9 @@
 #include "kNet/Types.h"
 #include "kNet/VLEPacker.h"
 #include "kNet/WaitFreeQueue.h"
+
+#ifdef KNET_USE_QT
+#include "kNet/qt/NetworkDialog.h"
+#include "kNet/qt/NetworkServerDialog.h"
+#include "kNet/qt/MessageConnectionDialog.h"
+#endif

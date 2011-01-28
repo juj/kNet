@@ -60,7 +60,7 @@ void NetworkWorkerThread::RemoveConnection(Ptr(MessageConnection) connection)
 			workThread.Resume();
 			return;
 		}
-	LOGNET("NetworkWorkerThread::RemoveConnection called for a nonexisting connection 0x%8X!", connection.ptr());
+//	LOGNET("NetworkWorkerThread::RemoveConnection called for a nonexisting connection 0x%8X!", connection.ptr());
 	workThread.Resume();
 }
 
@@ -92,7 +92,7 @@ void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 			workThread.Resume();
 			return;
 		}
-	LOGNET("NetworkWorkerThread::RemoveServer called for a nonexisting server 0x%8X!", server.ptr());
+//	LOGNET("NetworkWorkerThread::RemoveServer called for a nonexisting server 0x%8X!", server.ptr());
 	workThread.Resume();
 }
 
@@ -104,6 +104,16 @@ void NetworkWorkerThread::StartThread()
 void NetworkWorkerThread::StopThread()
 {
 	workThread.Stop();
+}
+
+int NetworkWorkerThread::NumConnections() const
+{
+	return connections.Acquire()->size();
+}
+
+int NetworkWorkerThread::NumServers() const
+{
+	return servers.Acquire()->size();
 }
 
 void NetworkWorkerThread::MainLoop()
@@ -247,14 +257,21 @@ void NetworkWorkerThread::MainLoop()
 			{
 				MessageConnection *connection = connectionList[index>>1];
 
-				// A socket event was raised. We can either read or write.
-				if ((index & 1) == 0)
+				try
 				{
-					connection->ReadSocket();
-					connection->SendOutPackets();
+					// A socket event was raised. We can either read or write.
+					if ((index & 1) == 0)
+					{
+						connection->ReadSocket();
+						connection->SendOutPackets();
+					}
+					else // new outbound messages were received from the application.
+						connection->SendOutPackets();
+				} catch(const NetException &e)
+				{
+					LOG(LogError, (std::string("kNet::NetException thrown when processing client connection: ") + e.what()).c_str());
+					///\todo Could Close(0) the connection here.
 				}
-				else // new outbound messages were received from the application.
-					connection->SendOutPackets();
 			}
 			else // An UDP server received a message.
 			{
@@ -264,7 +281,16 @@ void NetworkWorkerThread::MainLoop()
 					NetworkServer &server = *serverList[0]; ///\bug In case of multiple servers, this is not correct!
 					std::vector<Socket *> &listenSockets = server.ListenSockets();
 					if (socketIndex < (int)listenSockets.size())
-						server.ReadUDPSocketData(listenSockets[socketIndex]);
+					{
+						try
+						{
+							server.ReadUDPSocketData(listenSockets[socketIndex]);
+						} catch(const NetException &e)
+						{
+							LOG(LogError, (std::string("kNet::NetException thrown when reading server socket: ") + e.what()).c_str());
+							///\todo Could Close(0) the connection here.
+						}
+					}
 					else
 					{
 						LOG(LogError, "NetworkWorkerThread::MainLoop: Warning: Cannot find server socket to read from: EventArray::Wait returned index %d (socketIndex %d), but "
@@ -280,7 +306,7 @@ void NetworkWorkerThread::MainLoop()
 		}
 
 		// The UDP send throttle timers are not read through events. The writeWaitConnections list
-		// contains a list of UDP connections which are now, or will veru soon (in less than 1msec) be ready for writing. 
+		// contains a list of UDP connections which are now, or will very soon (in less than 1msec) be ready for writing. 
 		// Poll each and try to send a message.
 		for(size_t i = 0; i < writeWaitConnections.size(); ++i)
 			writeWaitConnections[i]->SendOutPackets();

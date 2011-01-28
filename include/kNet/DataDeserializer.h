@@ -27,39 +27,43 @@ namespace kNet
 /// DataDeserializer is an utility class that walks through and deserializes data in a stream of raw bytes. The stream
 /// itself does not contain information about what types of data is contained within, but the user of DataDeserializer must
 /// know the contents of the data.
+/// DataDeserializer never copies the data it is given to read into an internal memory buffer, but instead it reads
+/// the given existing memory buffers. DataDeserializer maintains an internal bit offset position to keep track the position
+/// that is currently being read.
 class DataDeserializer
 {
 public:
-	DataDeserializer(const char *data_, size_t size_)
-	:data(data_), size(size_)
-	{
-		assert(data);
-		assert(size > 0);
-		ResetTraversal();
-	}
+	/// Constructs a DataDeserializer that reads its data from the given buffer.
+	/// DataDeserializer will not copy the contents of the buffer to its own memory area, so
+	/// be sure to keep the data alive and unmoved for the duration DataDeserializer exists.
+	DataDeserializer(const char *data, size_t size);
 
-	DataDeserializer(const char *data_, size_t size_, const SerializedMessageDesc *msgTemplate)
-	:data(data_), size(size_)
-	{
-		assert(data);
-		assert(size > 0);
-		assert(msgTemplate);
+	/// Constructs a DataDeserializer that reads its data from the given buffer.
+	/// DataDeserializer will not copy the contents of the buffer to its own memory area, so
+	/// be sure to keep the data alive and unmoved for the duration DataDeserializer exists.
+	/// @param msgTemplate A pointer to an existing message template structure, which is used
+	///        to validate that deserialization of the data proceeds in the defined order.
+	///        DataDeserializer does not make a copy of this description, but dereferences
+	///        it directly. Be sure to keep it alive for the duration that DataDeserializer exists.
+	///        Do not pass in a zero pointer here.
+	DataDeserializer(const char *data, size_t size, const SerializedMessageDesc *msgTemplate);
 
-		iter = new SerializedDataIterator(*msgTemplate);
-
-		ResetTraversal();
-	}
-
+	/// Moves the bit offset position counter to the beginning of the data buffer.
 	void ResetTraversal();
 
+	/// Deserializes a single value of type T off the stream and advances the internal read offset.
 	template<typename T>
 	T Read();
 
 	static const u32 VLEReadError = 0xFFFFFFFF;
 
+	/// Reads a variable-length encoded integer off the stream and advances the internal read offset.
 	template<typename VLEType>
 	u32 ReadVLE();
 
+	/// Deserializes an array of values of type T off the stream and advances the internal read offset.
+	/// @param dst [out] Pointer to an array to receive the read data.
+	/// @param numElems The number of elements to read. The array dst must be able to hold that many elements.
 	template<typename T>
 	void ReadArray(T *dst, size_t numElems);
 

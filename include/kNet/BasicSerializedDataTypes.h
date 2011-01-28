@@ -28,6 +28,7 @@ namespace kNet
 typedef bool bit;
 
 /// Defines the basic data types that are the building blocks of every other serializable data type.
+///\note See MessageListParser.cpp:44: It depends on the order of the items specified here.
 enum BasicSerializedDataType
 {
 	/// Denotes an invalid value of type BasicSerializedDataType.

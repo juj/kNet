@@ -196,7 +196,7 @@ public:
 	}
 #endif
 
-	void RunChat(MessageConnection *connection)
+	void RunChat(Ptr(MessageConnection) connection)
 	{
 #ifdef WIN32
 		// Get the standard input handle.
@@ -270,6 +270,8 @@ int main(int argc, char **argv)
 		PrintUsage();
 		return 0;
 	}
+
+	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
 	EnableMemoryLeakLoggingAtExit();
 

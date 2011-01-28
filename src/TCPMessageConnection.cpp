@@ -264,7 +264,7 @@ void TCPMessageConnection::ExtractMessages()
 				if (socket)
 					socket->Close();
 				connectionState = ConnectionClosed;
-				return;
+				throw NetException("Malformed TCP data! Received an invalid message size!");
 			}
 
 			if (reader.BytesLeft() < messageSize)
