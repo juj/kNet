@@ -289,9 +289,9 @@ void Network::AssignConnectionToWorkerThread(Ptr(MessageConnection) connection)
 	GetOrCreateWorkerThread()->AddConnection(connection);
 }
 
-NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener)
+NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener, bool allowAddressReuse)
 {
-	Socket *listenSock = OpenListenSocket(port, transport);
+	Socket *listenSock = OpenListenSocket(port, transport, allowAddressReuse);
 	if (listenSock == 0)
 	{
 		LOGNET("Failed to start server. Could not open listen port to %d using %s.", (unsigned int)port, 
@@ -313,7 +313,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 }
 
 NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, SocketTransportLayer> > &listenPorts, 
-	INetworkServerListener *serverListener)
+	INetworkServerListener *serverListener, bool allowAddressReuse)
 {
 	if (listenPorts.size() == 0)
 	{
@@ -325,7 +325,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	for(size_t i = 0; i < listenPorts.size(); ++i)
 	{
-		Socket *listenSock = OpenListenSocket(listenPorts[i].first, listenPorts[i].second);
+		Socket *listenSock = OpenListenSocket(listenPorts[i].first, listenPorts[i].second, allowAddressReuse);
 		if (listenSock)
 			listenSockets.push_back(listenSock);
 	}
@@ -429,7 +429,7 @@ void Network::DeInit()
 	LOG(LogWaits, "Network::DeInit: Deinitialized kNet Network object, took %f msecs.", timer.MSecsElapsed());
 }
 
-Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport)
+Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport, bool allowAddressReuse)
 {
 	addrinfo *result = NULL;
 	addrinfo *ptr = NULL;
@@ -460,18 +460,26 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		freeaddrinfo(result);
 		return 0;
 	}
-/*
-	// Allow other sockets to be bound to this address after this. 
-	// (Possibly unsecure, only enable for development purposes - to avoid having to wait for the server listen socket 
-	//  to time out if the server crashes.)
-	BOOL val = TRUE;
-	ret = setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&val, sizeof(val));
-	if (ret != 0)
+
+	if (allowAddressReuse)
 	{
-		int error = WSAGetLastError();
-		LOGNET("Warning: setsockopt to SO_REUSEADDR failed: %s(%u)", GetErrorString(error).c_str(), error);
+		// Allow other sockets to be bound to this address after this. 
+		// (Possibly unsecure, only enable for development purposes - to avoid having to wait for the server listen socket 
+		//  to time out if the server crashes.)
+#ifdef WIN32
+		BOOL val = TRUE;
+		ret = setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&val, sizeof(val));
+#else
+		int val = 1;
+		ret = setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+#endif
+		if (ret != 0)
+		{
+			int error = GetLastError();
+			LOG(LogError, "setsockopt to SO_REUSEADDR failed: %s(%d)", GetErrorString(error).c_str(), error);
+		}
 	}
-*/
+
 	// Setup the listening socket - bind it to a port.
 	// If we are setting up a TCP socket, the socket will be only for listening and accepting incoming connections.
 	// If we are setting up an UDP socket, all connection initialization and data transfers will be managed through this socket.

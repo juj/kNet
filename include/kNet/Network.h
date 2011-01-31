@@ -46,12 +46,18 @@ public:
 	/// Starts a network server that listens to the given local port.
 	/// @param serverListener [in] A pointer to the listener object that will be registered to receive notifications
 	///	about incoming connections.
-	NetworkServer *StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener);
+	/// @param allowAddressReuse If true, kNet passes the SO_REUSEADDR parameter to the server listen socket before binding 
+	///        the socket to a local port (== before starting the server). This allows the same port to be forcibly reused
+	///        when restarting the server if a crash occurs, without having to wait for the operating system to free up the port.
+	NetworkServer *StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener, bool allowAddressReuse);
 
 	/// Starts a network server that listens to multiple local ports.
 	/// This version of the function is given a list of pairs (port, UDP|TCP) values
 	/// and the server will start listening on each of them.
-	NetworkServer *StartServer(const std::vector<std::pair<unsigned short, SocketTransportLayer> > &listenPorts, INetworkServerListener *serverListener);
+	/// @param allowAddressReuse If true, kNet passes the SO_REUSEADDR parameter to the server listen socket before binding 
+	///        the socket to a local port (== before starting the server). This allows the same port to be forcibly reused
+	///        when restarting the server if a crash occurs, without having to wait for the operating system to free up the port.
+	NetworkServer *StartServer(const std::vector<std::pair<unsigned short, SocketTransportLayer> > &listenPorts, INetworkServerListener *serverListener, bool allowAddressReuse);
 
 	void StopServer();
 
@@ -111,7 +117,10 @@ private:
 	Socket *ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint);
 
 	/// Opens a new socket that listens on the given port using the given transport.
-	Socket *OpenListenSocket(unsigned short port, SocketTransportLayer transport);
+	/// @param allowAddressReuse If true, kNet passes the SO_REUSEADDR parameter to the server listen socket before binding 
+	///        the socket to a local port (== before starting the server). This allows the same port to be forcibly reused
+	///        when restarting the server if a crash occurs, without having to wait for the operating system to free up the port.
+	Socket *OpenListenSocket(unsigned short port, SocketTransportLayer transport, bool allowAddressReuse);
 
 	/// Stores all the currently running network worker threads. Each thread is assigned
 	/// a list of MessageConnections and NetworkServers to oversee. The worker threads
