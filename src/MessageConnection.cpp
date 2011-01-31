@@ -329,18 +329,21 @@ void MessageConnection::SetPeerClosed()
 {
 	switch(connectionState)
 	{
-	case ConnectionPending: 
+	case ConnectionPending:
 		LOG(LogVerbose, "Peer closed connection when in ConnectionPending state!"); 
 		connectionState = ConnectionClosed; // Just tear it down, the peer rejected the connection.
 		break;
-	case ConnectionOK: 
+	case ConnectionOK:
 		connectionState = ConnectionPeerClosed;
 		break;
 	case ConnectionDisconnecting:
 		connectionState = ConnectionClosed;
 		break;
+	case ConnectionPeerClosed:
+	case ConnectionClosed:
+		break; // We've already in the state where peer has closed the connection, no need to do anything.
 	default:
-		LOG(LogError, "SetPeerClosed() called at an unexpected time: connectionState=%d.", connectionState); 
+		LOG(LogError, "SetPeerClosed() called at an unexpected time. The internal connectionState has an invalid value %d!", connectionState); 
 		break;
 	}
 }
