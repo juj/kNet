@@ -144,7 +144,9 @@ public:
 	/// Returns true if this socket is connected, i.e. at least half-open in one way.
 	bool Connected() const { return IsReadOpen() || IsWriteOpen(); }
 
-	/// Runs a modal processing loop and produces events for all inbound received data.
+	/// Runs a modal processing loop and produces events for all inbound received data. Returns when the connection is closed.
+	/// This is an example function mostly useful only for very simple demo applications. In most cases,
+	/// you do not want to call this.
 	void RunModalClient();
 
 	/// Blocks for the given amount of time until the connection has transitioned away from ConnectionPending state.
@@ -223,24 +225,12 @@ public:
 
 	enum PacketSendResult
 	{
-		PacketSendOK,
-		PacketSendSocketClosed,
-		PacketSendSocketFull,
-		PacketSendNoMessages,
-		PacketSendThrottled   ///< Cannot send just yet, throttle timer is in effect.
+		PacketSendOK, ///< The operating system signalled the packet was successfully sent.
+		PacketSendSocketClosed, ///< The packet could not be sent, since the socket was closed.
+		PacketSendSocketFull, ///< The packet could not be sent, since the OS outbound buffer was full.
+		PacketSendNoMessages, ///< A packet could not be sent, since there was nothing to send.
+		PacketSendThrottled   ///< The packet could not be sent right now, since a throttle timer is in effect.
 	};
-
-	/// Serializes several messages into a single UDP/TCP packet and sends it out to the wire.
-	virtual PacketSendResult SendOutPacket() = 0;
-
-	/// Sends out as many packets at one go as is allowed by the current send rate of the connection.
-	virtual void SendOutPackets() = 0;
-
-	/// Returns how many milliseconds need to be waited before this socket can try sending data the next time.
-	virtual unsigned long TimeUntilCanSendPacket() const = 0;
-
-	void UpdateConnection();
-	virtual void DoUpdateConnection() {}
 
 	/// Stops all outbound sends until ResumeOutboundSends is called. Use if you need to guarantee that some messages be sent in the same datagram.
 	/// Do not stop outbound sends for long periods, or the other end may time out the connection.
@@ -253,9 +243,6 @@ public:
 
 	/// Returns the number of messages in the outbound queue that are pending to be sent.
 	size_t NumOutboundMessagesPending() const { return outboundQueue.Size() + outboundAcceptQueue.Size(); }
-
-	/// Marks that the peer has closed the connection and will not send any more application-level data.
-	void SetPeerClosed();
 
 	/// Returns the underlying raw socket.
 	Socket *GetSocket() { return socket; }
@@ -287,7 +274,7 @@ public:
 	///       the queue never has time to exhaust, thus giving an infinite loop in practice.
 	void Process(int maxMessagesToProcess = 100);
 	
-	/// Waits for at most the given amount of time, and returns immediately when a new message is received for processing.
+	/// Waits for at most the given amount of time until a new message is received for processing.
 	/// @param maxMSecsToWait If 0, the call will wait indefinitely until a message is received or the connection transitions to
 	///                       closing state.
 	///                       If a positive value is passed, at most that many milliseconds is waited for a new message to be received.
@@ -332,11 +319,6 @@ public:
 	/// Dumps a long multi-line status message of this connection state to stdout.
 	void DumpStatus() const;
 
-	virtual void DumpConnectionStatus() const {}
-
-	/// Posted when the application has pushed us some messages to handle.
-	Event NewOutboundMessagesEvent() const;
-
 	/// Specifies the result of a Socket read activity.
 	enum SocketReadResult
 	{
@@ -345,19 +327,9 @@ public:
 		SocketReadThrottled, ///< There was so much data to read that we need to pause and make room for sends as well.
 	};
 
-	/// Reads all the new bytes available in the socket. [used internally by worker thread]
-	/// This data will be read into the connection's internal data queue, where it will be 
-	/// parsed to messages.
-	/// @param bytesRead [out] This field will get the number of bytes successfully read.
-	/// @return The return code of the operation.
-	virtual SocketReadResult ReadSocket(size_t &bytesRead) = 0;
-
-	SocketReadResult ReadSocket() { size_t ignored = 0; return ReadSocket(ignored); }
-
-	/// Sets the worker thread object that will handle this connection.
-	void SetWorkerThread(NetworkWorkerThread *thread) { workerThread = thread; }
-
 protected:
+	friend class NetworkWorkerThread;
+
 	/// The Network object inside which this MessageConnection lives. [main thread]
 	Network *owner;
 	/// If this MessageConnection represents a client connection on the server side, this gives the owner. [main thread]
@@ -374,10 +346,10 @@ protected:
 	/// [produced by worker thread, consumed by main thread]
 	WaitFreeQueue<NetworkMessage*> inboundMessageQueue;
 
-	/// A priority queue to maintain in order all the messages that are going out the pipe.
+	/// A priority queue that maintains in order all the messages that are going out the pipe. [worker thread]
 	///\todo Make the choice of which of the following structures to use a runtime option.
 //	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
-	WaitFreeQueue<NetworkMessage*> outboundQueue;
+	WaitFreeQueue<NetworkMessage*> outboundQueue; 
 
 	/// Tracks all the message sends that are fragmented. [worker thread]
 	Lockable<FragmentedSendManager> fragmentedSends;
@@ -386,12 +358,48 @@ protected:
 	FragmentedReceiveManager fragmentedReceives;
 
 	/// Allocations of NetworkMessage structures go through a pool to avoid dynamic new/delete calls when sending messages.
+	/// [main and worker thread]
 	LockFreePoolAllocator<NetworkMessage> messagePool;
 
 	float rtt; ///< The currently estimated round-trip time, in milliseconds.
 
 	PolledTimer pingTimer;
 	PolledTimer statsRefreshTimer;
+
+	/// Serializes several messages into a single UDP/TCP packet and sends it out to the wire.
+	virtual PacketSendResult SendOutPacket() = 0;
+
+	/// Sends out as many packets at one go as is allowed by the current send rate of the connection.
+	virtual void SendOutPackets() = 0;
+
+	/// Returns how many milliseconds need to be waited before this socket can try sending data the next time.
+	virtual unsigned long TimeUntilCanSendPacket() const = 0;
+
+	/// Performs the internal work tick that updates this connection.
+	void UpdateConnection();
+
+	/// Overridden by a subclass of MessageConnection to do protocol-specific updates (private implementation -pattern)
+	virtual void DoUpdateConnection() {}
+
+	/// Marks that the peer has closed the connection and will not send any more application-level data.
+	void SetPeerClosed();
+
+	virtual void DumpConnectionStatus() const {}
+
+	/// Posted when the application has pushed us some messages to handle.
+	Event NewOutboundMessagesEvent() const;
+
+	/// Reads all the new bytes available in the socket. [used internally by worker thread]
+	/// This data will be read into the connection's internal data queue, where it will be 
+	/// parsed to messages.
+	/// @param bytesRead [out] This field will get the number of bytes successfully read.
+	/// @return The return code of the operation.
+	virtual SocketReadResult ReadSocket(size_t &bytesRead) = 0;
+
+	SocketReadResult ReadSocket() { size_t ignored = 0; return ReadSocket(ignored); }
+
+	/// Sets the worker thread object that will handle this connection.
+	void SetWorkerThread(NetworkWorkerThread *thread) { workerThread = thread; }
 
 	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes);
 

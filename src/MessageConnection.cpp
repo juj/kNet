@@ -423,7 +423,7 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 //	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 }
 
-void MessageConnection::UpdateConnection()
+void MessageConnection::UpdateConnection() // [Called from the worker thread]
 {
 	if (!socket)
 		return;
