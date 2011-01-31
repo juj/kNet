@@ -272,25 +272,25 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 		connectionState = ConnectionDisconnecting;
 */
 	if (maxMSecsToWait > 0 && socket && socket->IsWriteOpen())
-    {
+	{
 		Disconnect(maxMSecsToWait);
-	    LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
-		    maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), socket->IsReadOpen() ? "true":"false",
-		    socket->IsWriteOpen() ? "true":"false");
-    }
+		LOG(LogInfo, "MessageConnection::Close(%d msecs): Disconnecting. connectionState = %s, readOpen:%s, writeOpen:%s.", 
+			maxMSecsToWait, ConnectionStateToString(connectionState).c_str(), (socket && socket->IsReadOpen()) ? "true":"false",
+			(socket && socket->IsWriteOpen()) ? "true":"false");
+	}
 
-    if (owner)
-    {
-    	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
+	if (owner)
+	{
+	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
 		owner->CloseConnection(this);
-        owner = 0;
-    }
+		owner = 0;
+	}
 
-    if (socket && socket->IsReadOpen())
-    {
-        socket->Close();
-        socket = 0;
-    }
+	if (socket && socket->IsReadOpen())
+	{
+		socket->Close();
+		socket = 0;
+	}
 
 	connectionState = ConnectionClosed;
 
