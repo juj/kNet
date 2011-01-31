@@ -247,8 +247,11 @@ public:
 	/// Returns the underlying raw socket.
 	Socket *GetSocket() { return socket; }
 
-	/// Returns an object that identifies the endpoint this connection is connected to.
-	EndPoint GetEndPoint() const;
+	/// Returns an object that identifies the local endpoint (IP and port) this connection is connected to.
+	EndPoint LocalEndPoint() const;
+
+	/// Returns an object that identifies the remote endpoint (IP and port) this connection is connected to.
+	EndPoint RemoteEndPoint() const;
 
 	/// Sets an upper limit to the data send rate for this connection.
 	/// The default is not to have an upper limit at all.

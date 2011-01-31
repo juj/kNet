@@ -261,10 +261,21 @@ void Network::Init()
 	}
 #endif
 
+	// Fetch the local system host name for later use. The local address is cached here 
+	// to avoid multiple queries to namespace providers.
 	char str[256];
-	gethostname(str, 256);
-	machineIP = str;
-	LOGNET("gethostname returned %s", str);
+	int ret = gethostname(str, 256); // For more information, see http://msdn.microsoft.com/en-us/library/ms738527(VS.85).aspx .
+	if (ret == 0)
+	{
+		localHostName = str;
+		LOG(LogInfo, "Network::Init successful. gethostname returned %s", str);
+	}
+	else
+	{
+		int error = GetLastError();
+		LOG(LogError, "Network::Init: gethostname failed! Error: %s(%d). Using 'localhost' as the local host name", GetErrorString(error).c_str(), error);
+		localHostName = "localhost";
+	}
 }
 
 NetworkWorkerThread *Network::GetOrCreateWorkerThread()
@@ -343,12 +354,12 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	LOGNET("Server up and listening on the following ports: ");
 	{
-	std::stringstream ss;
-	ss << "UDP ";
-	for(size_t i = 0; i < listenSockets.size(); ++i)
-		if (listenSockets[i]->TransportLayer() == SocketOverUDP)
-			ss << listenSockets[i]->LocalPort() << " ";
-	LOGNET(ss.str().c_str());
+		std::stringstream ss;
+		ss << "UDP ";
+		for(size_t i = 0; i < listenSockets.size(); ++i)
+			if (listenSockets[i]->TransportLayer() == SocketOverUDP)
+				ss << listenSockets[i]->LocalPort() << " ";
+		LOGNET(ss.str().c_str());
 	}
 	{
 		std::stringstream ss;
@@ -480,7 +491,10 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		}
 	}
 
-	// Setup the listening socket - bind it to a port.
+	// It is safe to cast to a sockaddr_in, since we've specifically queried for AF_INET addresses.
+	sockaddr_in localAddress = *(sockaddr_in*)&result->ai_addr;
+
+	// Setup the listening socket - bind it to a local port.
 	// If we are setting up a TCP socket, the socket will be only for listening and accepting incoming connections.
 	// If we are setting up an UDP socket, all connection initialization and data transfers will be managed through this socket.
 	ret = bind(listenSocket, result->ai_addr, (int)result->ai_addrlen);
@@ -510,8 +524,14 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		}
 	}
 
+	EndPoint localEndPoint = EndPoint::FromSockAddrIn(localAddress);
+
+	// We are starting up a server listen socket, which is not bound to an address. Use null address for the remote endpoint.
+	EndPoint remoteEndPoint;
+	remoteEndPoint.Reset();
+
 	const size_t maxSendSize = (transport == SocketOverTCP ? cMaxTCPSendSize : cMaxUDPSendSize);
-	sockets.push_back(Socket(listenSocket, "", port, transport, ServerListenSocket, maxSendSize));
+	sockets.push_back(Socket(listenSocket, localEndPoint, localHostName.c_str(), remoteEndPoint, "", transport, ServerListenSocket, maxSendSize));
 	Socket *listenSock = &sockets.back();
 	listenSock->SetBlocking(false);
 
@@ -573,12 +593,20 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 		return 0;
 	}
 
+	sockaddr_in sockname;
+	socklen_t socknamelen = sizeof(sockname);
+	getsockname(connectSocket, (sockaddr*)&sockname, &socknamelen); ///\todo Check return value.
+
 	sockaddr_in peername;
 	socklen_t peernamelen = sizeof(peername);
 	getpeername(connectSocket, (sockaddr*)&peername, &peernamelen); ///\todo Check return value.
 
-	Socket socket(connectSocket, address, port, transport, ClientSocket, (transport == SocketOverTCP) ? cMaxTCPSendSize : cMaxUDPSendSize);
-	socket.SetUDPPeername(peername);
+	EndPoint localEndPoint = EndPoint::FromSockAddrIn(sockname);
+	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(peername);
+	std::string remoteHostName = remoteEndPoint.IPToString();
+
+	const size_t maxSendSize = (transport == SocketOverTCP) ? cMaxTCPSendSize : cMaxUDPSendSize;
+	Socket socket(connectSocket, localEndPoint, localHostName.c_str(), remoteEndPoint, remoteHostName.c_str(), transport, ClientSocket, maxSendSize);
 
 	socket.SetBlocking(false);
 	sockets.push_back(socket);
@@ -615,20 +643,27 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 	return connection;
 }
 
-Socket *Network::ConnectUDP(SOCKET connectSocket, SocketType socketType, const EndPoint &remoteEndPoint)
+Socket *Network::CreateUDPSlaveSocket(Socket *serverListenSocket, const EndPoint &remoteEndPoint, const char *remoteHostName)
 {
-	sockaddr_in remoteAddr = remoteEndPoint.ToSockAddrIn();
+	if (!serverListenSocket)
+	{
+		LOG(LogError, "Network::CreateUDPSlaveSocket called with null serverListenSocket handle!");
+		return 0;
+	}
 
-	///\todo Not IPv6-capable.
-	char strIp[256];
-	sprintf(strIp, "%d.%d.%d.%d", remoteEndPoint.ip[0], remoteEndPoint.ip[1], remoteEndPoint.ip[2], remoteEndPoint.ip[3]);
+	SOCKET udpSocket = serverListenSocket->GetSocketHandle();
+	if (udpSocket == INVALID_SOCKET)
+	{
+		LOG(LogError, "Network::CreateUDPSlaveSocket called with a UDP server socket with invalid internal socket handle!");
+		return 0;
+	}
 
-	sockets.push_back(Socket(connectSocket, strIp, remoteEndPoint.port, SocketOverUDP, socketType, cMaxUDPSendSize));
+	sockets.push_back(Socket(udpSocket, serverListenSocket->LocalEndPoint(),
+		serverListenSocket->LocalAddress(), remoteEndPoint, remoteHostName, SocketOverUDP, ServerClientSocket, cMaxUDPSendSize));
 	Socket *socket = &sockets.back();
 	socket->SetBlocking(false);
-	socket->SetUDPPeername(remoteEndPoint.ToSockAddrIn());
 
-	LOGNET("Network::ConnectUDP: Connected an UDP socket to %s.", socket->ToString().c_str());
+	LOGNET("Network::CreateUDPSlaveSocket: Connected an UDP socket to %s.", socket->ToString().c_str());
 	return socket;
 }
 

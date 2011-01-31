@@ -36,6 +36,17 @@ struct EndPoint
 
 	unsigned short port;
 
+	EndPoint()
+	{
+		Reset();
+	}
+
+	/// Clears all fields of this structure to zero.
+	void Reset()
+	{
+		memset(this, 0, sizeof(EndPoint));
+	}
+
 	///\todo Not IPv6-capable.
 	bool operator < (const EndPoint &rhs) const
 	{

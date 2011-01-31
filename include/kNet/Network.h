@@ -74,8 +74,8 @@ public:
 		free it by letting the refcount go to 0. */
 	Ptr(MessageConnection) Connect(const char *address, unsigned short port, SocketTransportLayer transport, IMessageHandler *messageHandler, Datagram *connectMessage = 0);
 
-	/// @return Local machine IP.
-	const char *MachineIP() const { return machineIP.c_str(); }
+	/// Returns the local host name of the system (the local machine name or the local IP, whatever is specified by the system).
+	const char *LocalAddress() const { return localHostName.c_str(); }
 
 	/// Returns the error string associated with the given networking error id.
 	static std::string GetErrorString(int error);
@@ -95,7 +95,9 @@ public:
 	Ptr(NetworkServer) GetServer() { return server; }
 
 private:
-	std::string machineIP;
+	/// Specifies the local network address of the system. This name is cached here on initialization
+	/// to avoid multiple queries to namespace providers whenever the name is needed.
+	std::string localHostName;
 
 	/// Maintains the server-related data structures if this computer
 	/// is acting as a server. Otherwise this data is not used.
@@ -111,10 +113,10 @@ private:
 
 	void SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage);
 
-	/// Returns a new UDP socket that is bound to communicating with the given endpoint.
-	/// Does NOT send the connection packet.
+	/// Returns a new UDP socket that is bound to communicating with the given endpoint, under
+	/// the given UDP master server socket.
 	/// The returned pointer is owned by this class.
-	Socket *ConnectUDP(SOCKET connectSocket, SocketType socketType, const EndPoint &remoteEndPoint);
+	Socket *CreateUDPSlaveSocket(Socket *serverListenSocket, const EndPoint &remoteEndPoint, const char *remoteHostName);
 
 	/// Opens a new socket that listens on the given port using the given transport.
 	/// @param allowAddressReuse If true, kNet passes the SO_REUSEADDR parameter to the server listen socket before binding 

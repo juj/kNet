@@ -86,7 +86,8 @@ type(InvalidSocketType)
 ,queuedSendBuffers(numConcurrentSendBuffers)
 #endif
 {
-	memset(&udpPeerName, 0, sizeof(udpPeerName));
+	localEndPoint.Reset();
+	remoteEndPoint.Reset();
 }
 
 Socket::~Socket()
@@ -99,9 +100,11 @@ Socket::~Socket()
 #endif
 }
 
-Socket::Socket(SOCKET connection, const char *address, unsigned short port, SocketTransportLayer transport_, SocketType type_, 
-	size_t maxSendSize_)
-:connectSocket(connection), destinationAddress(address), destinationPort(port), 
+Socket::Socket(SOCKET connection, const EndPoint &localEndPoint_, const char *localHostName_,
+	const EndPoint &remoteEndPoint_, const char *remoteHostName_, 
+	SocketTransportLayer transport_, SocketType type_, size_t maxSendSize_)
+:connectSocket(connection), localEndPoint(localEndPoint_), localHostName(localHostName_),
+remoteEndPoint(remoteEndPoint_), remoteHostName(remoteHostName_), 
 transport(transport_), type(type_), maxSendSize(maxSendSize_),
 writeOpen(true), readOpen(true)
 #ifdef WIN32
@@ -111,6 +114,7 @@ writeOpen(true), readOpen(true)
 {
 	SetSendBufferSize(512 * 1024);
 	SetReceiveBufferSize(512 * 1024);
+	udpPeerAddress = remoteEndPoint.ToSockAddrIn();
 }
 
 Socket::Socket(const Socket &rhs)
@@ -134,14 +138,16 @@ Socket &Socket::operator=(const Socket &rhs)
 		return *this;
 
 	connectSocket = rhs.connectSocket;
-	udpPeerName = rhs.udpPeerName;
-	destinationAddress = rhs.destinationAddress;
-	destinationPort = rhs.destinationPort;
+	localEndPoint = rhs.localEndPoint;
+	localHostName = rhs.localHostName;
+	remoteEndPoint = rhs.remoteEndPoint;
+	remoteHostName = rhs.remoteHostName;
 	transport = rhs.transport;
 	type = rhs.type;
 	maxSendSize = rhs.maxSendSize;
 	writeOpen = rhs.writeOpen;
 	readOpen = rhs.readOpen;
+	udpPeerAddress = rhs.udpPeerAddress;
 
 	return *this;
 }
@@ -638,8 +644,10 @@ void Socket::Close()
 	}
 
 	connectSocket = INVALID_SOCKET;
-	destinationAddress = "";
-	destinationPort = 0;
+	localEndPoint.Reset();
+	localHostName = "";
+	remoteEndPoint.Reset();
+	remoteHostName = "";
 	transport = InvalidTransportLayer;
 	type = InvalidSocketType;
 	readOpen = false;
@@ -693,6 +701,13 @@ bool Socket::Send(const char *data, size_t numBytes)
 		return false;
 	}
 
+	// Server listen sockets are *not* for sending data. They only accept incoming connections.
+	if (type == ServerListenSocket)
+	{
+		LOG(LogError, "Trying to send data through a server listen socket!");
+		return false;
+	}
+
 	int sendTriesLeft = 100;
 	size_t numBytesSent = 0;
 	while(numBytesSent < numBytes && sendTriesLeft-- > 0)
@@ -701,7 +716,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 		SetBlocking(true);
 		int ret;
 		if (transport == SocketOverUDP)
-			ret = sendto(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0, (sockaddr*)&udpPeerName, sizeof(udpPeerName));
+			ret = sendto(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
 		else
 			ret = send(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0);
 
@@ -838,7 +853,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 //	DumpBuffer("Socket::EndSend", sendBuffer->buffer.buf, sendBuffer->buffer.len);
 
 	if (transport == SocketOverUDP)
-		ret = WSASendTo(connectSocket, &sendBuffer->buffer, 1, (LPDWORD)&bytesSent, 0, (sockaddr*)&udpPeerName, sizeof(udpPeerName), &sendBuffer->overlapped, 0);
+		ret = WSASendTo(connectSocket, &sendBuffer->buffer, 1, (LPDWORD)&bytesSent, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress), &sendBuffer->overlapped, 0);
 	else
 		ret = WSASend(connectSocket, &sendBuffer->buffer, 1, (LPDWORD)&bytesSent, 0, &sendBuffer->overlapped, 0);
 
@@ -931,12 +946,7 @@ void Socket::AbortSend(OverlappedTransferBuffer *send)
 	DeleteOverlappedTransferBuffer(send);
 #endif
 }
-
-EndPoint Socket::GetEndPoint() const
-{
-	return EndPoint::FromSockAddrIn(udpPeerName);
-}
-
+/*
 unsigned short Socket::LocalPort() const
 {
 	sockaddr_in addr;
@@ -946,7 +956,7 @@ unsigned short Socket::LocalPort() const
 	EndPoint sockName = EndPoint::FromSockAddrIn(addr);
 	return sockName.port;
 }
-
+*/
 std::string Socket::ToString() const
 {
 	sockaddr_in addr;

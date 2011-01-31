@@ -77,11 +77,11 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	if (!listenSocket || !listenSocket->Connected())
 		return 0;
 
-	sockaddr_in clientAddr;
-	memset(&clientAddr, 0, sizeof(clientAddr));
-	socklen_t addrLen = sizeof(clientAddr);
+	sockaddr_in remoteAddress;
+	memset(&remoteAddress, 0, sizeof(remoteAddress));
+	socklen_t remoteAddressLen = sizeof(remoteAddress);
 	SOCKET &listenSock = listenSocket->GetSocketHandle();
-	SOCKET acceptSocket = accept(listenSock, (sockaddr*)&clientAddr, &addrLen);
+	SOCKET acceptSocket = accept(listenSock, (sockaddr*)&remoteAddress, &remoteAddressLen);
 	if (acceptSocket == KNET_ACCEPT_FAILURE)
 	{
 		int error = Network::GetLastError();
@@ -93,18 +93,19 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 		}
 		return 0;
 	}
-	LOGNET("Accepted incoming connectiond 0x%8X.", acceptSocket);
    
-	EndPoint ep = EndPoint::FromSockAddrIn(clientAddr);
-	std::string address = ep.IPToString();
+	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(remoteAddress);
+	std::string remoteHostName = remoteEndPoint.IPToString();
 
-	unsigned short port = ep.port;
-	LOGNET("Client connected from %s:%d.\n", address.c_str(), (unsigned int)port);
+	LOGNET("Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (unsigned int)remoteEndPoint.port);
+
+	EndPoint localEndPoint;
+	localEndPoint.Reset(); ///\todo Compute the socket local endpoint here.
+	std::string localHostName = ""; ///\todo Compute the socket local hostname here.
 
 	const size_t maxTcpSendSize = 65536;
-	Socket *socket = owner->StoreSocket(Socket(acceptSocket, address.c_str(), port, SocketOverTCP, ServerClientSocket, maxTcpSendSize));
+	Socket *socket = owner->StoreSocket(Socket(acceptSocket, localEndPoint, localHostName.c_str(), remoteEndPoint, remoteHostName.c_str(), SocketOverTCP, ServerClientSocket, maxTcpSendSize));
 	socket->SetBlocking(false);
-	socket->SetUDPPeername(clientAddr);
 
 	return socket;
 }
@@ -285,10 +286,10 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	///\todo Check IP banlist.
 	///\todo Check that the maximum number of active concurrent connections is not exceeded.
 
-	SOCKET sock = listenSocket->GetSocketHandle();
+	std::string remoteHostName = endPoint.IPToString();
 
 	// Accept the connection and create a new UDP socket that communicates to that endpoint.
-	Socket *socket = owner->ConnectUDP(sock, ServerClientSocket, endPoint);
+	Socket *socket = owner->CreateUDPSlaveSocket(listenSocket, endPoint, remoteHostName.c_str());
 	if (!socket)
 	{
 		LOGNET("Network::ConnectUDP failed! Cannot accept new UDP connection.");

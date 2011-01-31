@@ -87,7 +87,7 @@ void NetworkDialog::Update()
 	if (!connectionsTree)
 		return;
 
-	machineIp->setText(network->MachineIP());
+	machineIp->setText(network->LocalAddress());
 	numRunningThreads->setText(QString::number(network->NumWorkerThreads()));
 
 	connectionsTree->clear();

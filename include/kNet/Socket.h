@@ -116,7 +116,9 @@ class Socket : public RefCountable
 public:
 	Socket();
 
-	Socket(SOCKET connection, const char *address, unsigned short port, SocketTransportLayer transport, SocketType type, size_t maxSendSize);
+	Socket(SOCKET connection, const EndPoint &localEndPoint, const char *localHostName,
+		const EndPoint &remoteEndPoint, const char *remoteHostName, 
+		SocketTransportLayer transport, SocketType type, size_t maxSendSize);
 
 	Socket(const Socket &);
 	~Socket();
@@ -149,18 +151,16 @@ public:
 	/// the data for all clients is received through this same socket, and there are no individual sockets created for
 	/// each new connection, like is done with TCP.
 	bool IsUDPServerSocket() const { return transport == SocketOverUDP && type == ServerListenSocket; }
-
 	/// Returns whether this socket is a UDP slave socket.
 	bool IsUDPSlaveSocket() const { return transport == SocketOverUDP && type == ServerClientSocket; }
-
-	/// Performs an immediate write and read close on the socket, without waiting for the connection to gracefully shut down.
-	void Close();
 
 	/// Performs a write close operation on the socket, signalling the other end that no more data will be sent. Any data
 	/// currently left in the send buffers will be sent over to the other side, but no new data can be sent. The connection
 	/// will remain half-open for reading, and Receive() calls may still be made to the socket. When a read returns 0, the
 	/// connection will be transitioned to bidirectionally closed state (Connected() will return false).
 	void Disconnect();
+	/// Performs an immediate write and read close on the socket, without waiting for the connection to gracefully shut down.
+	void Close();
 
 	/// Sends the given data through the socket. This function may only be called if Socket::IsWriteOpen() returns true. If
 	/// the socket is not write-open, calls to this function will fail.
@@ -225,26 +225,36 @@ public:
 	/// Returns which transport layer the connection is using. This value is either SocketOverUDP or SocketOverTCP.
 	SocketTransportLayer TransportLayer() const { return transport; }
 
+	/// Returns the type of this socket object.
 	SocketType Type() const { return type; }
 
 	/// Returns the maximum amount of bytes that can be sent through to the network in one call. If you try sending
 	/// more data than specified by this value, the result is undefined.
 	size_t MaxSendSize() const { return maxSendSize; }
 
-	const char *DestinationAddress() const { return destinationAddress.c_str(); }
-	unsigned short DestinationPort() const { return destinationPort; }
-
+	/// Returns the local EndPoint this socket is bound to.
+	const EndPoint &LocalEndPoint() const { return localEndPoint; }
+	/// Returns the local address (local hostname) of the local end point this socket is bound to.
+	const char *LocalAddress() const { return localHostName.c_str(); }
 	/// Returns the local port that this socket is bound to.
-	unsigned short LocalPort() const;
+	unsigned short LocalPort() const { return localEndPoint.port; }
 
-	/// Returns the EndPoint this socket is connected to.
-	EndPoint GetEndPoint() const;
+	/// Returns the remote EndPoint this socket is connected to.
+	/// If SocketType == ServerListenSocket, this socket is not bound
+	/// to any remote end point, and so the returned struct is uninitialized (filled with zeroes).
+	const EndPoint &RemoteEndPoint() const { return remoteEndPoint; }
+	/// Returns the destination address (destination hostname) of the remote end point this socket is connected to.
+	/// If SocketType == ServerListenSocket, returns an empty string.
+	const char *DestinationAddress() const { return remoteHostName.c_str(); }
+	/// Returns the destination port of the remote end point this socket is connected to.
+	/// If SocketType == ServerListenSocket, returns 0.
+	unsigned short DestinationPort() const { return remoteEndPoint.port; }
 
 	/// Returns a human-readable representation of this socket, specifying the peer address and port this socket is
 	/// connected to.
 	std::string ToString() const;
 
-	void SetUDPPeername(const sockaddr_in &peer) { udpPeerName = peer; }
+//	void SetUDPPeername(const sockaddr_in &peer) { udpPeerName = peer; }
 
 	/// Sets the socket to blocking or nonblocking state.
 	void SetBlocking(bool isBlocking);
@@ -261,9 +271,31 @@ public:
 private:
 	/// Stores the handle to the underlying BSD socket object. Has the value INVALID_SOCKET if uninitialized.
 	SOCKET connectSocket;
-	sockaddr_in udpPeerName;
-	std::string destinationAddress;
-	unsigned short destinationPort;
+
+	/// Specifies the local system end point (IP and port) this socket is bound to.
+	EndPoint localEndPoint;
+
+	/// Specifies the network host name of the local end point (the local system).
+	/// If the local end point does not have a hostname, this field is the string representation of the
+	/// system IP address (one of them, there may be multiple IPs).
+	std::string localHostName;
+	
+	/// Specifies the remote system end point (IP and port) this socket is bound to (== the "peer" address).
+	/// If SocketType == ServerListenSocket or transport == SocketOverUDP, this socket is not bound
+	/// to any remote end point, and so this struct is uninitialized (filled with zeroes).
+	EndPoint remoteEndPoint;
+
+	/// If this socket is a UDP socket, the remoteEndPoint variable is copied (cached) to the variable
+	/// udpPeerAddress to avoid having to reconstruct it at each Socket::Send() call (this is an optimization).
+	/// This field is only used if this socket is a UDP socket.
+	sockaddr_in udpPeerAddress;
+
+	/// Specifies the network host name of the remote end point (== the remote system == the "peer").
+	/// If the remote end point does not have a known hostname, this field is the string representation of the
+	/// remote IP address. If SocketType == ServerListenSocket, this field is empty.
+	std::string remoteHostName;
+
+	/// Specifies the underlying transport protocol that this Socket is using (TCP or UDP).
 	SocketTransportLayer transport;
 
 	/// Specifies the type of this SOCKET object.
@@ -274,8 +306,13 @@ private:
 	/// when tearing down this socket.
 	SocketType type;
 
+	/// Specifies the maximum amount of data that can be sent to the socket at one call to send().
 	size_t maxSendSize;
+
+	/// Tracks whether data can be sent through this socket.
 	bool writeOpen;
+
+	/// Tracks whether the socket is open for receiving data (doesn't mean that there necessarily exists new data to be read).
 	bool readOpen;
 
 #ifdef WIN32

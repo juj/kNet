@@ -1154,10 +1154,18 @@ Event MessageConnection::NewOutboundMessagesEvent() const
 	return eventMsgsOutAvailable;
 }
 
-EndPoint MessageConnection::GetEndPoint() const
+EndPoint MessageConnection::LocalEndPoint() const
 {
 	if (socket)
-		return socket->GetEndPoint();
+		return socket->LocalEndPoint();
+	else
+		return EndPoint();
+}
+
+EndPoint MessageConnection::RemoteEndPoint() const
+{
+	if (socket)
+		return socket->RemoteEndPoint();
 	else
 		return EndPoint();
 }
