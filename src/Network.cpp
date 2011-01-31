@@ -511,7 +511,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	}
 
 	const size_t maxSendSize = (transport == SocketOverTCP ? cMaxTCPSendSize : cMaxUDPSendSize);
-	sockets.push_back(Socket(listenSocket, "", port, transport, maxSendSize, (transport == SocketOverUDP) ? true : false));
+	sockets.push_back(Socket(listenSocket, "", port, transport, ServerListenSocket, maxSendSize));
 	Socket *listenSock = &sockets.back();
 	listenSock->SetBlocking(false);
 
@@ -577,7 +577,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 	socklen_t peernamelen = sizeof(peername);
 	getpeername(connectSocket, (sockaddr*)&peername, &peernamelen); ///\todo Check return value.
 
-	Socket socket(connectSocket, address, port, transport, (transport == SocketOverTCP) ? cMaxTCPSendSize : cMaxUDPSendSize, false);
+	Socket socket(connectSocket, address, port, transport, ClientSocket, (transport == SocketOverTCP) ? cMaxTCPSendSize : cMaxUDPSendSize);
 	socket.SetUDPPeername(peername);
 
 	socket.SetBlocking(false);
@@ -615,7 +615,7 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 	return connection;
 }
 
-Socket *Network::ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint)
+Socket *Network::ConnectUDP(SOCKET connectSocket, SocketType socketType, const EndPoint &remoteEndPoint)
 {
 	sockaddr_in remoteAddr = remoteEndPoint.ToSockAddrIn();
 
@@ -623,7 +623,7 @@ Socket *Network::ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint
 	char strIp[256];
 	sprintf(strIp, "%d.%d.%d.%d", remoteEndPoint.ip[0], remoteEndPoint.ip[1], remoteEndPoint.ip[2], remoteEndPoint.ip[3]);
 
-	sockets.push_back(Socket(connectSocket, strIp, remoteEndPoint.port, SocketOverUDP, cMaxUDPSendSize, false));
+	sockets.push_back(Socket(connectSocket, strIp, remoteEndPoint.port, SocketOverUDP, socketType, cMaxUDPSendSize));
 	Socket *socket = &sockets.back();
 	socket->SetBlocking(false);
 	socket->SetUDPPeername(remoteEndPoint.ToSockAddrIn());

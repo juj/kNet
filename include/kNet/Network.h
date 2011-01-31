@@ -114,7 +114,7 @@ private:
 	/// Returns a new UDP socket that is bound to communicating with the given endpoint.
 	/// Does NOT send the connection packet.
 	/// The returned pointer is owned by this class.
-	Socket *ConnectUDP(SOCKET connectSocket, const EndPoint &remoteEndPoint);
+	Socket *ConnectUDP(SOCKET connectSocket, SocketType socketType, const EndPoint &remoteEndPoint);
 
 	/// Opens a new socket that listens on the given port using the given transport.
 	/// @param allowAddressReuse If true, kNet passes the SO_REUSEADDR parameter to the server listen socket before binding 

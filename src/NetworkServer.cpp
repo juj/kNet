@@ -102,7 +102,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	LOGNET("Client connected from %s:%d.\n", address.c_str(), (unsigned int)port);
 
 	const size_t maxTcpSendSize = 65536;
-	Socket *socket = owner->StoreSocket(Socket(acceptSocket, address.c_str(), port, SocketOverTCP, maxTcpSendSize, false));
+	Socket *socket = owner->StoreSocket(Socket(acceptSocket, address.c_str(), port, SocketOverTCP, ServerClientSocket, maxTcpSendSize));
 	socket->SetBlocking(false);
 	socket->SetUDPPeername(clientAddr);
 
@@ -288,14 +288,12 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	SOCKET sock = listenSocket->GetSocketHandle();
 
 	// Accept the connection and create a new UDP socket that communicates to that endpoint.
-	Socket *socket = owner->ConnectUDP(sock, endPoint);
+	Socket *socket = owner->ConnectUDP(sock, ServerClientSocket, endPoint);
 	if (!socket)
 	{
 		LOGNET("Network::ConnectUDP failed! Cannot accept new UDP connection.");
 		return false;
 	}
-
-	socket->SetUDPSlaveMode(true);
 
 	UDPMessageConnection *udpConnection = new UDPMessageConnection(owner, this, socket, ConnectionOK);
 	Ptr(MessageConnection) connection(udpConnection);

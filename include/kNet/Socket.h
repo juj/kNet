@@ -64,9 +64,22 @@ namespace kNet
 /// Identifiers for the possible bottom-level tranport layers.
 enum SocketTransportLayer
 {
+	InvalidTransportLayer = 0, ///< A default invalid value for uninitialized sockets.
 	SocketOverUDP,
 	SocketOverTCP
 };
+
+std::string SocketTransportLayerToString(SocketTransportLayer transport);
+
+enum SocketType
+{
+	InvalidSocketType = 0, ///< A default invalid value for uninitialized sockets.
+	ServerListenSocket, ///< For TCP: a listen socket. For UDP: the single master socket handle that is used to send & receive all data.
+	ServerClientSocket, ///< For TCP: a client data socket. For UDP: a slave-mode Socket object that shares the underlying socket handle with the UDP master Socket.
+	ClientSocket ///< A client-side socket.
+};
+
+std::string SocketTypeToString(SocketType type);
 
 typedef int OverlappedTransferTag;
 
@@ -103,7 +116,7 @@ class Socket : public RefCountable
 public:
 	Socket();
 
-	Socket(SOCKET connection, const char *address, unsigned short port, SocketTransportLayer transport, size_t maxSendSize, bool isUdpServerSocket);
+	Socket(SOCKET connection, const char *address, unsigned short port, SocketTransportLayer transport, SocketType type, size_t maxSendSize);
 
 	Socket(const Socket &);
 	~Socket();
@@ -135,7 +148,10 @@ public:
 	/// If this function returns true, this socket represents a UDP server socket instance. For a UDP server,
 	/// the data for all clients is received through this same socket, and there are no individual sockets created for
 	/// each new connection, like is done with TCP.
-	bool IsUDPServerSocket() const { return isUdpServerSocket; }
+	bool IsUDPServerSocket() const { return transport == SocketOverUDP && type == ServerListenSocket; }
+
+	/// Returns whether this socket is a UDP slave socket.
+	bool IsUDPSlaveSocket() const { return transport == SocketOverUDP && type == ServerClientSocket; }
 
 	/// Performs an immediate write and read close on the socket, without waiting for the connection to gracefully shut down.
 	void Close();
@@ -209,6 +225,8 @@ public:
 	/// Returns which transport layer the connection is using. This value is either SocketOverUDP or SocketOverTCP.
 	SocketTransportLayer TransportLayer() const { return transport; }
 
+	SocketType Type() const { return type; }
+
 	/// Returns the maximum amount of bytes that can be sent through to the network in one call. If you try sending
 	/// more data than specified by this value, the result is undefined.
 	size_t MaxSendSize() const { return maxSendSize; }
@@ -233,14 +251,6 @@ public:
 
 	SOCKET &GetSocketHandle() { return connectSocket; }
 
-	/// Socket objects that represent UDP client connections on the server need to operate in a "slave" mode,
-	/// where socket reads are not performed through that socket, but through the single server UDP server socket.
-	/// Calling this function marks the Socket a slave socket, if isUdpSlaveSocket_==true.
-	void SetUDPSlaveMode(bool isUdpSlaveSocket_) { isUdpSlaveSocket = isUdpSlaveSocket_; }
-
-	/// Returns whether this socket is a UDP slave socket.
-	bool IsUDPSlaveSocket() const { return isUdpSlaveSocket; }
-
 	/// Enables or disables the use of Nagle's algorithm (TCP_NODELAY) for this socket.
 	/// Nagle's algorithm reduces the bandwidth consumption of the channel, but can increase latency.
 	/// Conversely, disabling Nagle's algorithm improves the latency, but increases the number of IP packets sent to the network.
@@ -255,25 +265,18 @@ private:
 	std::string destinationAddress;
 	unsigned short destinationPort;
 	SocketTransportLayer transport;
+
+	/// Specifies the type of this SOCKET object.
+	/// UDP server sockets are never bound to a remote, since the same socket is used to send and receive data to and 
+	/// from all client addresses. UDP client sockets and TCP sockets on the other hand are always bound to a peer.
+	/// UDP client sockets are shared slave copies of the single UDP server socket. In this case, this field is used 
+	/// to remember that this Socket object is not authoritative over the OS socket object and should not close it 
+	/// when tearing down this socket.
+	SocketType type;
+
 	size_t maxSendSize;
 	bool writeOpen;
 	bool readOpen;
-
-	/// UDP server sockets operate in unbound (destination, or peer) mode, since the same socket is used
-	/// to send and receive data to and from all client addresses. UDP client sockets
-	/// and TCP sockets are always bound to a peer.
-	bool isUdpServerSocket;
-
-	/// If true, this socket is a shared slave copy of a UDP server socket. This boolean is used to remember
-	/// that this Socket object is not authoritative over the OS socket object and should not close it when tearing
-	/// down this socket.
-	bool isUdpSlaveSocket;
-
-    // On UDP server side, there is a single UDP server socket with isUdpServerSocket == true (isUdpSlaveSocket == false), 
-    // and all client sockets that represent connections to that server have isUdpServerSocket == false and isUdpSlaveSocket == true.
-    // On UDP client side, both isUdpServerSocket and isUdpSlaveSocket are always false.
-    ///\todo Perhaps simplify and convert the above booleans to enum UDPSocketMode { UDPServerMasterSocket, UDPServerSlaveSocket, UDPClientSocket };
-    /// or enum SocketType { TCPServerListenSocket, TCPServerClientSocket, TCPClientSocket, UDPServerMasterSocket, UDPServerSlaveSocket, UDPClientSocket };
 
 #ifdef WIN32
 	WaitFreeQueue<OverlappedTransferBuffer*> queuedReceiveBuffers;
