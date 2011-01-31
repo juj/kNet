@@ -37,6 +37,10 @@ public:
 
 		size = 0;
 	}
+	~SequentialIntegerSet()
+	{
+		delete[] table;
+	}
 
 	/// Cannot necessarily return the exact size, but only an upper bound.
 	int Size() const { return size; }
@@ -61,7 +65,7 @@ public:
 				Add(newTable, table[i]);				
 				++size;
 			}
-		delete table;
+		delete[] table;
 		table = newTable;
 	}
 
@@ -95,6 +99,10 @@ private:
 	{
 		dstTable[Hash(value)] = value;
 	}
+
+	SequentialIntegerSet(const SequentialIntegerSet &); ///\todo Implement.
+	void operator =(const SequentialIntegerSet &); ///\todo Implement.
+
 };
 
 } // ~kNet
