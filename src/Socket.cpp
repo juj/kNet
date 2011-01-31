@@ -31,6 +31,9 @@ using namespace std;
 
 #ifdef LINUX
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
 #endif
 
 #ifdef WIN32
@@ -927,6 +930,31 @@ std::string Socket::ToString() const
 		this);
 
 	return std::string(str);
+}
+
+void Socket::SetNaglesAlgorithmEnabled(bool enabled)
+{
+	if (connectSocket == INVALID_SOCKET)
+	{
+		LOG(LogError, "Socket::SetNaglesAlgorithmEnabled called for invalid socket object!");
+		return;
+	}
+	if (transport != SocketOverTCP)
+	{
+		LOG(LogError, "Calling Socket::SetNaglesAlgorithmEnabled is only valid for TCP sockets!");
+		return;
+	}
+
+#ifdef WIN32
+	BOOL nagleEnabled = enabled ? TRUE : FALSE;
+	int ret = setsockopt(connectSocket, IPPROTO_TCP, TCP_NODELAY, (const char *)&nagleEnabled, sizeof(nagleEnabled));
+#else
+	int nagleEnabled = enabled ? 1 : 0;
+	int ret = setsockopt(connectSocket, IPPROTO_TCP, TCP_NODELAY, &nagleEnabled, sizeof(nagleEnabled));
+#endif
+	if (ret != 0)
+		LOG(LogError, "Setting TCP_NODELAY=%s for socket %d failed. Reason: %s.",
+			enabled ? "true" : "false", (int)connectSocket, Network::GetLastErrorString().c_str());
 }
 
 } // ~kNet

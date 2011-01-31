@@ -241,7 +241,15 @@ public:
 	/// Returns whether this socket is a UDP slave socket.
 	bool IsUDPSlaveSocket() const { return isUdpSlaveSocket; }
 
+	/// Enables or disables the use of Nagle's algorithm (TCP_NODELAY) for this socket.
+	/// Nagle's algorithm reduces the bandwidth consumption of the channel, but can increase latency.
+	/// Conversely, disabling Nagle's algorithm improves the latency, but increases the number of IP packets sent to the network.
+	/// By default, Nagle's algorithm is enabled.
+	/// Read more about Nagle's algorithm here: http://msdn.microsoft.com/en-us/library/ms817942.aspx
+	void SetNaglesAlgorithmEnabled(bool enabled);
+
 private:
+	/// Stores the handle to the underlying BSD socket object. Has the value INVALID_SOCKET if uninitialized.
 	SOCKET connectSocket;
 	sockaddr_in udpPeerName;
 	std::string destinationAddress;
