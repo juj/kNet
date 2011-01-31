@@ -22,6 +22,7 @@
 #include <QTreeWidget>
 
 #include "kNet/qt/MessageConnectionDialog.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 namespace kNet
 {

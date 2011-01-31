@@ -23,6 +23,7 @@
 
 #include "kNet/qt/NetworkDialog.h"
 #include "kNet/qt/MessageConnectionDialog.h"
+#include "kNet/DebugMemoryLeakCheck.h"
 
 namespace kNet
 {
@@ -64,9 +65,9 @@ public:
 	Ptr(MessageConnection) connection;
 };
 
-QTreeWidgetItem *NewTreeItemFromString(const char *str)
+QTreeWidgetItem *NewTreeItemFromString(QTreeWidget *parent, const char *str)
 {
-	QTreeWidgetItem *item = new QTreeWidgetItem();
+	QTreeWidgetItem *item = new QTreeWidgetItem(parent);
 	item->setText(0, str);
 	return item;
 }
@@ -94,7 +95,7 @@ void NetworkDialog::Update()
 	Ptr(NetworkServer) server = network->GetServer();
 	if (server)
 	{
-		QTreeWidgetItem *serverItem = NewTreeItemFromString(server->ToString().c_str());
+		QTreeWidgetItem *serverItem = NewTreeItemFromString(connectionsTree, server->ToString().c_str());
 		connectionsTree->addTopLevelItem(serverItem);
 
 		NetworkServer::ConnectionMap connections = server->GetConnections();

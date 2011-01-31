@@ -18,9 +18,11 @@
 
 #include <cmath>
 
-#include "kNet/UDPMessageConnection.h"
-
+#include "kNet/Allocator.h"
+#include "kNet/MessageConnection.h"
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/UDPMessageConnection.h"
 
 #include "kNet/NetworkLogging.h"
 #include "kNet/DataSerializer.h"
