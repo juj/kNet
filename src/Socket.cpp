@@ -889,7 +889,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 //	DumpBuffer("Socket::EndSend", sendBuffer->buffer.buf, sendBuffer->buffer.len);
 
 	if (transport == SocketOverUDP)
-		ret = sendto(connectSocket, sendBuffer->buffer.buf, sendBuffer->buffer.len, 0, (sockaddr*)&udpPeerName, sizeof(udpPeerName));
+		ret = sendto(connectSocket, sendBuffer->buffer.buf, sendBuffer->buffer.len, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
 	else
 		ret = send(connectSocket, sendBuffer->buffer.buf, sendBuffer->buffer.len, 0);
 

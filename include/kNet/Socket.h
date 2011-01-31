@@ -254,8 +254,6 @@ public:
 	/// connected to.
 	std::string ToString() const;
 
-//	void SetUDPPeername(const sockaddr_in &peer) { udpPeerName = peer; }
-
 	/// Sets the socket to blocking or nonblocking state.
 	void SetBlocking(bool isBlocking);
 
