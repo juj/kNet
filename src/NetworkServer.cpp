@@ -93,7 +93,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 		}
 		return 0;
 	}
-   
+
 	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(remoteAddress);
 	std::string remoteHostName = remoteEndPoint.IPToString();
 
@@ -168,7 +168,7 @@ void NetworkServer::Process()
 					LOG(LogError, "getpeername failed for %s!", client->ToString().c_str());
 
 				EndPoint endPoint = EndPoint::FromSockAddrIn(sockname);
-                LOG(LogInfo, "Client connected from %s.", endPoint.ToString().c_str());
+				LOG(LogInfo, "Client connected from %s.", endPoint.ToString().c_str());
 
 				{
 					PolledTimer timer;
@@ -451,7 +451,7 @@ void NetworkServer::ConnectionClosed(MessageConnection *connection)
 			return;
 		}
 
-    LOG(LogError, "Unknown MessageConnection passed to NetworkServer::Disconnect!");
+	LOG(LogError, "Unknown MessageConnection passed to NetworkServer::Disconnect!");
 }
 
 std::vector<Socket *> &NetworkServer::ListenSockets()
@@ -460,7 +460,7 @@ std::vector<Socket *> &NetworkServer::ListenSockets()
 }
 
 NetworkServer::ConnectionMap NetworkServer::GetConnections()
-{ 
+{
 	PolledTimer timer;
 	Lockable<ConnectionMap>::LockType lock = clients.Acquire();
 	if (timer.MSecsElapsed() > 50.f)

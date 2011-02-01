@@ -315,8 +315,8 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		}
 
 		// We need to add extra 2 bytes for the VLE-encoded InOrder PacketID delta counter.
-        // Estimate the size the per-message header consumes at most.
-        // This computation is not exact, but as it only needs to be an upper bound, keeping it simple is good. \todo Can be more precise here.
+		// Estimate the size the per-message header consumes at most.
+		// This computation is not exact, but as it only needs to be an upper bound, keeping it simple is good. \todo Can be more precise here.
 		int totalMessageSize = msg->GetTotalDatagramPackedSize();// + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
 
 		// If this message won't fit into the buffer, send out all the previously gathered messages.

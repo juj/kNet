@@ -473,15 +473,15 @@ Event Socket::GetOverlappedSendEvent()
 
 OverlappedTransferBuffer *Socket::BeginReceive()
 {
-    // UDP 'slave socket' is a socket descriptor on the server side that is a copy of the single UDP server listen socket.
-    // The slave sockets don't receive data directly, but the server socket is used instead to receive data for them.
-    if (IsUDPSlaveSocket())
-    {
+	// UDP 'slave socket' is a socket descriptor on the server side that is a copy of the single UDP server listen socket.
+	// The slave sockets don't receive data directly, but the server socket is used instead to receive data for them.
+	if (IsUDPSlaveSocket())
+	{
 #ifdef WIN32
-        assert(queuedReceiveBuffers.Size() == 0); // We shouldn't ever have queued a single receive buffer for this Socket.
+		assert(queuedReceiveBuffers.Size() == 0); // We shouldn't ever have queued a single receive buffer for this Socket.
 #endif
-        return 0; // If we happen to come here, act as if the socket never received any data.
-    }
+		return 0; // If we happen to come here, act as if the socket never received any data.
+	}
 
 #ifdef WIN32
 	if (readOpen)
@@ -537,8 +537,8 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 	{
 		queuedReceiveBuffers.PopFront();
 		if (readOpen || writeOpen)
-            if (!(IsUDPServerSocket() && error == 10054)) // If we are running both UDP server and client on localhost, we can receive 10054 (Peer closed connection) on the server side, in which case, we ignore this error print.
-			    LOG(LogError, "Socket::BeginReceive: WSAGetOverlappedResult failed with code %d when reading from an overlapped socket! Reason: %s.", error, Network::GetErrorString(error).c_str());
+			if (!(IsUDPServerSocket() && error == 10054)) // If we are running both UDP server and client on localhost, we can receive 10054 (Peer closed connection) on the server side, in which case, we ignore this error print.
+				LOG(LogError, "Socket::BeginReceive: WSAGetOverlappedResult failed with code %d when reading from an overlapped socket! Reason: %s.", error, Network::GetErrorString(error).c_str());
 		DeleteOverlappedTransferBuffer(receivedData);
 		// Mark this socket closed, unless the read error was on a UDP server socket, in which case we must ignore
 		// the read error on this buffer (an error on a single client connection cannot shut down the whole server!)

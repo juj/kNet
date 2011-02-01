@@ -46,12 +46,12 @@ void Clock::InitClockData()
 	}
 
 	if (ddwTimerFrequency.HighPart > 0)
-        LOG(LogError, "Warning: Clock::TicksPerSec will yield invalid timing data!");
+		LOG(LogError, "Warning: Clock::TicksPerSec will yield invalid timing data!");
 
 	if (appStartTime == 0)
 		appStartTime = GetTickCount();
 
-    ///\todo Test here that the return values of QueryPerformanceCounter is nondecreasing.
+	///\todo Test here that the return values of QueryPerformanceCounter is nondecreasing.
 }
 
 Clock::Clock()

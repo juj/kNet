@@ -103,26 +103,27 @@ Network::~Network()
 
 void PrintLocalIP()
 {
-    char ac[80];
-    if (gethostname(ac, sizeof(ac)) == KNET_SOCKET_ERROR)
-	 {
-        LOG(LogError, "Error getting local host name!");
-        return;
-    }
-    LOG(LogInfo, "Host name is %s", ac);
+	char ac[80];
+	if (gethostname(ac, sizeof(ac)) == KNET_SOCKET_ERROR)
+	{
+		LOG(LogError, "Error getting local host name!");
+		return;
+	}
+	LOG(LogInfo, "Host name is %s", ac);
 
-    struct hostent *phe = gethostbyname(ac);
-    if (phe == 0) {
-        LOG(LogError, "Bad host lookup.");
-        return;
-    }
+	struct hostent *phe = gethostbyname(ac);
+	if (phe == 0)
+	{
+		LOG(LogError, "Bad host lookup.");
+		return;
+	}
 
-    for (int i = 0; phe->h_addr_list[i] != 0; ++i)
-	 {
-        struct in_addr addr;
-        memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
-        LOG(LogInfo, "Address %d: %s", i, inet_ntoa(addr)); ///\todo inet_ntoa is deprecated! doesn't handle IPv6!
-    }
+	for (int i = 0; phe->h_addr_list[i] != 0; ++i)
+	{
+		struct in_addr addr;
+		memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
+		LOG(LogInfo, "Address %d: %s", i, inet_ntoa(addr)); ///\todo inet_ntoa is deprecated! doesn't handle IPv6!
+	}
 }
 
 void Network::PrintAddrInfo(const addrinfo *ptr)
@@ -233,7 +234,7 @@ void Network::PrintHostNameInfo(const char *hostname, const char *port)
 		return;
 	}
 
-    LOG(LogInfo, "getaddrinfo returned success\n");
+	LOG(LogInfo, "getaddrinfo returned success\n");
 
 	int i = 1;
 
@@ -256,7 +257,7 @@ void Network::Init()
 	int result = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (result != 0)
 	{
-        LOG(LogError, "Network::Init: WSAStartup failed: %s(%d)!", GetErrorString(result).c_str(), result);
+		LOG(LogError, "Network::Init: WSAStartup failed: %s(%d)!", GetErrorString(result).c_str(), result);
 		return;
 	}
 #endif

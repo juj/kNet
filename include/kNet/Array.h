@@ -329,7 +329,7 @@ public:
 		const size_t alignment = 4; ///\ todo
 		T *newData = NewArray<T, AllocT>(newSize, allocator, alignment);
 
-// For POD types, this is more efficient, but need some kind of trait mechanism to detect whether T is POD or not.
+//		For POD types, this is more efficient, but need some kind of trait mechanism to detect whether T is POD or not.
 //		memcpy(newData, data, sizeof(T)*used);
 		for(size_t i = 0; i < used; ++i)
 			newData[i] = data[i];

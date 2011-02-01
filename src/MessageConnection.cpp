@@ -106,7 +106,7 @@ MessageConnection::~MessageConnection()
 }
 
 ConnectionState MessageConnection::GetConnectionState() const
-{ 
+{
 	// If we have now low-level socket at all, we have been already deinitialized.
 	if (!socket)
 		return ConnectionClosed;
@@ -446,12 +446,12 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 
 		// Check if the socket is dead and mark it read-closed.
-        if ((connectionState == ConnectionOK || connectionState == ConnectionDisconnecting) && IsReadOpen())
-		    if (!socket || !socket->IsReadOpen())
-		    {
-			    LOG(LogInfo, "Peer closed connection.");
-			    SetPeerClosed();
-		    }
+		if ((connectionState == ConnectionOK || connectionState == ConnectionDisconnecting) && IsReadOpen())
+			if (!socket || !socket->IsReadOpen())
+			{
+				LOG(LogInfo, "Peer closed connection.");
+				SetPeerClosed();
+			}
 	}
 
 	// Perform the TCP/UDP -specific connection update.
@@ -800,9 +800,9 @@ int NetworkMessage::GetTotalDatagramPackedSize() const
 {
 //	const int idLength = (transfer == 0 || fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(id)/8 : 0;
 //	const int headerLength = 2;
-    const int headerLength = 30; ///\todo This is loose, but since it only needs to be an upper bound, it is safe now.
+	const int headerLength = 30; ///\todo This is loose, but since it only needs to be an upper bound, it is safe now.
 	const int contentLength = dataSize;
-    return headerLength + contentLength;
+	return headerLength + contentLength;
 //	const int fragmentStartLength = (transfer && fragmentIndex == 0) ? VLE8_16_32::GetEncodedBitLength(transfer->totalNumFragments)/8 : 0;
 //	const int fragmentLength = (transfer ? 1 : 0) + ((transfer && fragmentIndex != 0) ? VLE8_16_32::GetEncodedBitLength(fragmentIndex)/8 : 0);
 
@@ -904,7 +904,7 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 	if (iter != outboundContentIDMessages.end())
 	{
 		if (msg->IsNewerThan(*iter->second))
-		{				
+		{
 			iter->second->obsolete = true;
 
 			assert(iter->second != msg);
@@ -1002,7 +1002,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 			memcpy(msg->data, data + reader.BytePos(), reader.BytesLeft());
 			msg->dataSize = reader.BytesLeft();
 			msg->id = messageID;
- 			msg->contentID = 0;
+			msg->contentID = 0;
 			bool success = inboundMessageQueue.Insert(msg);
 			if (!success)
 			{
@@ -1130,13 +1130,13 @@ void MessageConnection::DumpStatus() const
 		FormatBytes((size_t)BytesInPerSec()).c_str(), FormatBytes((size_t)BytesOutPerSec()).c_str(),
 		(int)eventMsgsOutAvailable.Test(), 
 #ifdef WIN32
-		socket ? socket->NumOverlappedReceivesInProgress() : -1, 
+		socket ? socket->NumOverlappedReceivesInProgress() : -1,
 #else
 		-1,
 #endif
 		(socket && socket->GetOverlappedReceiveEvent().Test()) ? "true" : "false",
 #ifdef WIN32
-		socket ? socket->NumOverlappedSendsInProgress() : -1, 
+		socket ? socket->NumOverlappedSendsInProgress() : -1,
 #else
 		-1,
 #endif
@@ -1149,7 +1149,7 @@ void MessageConnection::DumpStatus() const
 }
 
 Event MessageConnection::NewOutboundMessagesEvent() const
-{ 
+{
 	assert(!eventMsgsOutAvailable.IsNull());
 
 	return eventMsgsOutAvailable;

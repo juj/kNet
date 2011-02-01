@@ -200,10 +200,10 @@ void DataSerializer::AddArray(const T *data, u32 count)
 /// Sums up the sizes of each element of an array.
 template<typename T> size_t SumArray(const T &data, size_t numElems)
 {
-   size_t size = 0;
-   for(size_t i = 0; i < numElems; ++i)
-      size += data[i].Size();
-   return size;
+	size_t size = 0;
+	for(size_t i = 0; i < numElems; ++i)
+		size += data[i].Size();
+	return size;
 }
 
 } // ~kNet
