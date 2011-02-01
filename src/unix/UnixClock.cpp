@@ -51,7 +51,7 @@ void Clock::Sleep(int milliseconds)
 	ts.tv_nsec = (milliseconds - ts.tv_sec * 1000) * 1000 * 1000;
 	int ret = nanosleep(&ts, NULL);
 	if (ret == -1)
-		LOG(LogError, "nanosleep returned -1! Reason: %s(%d).", strerror(errno), errno);
+		LOG(LogError, "nanosleep returned -1! Reason: %s(%d).", strerror(errno), (int)errno);
 }
 
 int Clock::Year()

@@ -57,14 +57,14 @@ void Event::Create(EventWaitType type_)
 	fd = eventfd(0, 0);
 	if (fd == -1)
 	{
-		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), (int)errno);
 		return;
 	}
 
 	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
 	if (ret == -1)
 	{
-		LOG(LogError, "fcntl call failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "fcntl call failed: %s(%d)!", strerror(errno), (int)errno);
 		return;
 	}
 
@@ -112,7 +112,7 @@ void Event::Reset()
 	eventfd_t val = 0;
 	int ret = eventfd_read(fd, &val);
 	if (ret == -1 && errno != EAGAIN)
-		LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
 }
 
 void Event::Set()
@@ -126,7 +126,7 @@ void Event::Set()
 	int ret = eventfd_write(fd, 1);
 	if (ret == -1)
 	{
-		LOG(LogError, "Event::Set() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Set() eventfd_write() failed: %s(%d)!", strerror(errno), (int)errno);
 		return;
 	}
 }
@@ -145,14 +145,14 @@ bool Event::Test() const
 		int ret = eventfd_read(fd, &val);
 		if (ret == -1 && errno != EAGAIN)
 		{
-			LOG(LogError, "Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
+			LOG(LogError, "Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
 			return false;
 		}
 		if (val != 0)
 		{
 			int ret = eventfd_write(fd, 1);
 			if (ret == -1)
-				LOG(LogError, "Event::Test() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
+				LOG(LogError, "Event::Test() eventfd_write() failed: %s(%d)!", strerror(errno), (int)errno);
 		}
 		return val != 0;
 	}
@@ -183,7 +183,7 @@ bool Event::Wait(unsigned long msecs) const
 	int ret = select(fd+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
-		LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), (int)errno);
 		return false;
 	}
 

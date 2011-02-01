@@ -281,7 +281,7 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 
 	if (owner)
 	{
-	LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
+		LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
 		owner->CloseConnection(this);
 		owner = 0;
 	}
@@ -295,19 +295,19 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 	connectionState = ConnectionClosed;
 
 	if (outboundAcceptQueue.Size() > 0)
-		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in outboundAcceptQueue!", outboundAcceptQueue.Size());
+		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in outboundAcceptQueue!", (int)outboundAcceptQueue.Size());
 
 	if (outboundQueue.Size() > 0)
-		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in outboundQueue!", outboundQueue.Size());
+		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in outboundQueue!", (int)outboundQueue.Size());
 
 	if (inboundMessageQueue.Size() > 0)
-		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in inboundMessageQueue!", inboundMessageQueue.Size());
+		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in inboundMessageQueue!", (int)inboundMessageQueue.Size());
 
 	if (fragmentedSends.UnsafeGetValue().transfers.size() > 0)
-		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedSends.transfers list!", fragmentedSends.UnsafeGetValue().transfers.size());
+		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedSends.transfers list!", (int)fragmentedSends.UnsafeGetValue().transfers.size());
 
 	if (fragmentedReceives.transfers.size() > 0)
-		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedReceives.transfers list!", fragmentedReceives.transfers.size());
+		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedReceives.transfers list!", (int)fragmentedReceives.transfers.size());
 
 	FreeMessageData();
 }
@@ -343,7 +343,7 @@ void MessageConnection::SetPeerClosed()
 	case ConnectionClosed:
 		break; // We've already in the state where peer has closed the connection, no need to do anything.
 	default:
-		LOG(LogError, "SetPeerClosed() called at an unexpected time. The internal connectionState has an invalid value %d!", connectionState); 
+		LOG(LogError, "SetPeerClosed() called at an unexpected time. The internal connectionState has an invalid value %d!", (int)connectionState); 
 		break;
 	}
 }
@@ -512,7 +512,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 	assert(totalNumFragments > 1); // Shouldn't be calling this function if the message can well fit into one fragment.
 
 	LOG(LogVerbose, "Splitting a message of %db into %d fragments of %db size at most.",
-		message->dataSize, totalNumFragments, maxFragmentSize);
+		(int)message->dataSize, (int)totalNumFragments, (int)maxFragmentSize);
 
 /** \todo Would like to do this:
 	FragmentedSendManager::FragmentedTransfer *transfer;
@@ -533,7 +533,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 	if (!message->reliable)
 	{
-		LOG(LogVerbose, "Upgraded a nonreliable message with ID %d and size %d to a reliable message since it had to be fragmented!", message->id, message->dataSize);
+		LOG(LogVerbose, "Upgraded a nonreliable message with ID %d and size %d to a reliable message since it had to be fragmented!", (int)message->id, (int)message->dataSize);
 	}
 
 	// Split the message into fragments.
@@ -598,7 +598,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Discarded message with ID 0x%X and size %d bytes. "
 			"msg->obsolete: %d. socket ptr: %p. ConnectionState: %s. socket->IsWriteOpen(): %s. msgconn->IsWriteOpen: %s. "
 			"internalQueue: %s.",
-			msg->id, numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), (socket && socket->IsWriteOpen()) ? "true" : "false",
+			(int)msg->id, (int)numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), (socket && socket->IsWriteOpen()) ? "true" : "false",
 			IsWriteOpen() ? "true" : "false", internalQueue ? "true" : "false");
 		FreeMessage(msg);
 		return;
@@ -613,7 +613,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 	{
 		LOG(LogError, "Critical! User specified a larger NetworkMessage than there is Capacity() for. Call NetworkMessage::Reserve() "
 			"to ensure there is a proper amount of space for the buffer! Specified: %d bytes, Capacity(): %d bytes.",
-			msg->dataSize, msg->Capacity());
+			(int)msg->dataSize, (int)msg->Capacity());
 	}
 
 	// Check if the message is too big - in that case we split it into fixed size fragments and add them into the queue.
@@ -634,7 +634,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 
 	if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 	{
-		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID 0x%X.", msg->Size(), msg->id);
+		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID 0x%X.", (int)msg->Size(), (int)msg->id);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 		outboundQueue.InsertWithResize(msg);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
@@ -652,7 +652,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 			FreeMessage(msg);
 			return;
 		}
-		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID 0x%X.", msg->Size(), msg->id);
+		LOG(LogData, "MessageConnection::EndAndQueueMessage: Queued message of size %d bytes and ID 0x%X.", (int)msg->Size(), (int)msg->id);
 	}
 
 	// Signal the worker thread that there are new outbound events available.
@@ -751,7 +751,7 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 		if (timer.MSecsElapsed() >= 1000.f)
 		{
 				LOG(LogWaits, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
-				timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), inboundMessageQueue.Size());
+				timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), (int)inboundMessageQueue.Size());
 		}
 
 //#endif
@@ -916,8 +916,8 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 		}
 		else
 		{
-			LOG(LogError, "Warning! Adding new message ID %u, number %u, content ID %u, priority %u, but it was obsoleted by an already existing message number %u.", 
-				msg->id, msg->messageNumber, msg->contentID, iter->second->priority, iter->second->messageNumber);
+			LOG(LogError, "Warning! Adding new message ID %d, number %d, content ID %d, priority %d, but it was obsoleted by an already existing message number %d.", 
+				(int)msg->id, (int)msg->messageNumber, (int)msg->contentID, (int)iter->second->priority, (int)iter->second->messageNumber);
 			msg->obsolete = true;
 		}
 	}
@@ -975,11 +975,11 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	u32 messageID = reader.ReadVLE<VLE8_16_32>(); ///\todo Check that there actually is enough space to read.
 	if (messageID == DataDeserializer::VLEReadError)
 	{
-		LOG(LogError, "Error parsing messageID of a message in socket %s. Data size: %d bytes.", socket->ToString().c_str(), numBytes);
+		LOG(LogError, "Error parsing messageID of a message in socket %s. Data size: %d bytes.", socket->ToString().c_str(), (int)numBytes);
 		///\todo Should kill/Close the connection right here and now?
 		return;
 	}
-	LOG(LogData, "Received message with ID %d and size %d from peer %s.", packetID, numBytes, socket->ToString().c_str());
+	LOG(LogData, "Received message with ID %d and size %d from peer %s.", (int)packetID, (int)numBytes, socket->ToString().c_str());
 
 	// Pass the message to TCP/UDP -specific message handler.
 	bool childHandledMessage = HandleMessage(packetID, messageID, data + reader.BytePos(), reader.BytesLeft());
@@ -1007,7 +1007,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 			if (!success)
 			{
 				LOG(LogError, "Failed to add a new message of ID %d and size %dB to inbound queue! Queue was full.",
-					messageID, msg->dataSize);
+					(int)messageID, (int)msg->dataSize);
 				FreeMessage(msg);
 			}
 		}
@@ -1036,14 +1036,14 @@ void MessageConnection::SendPingRequestMessage()
 	msg->data[0] = pingID;
 	msg->priority = NetworkMessage::cMaxPriority - 2;
 	EndAndQueueMessage(msg, 1, true);
-	LOG(LogVerbose, "Enqueued ping message %d.", pingID);
+	LOG(LogVerbose, "Enqueued ping message %d.", (int)pingID);
 }
 
 void MessageConnection::HandlePingRequestMessage(const char *data, size_t numBytes)
 {
 	if (numBytes != 1)
 	{
-		LOG(LogError, "Malformed PingRequest message received! Size was %d bytes, expected 1 byte!", numBytes);
+		LOG(LogError, "Malformed PingRequest message received! Size was %d bytes, expected 1 byte!", (int)numBytes);
 		return;
 	}
 
@@ -1052,14 +1052,14 @@ void MessageConnection::HandlePingRequestMessage(const char *data, size_t numByt
 	msg->data[0] = pingID;
 	msg->priority = NetworkMessage::cMaxPriority - 1;
 	EndAndQueueMessage(msg, 1, true);
-	LOG(LogVerbose, "HandlePingRequestMessage: %d.", pingID);
+	LOG(LogVerbose, "HandlePingRequestMessage: %d.", (int)pingID);
 }
 
 void MessageConnection::HandlePingReplyMessage(const char *data, size_t numBytes)
 {
 	if (numBytes != 1)
 	{
-		LOG(LogError, "Malformed PingReply message received! Size was %d bytes, expected 1 byte!", numBytes);
+		LOG(LogError, "Malformed PingReply message received! Size was %d bytes, expected 1 byte!", (int)numBytes);
 		return;
 	}
 
@@ -1078,12 +1078,12 @@ void MessageConnection::HandlePingReplyMessage(const char *data, size_t numBytes
 			stats.Unlock();
 			rtt = rttPredictBias * newRtt + (1.f * rttPredictBias) * rtt;
 
-			LOG(LogVerbose, "HandlePingReplyMessage: %d.", pingID);
+			LOG(LogVerbose, "HandlePingReplyMessage: %d.", (int)pingID);
 			return;
 		}
 
 	stats.Unlock();
-	LOG(LogError, "Received PingReply with ID %d in socket %s, but no matching PingRequest was ever sent!", pingID, socket->ToString().c_str());
+	LOG(LogError, "Received PingReply with ID %d in socket %s, but no matching PingRequest was ever sent!", (int)pingID, socket->ToString().c_str());
 }
 
 std::string MessageConnection::ToString() const

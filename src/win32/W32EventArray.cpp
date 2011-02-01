@@ -68,7 +68,7 @@ int EventArray::Wait(int msecs)
 		return WaitTimedOut;
 	else
 	{
-		LOG(LogError, "EventArray::Wait: WSAWaitForMultipleEvents failed with error code %d (WSAGetLastError: %d)!", ret, WSAGetLastError());
+		LOG(LogError, "EventArray::Wait: WSAWaitForMultipleEvents failed with error code %d (WSAGetLastError: %d)!", (int)ret, (int)WSAGetLastError());
 		for(int i = 0; i < numAdded; ++i)
 			if (WSAWaitForMultipleEvents(1, events+i, FALSE, 0, FALSE) == WSA_WAIT_FAILED)
 				LOG(LogError, "EventArray::Wait: EventArray event at index %d is not valid!", i);

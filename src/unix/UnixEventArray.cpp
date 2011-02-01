@@ -96,7 +96,7 @@ int EventArray::Wait(int msecs)
 	int ret = select(nfds, &readfds, &writefds, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
-		LOG(LogError, "EventArray::Wait: select() failed: %s(%d)", strerror(errno), errno);
+		LOG(LogError, "EventArray::Wait: select() failed: %s(%d)", strerror(errno), (int)errno);
 		return WaitFailed;
 	}
 

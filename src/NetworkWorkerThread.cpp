@@ -293,13 +293,13 @@ void NetworkWorkerThread::MainLoop()
 					else
 					{
 						LOG(LogError, "NetworkWorkerThread::MainLoop: Warning: Cannot find server socket to read from: EventArray::Wait returned index %d (socketIndex %d), but "
-							"serverList.size()=%d, connectionList.size()=%d!", index, socketIndex, serverList.size(), connectionList.size());
+							"serverList.size()=%d, connectionList.size()=%d!", index, socketIndex, (int)serverList.size(), (int)connectionList.size());
 					}
 				}
 				else
 				{
 					LOG(LogError, "NetworkWorkerThread::MainLoop: Warning: EventArray::Wait returned index %d (socketIndex %d), but "
-						"serverList.size()=%d, connectionList.size()=%d!", index, socketIndex, serverList.size(), connectionList.size());
+						"serverList.size()=%d, connectionList.size()=%d!", index, socketIndex, (int)serverList.size(), (int)connectionList.size());
 				}
 			}
 		}

@@ -88,7 +88,7 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 	if (readResult == SocketReadThrottled)
 		return SocketReadThrottled;
 	if (bytesRead > 0)
-		LOG(LogData, "Received %d bytes from UDP socket.", bytesRead);
+		LOG(LogData, "Received %d bytes from UDP socket.", (int)bytesRead);
 	return SocketReadOK;
 }
 
@@ -173,7 +173,7 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 		++numPacketsTimedOut;
 			
 		LOG(LogVerbose, "A packet with ID %d timed out. Age: %.2fms. Contains %d messages.", 
-			track->packetID, (float)Clock::TimespanToMillisecondsD(track->sentTick, now), track->messages.size());
+			(int)track->packetID, (float)Clock::TimespanToMillisecondsD(track->sentTick, now), (int)track->messages.size());
 
 		// Store a new suggestion for a lowered datagram send rate.
 		lowestDatagramSendRateOnPacketLoss = min(lowestDatagramSendRateOnPacketLoss, track->datagramSendRate);
@@ -210,7 +210,7 @@ void UDPMessageConnection::HandleFlowControl()
 			float oldRate = datagramSendRate;
 			datagramSendRate = min(datagramSendRate, max(1.f, lowestDatagramSendRateOnPacketLoss * 0.9f)); // Multiplicative decreases.
 //			datagramSendRate = max(1.f, datagramSendRate * 0.9f); // Multiplicative decreases.
-			LOG(LogVerbose, "Received %d losses. datagramSendRate backed to %.2f from %.2f", numLossesLastFrame, datagramSendRate, oldRate);
+			LOG(LogVerbose, "Received %d losses. datagramSendRate backed to %.2f from %.2f", (int)numLossesLastFrame, datagramSendRate, oldRate);
 		}
 		else // Additive increases.
 		{
@@ -481,7 +481,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		LOG(LogInfo, "UDPMessageConnection::SendOutPacket: Send DisconnectAck from connection %s.", ToString().c_str());
 	}
 
-	LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Socket::EndSend succeeded with %d bytes.", writer.BytesFilled());
+	LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Socket::EndSend succeeded with %d bytes.", (int)writer.BytesFilled());
 	return PacketSendOK;
 }
 
@@ -541,7 +541,7 @@ void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 	ConnectionStatistics::DatagramIDTrack &t = cs.recvPacketIDs.back();
 	t.tick = Clock::Tick();
 	t.packetID = packetID;
-//	LOG(LogVerbose, "Marked packet with ID %d received.", (unsigned long)packetID);
+//	LOG(LogVerbose, "Marked packet with ID %d received.", (int)packetID);
 	stats.Unlock();
 */
 	// Remember this packet ID for duplicacy detection and pruning purposes.
@@ -563,7 +563,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 
 	if (numBytes < 3)
 	{
-		LOG(LogError, "Malformed UDP packet when reading packet header! Size = %d bytes, no space for packet header, which is at least 3 bytes.", numBytes);
+		LOG(LogError, "Malformed UDP packet when reading packet header! Size = %d bytes, no space for packet header, which is at least 3 bytes.", (int)numBytes);
 		throw NetException("Malformed UDP packet received! No packed header present.");
 	}
 
@@ -601,7 +601,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 //		inOrderID = reader.ReadVLE<VLE8_16>();
 		if (inOrderID == DataDeserializer::VLEReadError)
 		{
-			LOG(LogError, "Malformed UDP packet! Size = %d bytes, no space for packet header field 'inOrder'!", numBytes);
+			LOG(LogError, "Malformed UDP packet! Size = %d bytes, no space for packet header field 'inOrder'!", (int)numBytes);
 			throw NetException("Malformed UDP packet received! The inOrder field was invalid.");
 		}
 	}
@@ -612,7 +612,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		if (reader.BytesLeft() < 2)
 		{
 			LOG(LogError, "Malformed UDP packet! Parsed %d messages ok, but after that there's not enough space for UDP message header! BytePos %d, total size %d",
-				reader.BytePos(), numBytes);
+				(int)reader.BytePos(), (int)numBytes);
 			throw NetException("Malformed UDP packet received! Message header was not present.");
 		}
 
@@ -641,7 +641,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 
 		if (contentLength == 0)
 		{
-			LOG(LogError, "Malformed UDP packet! Byteofs %d, Packet length %d. Message had zero length (Length must be at least one byte)!", reader.BytePos(), numBytes);
+			LOG(LogError, "Malformed UDP packet! Byteofs %d, Packet length %d. Message had zero length (Length must be at least one byte)!", (int)reader.BytePos(), (int)numBytes);
 			throw NetException("Malformed UDP packet received! Messages with zero content length are not valid.");
 		}
 
@@ -652,7 +652,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		if (reader.BytesLeft() < contentLength)
 		{
 			LOG(LogError, "Malformed UDP packet! Byteofs %d, Packet length %d. Expected %d bytes of message content, but only %d bytes left!",
-				reader.BytePos(), numBytes, contentLength, reader.BytesLeft());
+				(int)reader.BytePos(), (int)numBytes, (int)contentLength, (int)reader.BytesLeft());
 			throw NetException("Malformed UDP packet received! Message payload missing.");
 		}
 
@@ -757,7 +757,7 @@ void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, siz
 {/*
 	if (numBytes != 2)
 	{
-		LOG(LogError, "Malformed FlowControlRequest message received! Size was %d bytes, expected 2 bytes!", numBytes);
+		LOG(LogError, "Malformed FlowControlRequest message received! Size was %d bytes, expected 2 bytes!", (int)numBytes);
 		return;
 	}
 
@@ -766,12 +766,12 @@ void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, siz
 	u16 newOutboundRate = *reinterpret_cast<const u16*>(data);
 	if (newOutboundRate < minOutboundRate || newOutboundRate > maxOutboundRate)
 	{
-		LOG(LogError, "Invalid FlowControlRequest rate %d packets/sec received! Ignored. Valid range (%d, %d)", newOutboundRate,
-			minOutboundRate, maxOutboundRate);
+		LOG(LogError, "Invalid FlowControlRequest rate %d packets/sec received! Ignored. Valid range (%d, %d)", (int)newOutboundRate,
+			(int)minOutboundRate, (int)maxOutboundRate);
 		return;
 	}
 
-//	LOG(LogVerbose, "Received FlowControl message. Adjusting OutRate from %d to %d msgs/sec.", datagramOutRatePerSecond, newOutboundRate);
+//	LOG(LogVerbose, "Received FlowControl message. Adjusting OutRate from %d to %d msgs/sec.", (int)datagramOutRatePerSecond, (int)newOutboundRate);
 
 	datagramOutRatePerSecond = newOutboundRate;*/
 }
@@ -934,7 +934,7 @@ void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBy
 {
 	if (numBytes != 7)
 	{
-		LOG(LogError, "Malformed PacketAck message received! Size was %d bytes, expected 7 bytes!", numBytes);
+		LOG(LogError, "Malformed PacketAck message received! Size was %d bytes, expected 7 bytes!", (int)numBytes);
 		throw NetException("Received a PacketAck message of wrong size! (expected 7 bytes)");
 	}
 
@@ -976,7 +976,7 @@ void UDPMessageConnection::HandleDisconnectAckMessage()
 
 	if (connectionState != ConnectionDisconnecting)
 		LOG(LogInfo, "Received DisconnectAck message on a MessageConnection not in ConnectionDisconnecting state! (state was %d)",
-		connectionState);
+		(int)connectionState);
 	else
 		LOG(LogInfo, "UDPMessageConnection::HandleDisconnectAckMessage: Connection closed to %s.", ToString().c_str());
 
@@ -1113,7 +1113,7 @@ bool UDPMessageConnection::HandleMessage(packet_id_t packetID, u32 messageID, co
 			u32 contentID = inboundMessageHandler->ComputeContentID(messageID, data, numBytes);
 			if (contentID != 0 && CheckAndSaveContentIDStamp(messageID, contentID, packetID) == false)
 			{
-				LOG(LogVerbose, "MessageID %u in packetID %d and contentID %u is obsolete! Skipped.", messageID, (int)packetID, contentID);
+				LOG(LogVerbose, "MessageID %d in packetID %d and contentID %d is obsolete! Skipped.", (int)messageID, (int)packetID, (int)contentID);
 				return true;
 			}
 			return false;

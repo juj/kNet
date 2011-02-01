@@ -54,7 +54,7 @@ void FragmentedSendManager::FreeFragmentedTransfer(FragmentedTransfer *transfer)
 		if (&*iter == transfer)
 		{
 			transfers.erase(iter);
-			LOG(LogObjectAlloc, "Freed fragmented transfer ID=%d, numFragments: %d (%p).", transfer->id, transfer->totalNumFragments, transfer);
+			LOG(LogObjectAlloc, "Freed fragmented transfer ID=%d, numFragments: %d (%p).", transfer->id, (int)transfer->totalNumFragments, transfer);
 			return;
 		}
 	LOG(LogError, "Tried to free a fragmented send struct that didn't exist!");
@@ -72,7 +72,7 @@ void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkM
 			if (transfer->fragments.size() == 0)
 				FreeFragmentedTransfer(transfer);
 
-			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (%p).", message->messageNumber, message->fragmentIndex, transfer->id, transfer);
+			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (%p).", (int)message->messageNumber, (int)message->fragmentIndex, transfer->id, transfer);
 
 			return;
 		}
@@ -105,7 +105,7 @@ bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &tra
 		return false;
 	transfer.id = transferID;
 
-	LOG(LogObjectAlloc, "Allocated a transferID %d to a transfer of %d fragments.", transfer.id, transfer.totalNumFragments);
+	LOG(LogObjectAlloc, "Allocated a transferID %d to a transfer of %d fragments.", transfer.id, (int)transfer.totalNumFragments);
 
 	return true;
 }
@@ -118,11 +118,11 @@ void FragmentedSendManager::FreeAllTransfers()
 void FragmentedReceiveManager::NewFragmentStartReceived(int transferID, int numTotalFragments, const char *data, size_t numBytes)
 {
 	assert(data);
-	LOG(LogVerbose, "Received a fragmentStart of size %db (#total fragments %d) for a transfer with ID %d.", numBytes, numTotalFragments, transferID);
+	LOG(LogVerbose, "Received a fragmentStart of size %db (#total fragments %d) for a transfer with ID %d.", (int)numBytes, numTotalFragments, transferID);
 
 	if (numBytes == 0 || numTotalFragments <= 1)
 	{
-		LOG(LogError, "Discarding degenerate fragmentStart of size %db and numTotalFragments=%db!", numBytes, numTotalFragments);
+		LOG(LogError, "Discarding degenerate fragmentStart of size %db and numTotalFragments=%db!", (int)numBytes, numTotalFragments);
 		return;
 	}
 
@@ -145,7 +145,7 @@ void FragmentedReceiveManager::NewFragmentStartReceived(int transferID, int numT
 
 bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentNumber, const char *data, size_t numBytes)
 {
-	LOG(LogVerbose, "Received a fragment of size %db (index %d) for a transfer with ID %d.", numBytes, fragmentNumber, transferID);
+	LOG(LogVerbose, "Received a fragment of size %db (index %d) for a transfer with ID %d.", (int)numBytes, fragmentNumber, transferID);
 
 	if (numBytes == 0)
 	{
@@ -162,7 +162,7 @@ bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentN
 				if (transfer.fragments[j].fragmentIndex == fragmentNumber)
 				{
 					LOG(LogError, "A fragment with fragmentNumber %d already exists for transferID %d. Discarding the new fragment! Old size: %db, discarded size: %db",
-						fragmentNumber, transferID, transfer.fragments[j].data.size(), numBytes);
+						fragmentNumber, transferID, (int)transfer.fragments[j].data.size(), (int)numBytes);
 					return false;
 				}
 
@@ -174,14 +174,14 @@ bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentN
 			if (transfer.fragments.size() >= (size_t)transfer.numTotalFragments)
 			{
 				LOG(LogData, "Finished receiving a fragmented transfer that consisted of %d fragments (transferID=%d).",
-					transfer.fragments.size(), transfer.transferID);
+					(int)transfer.fragments.size(), transfer.transferID);
 				return true;
 			}
 			else
 				return false;
 		}
 	LOG(LogError, "Received a fragment of size %db (index %d) for a transfer with ID %d, but that transfer had not been initiated!",
-		numBytes, fragmentNumber, transferID);
+		(int)numBytes, fragmentNumber, transferID);
 	return false;
 }
 

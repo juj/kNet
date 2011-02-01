@@ -87,7 +87,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 		int error = Network::GetLastError();
 		if (error != KNET_EWOULDBLOCK)
 		{
-			LOG(LogError, "accept failed: %s(%u)", Network::GetErrorString(error).c_str(), error);
+			LOG(LogError, "accept failed: %s(%d)", Network::GetErrorString(error).c_str(), error);
 			closesocket(listenSock);
 			listenSock = INVALID_SOCKET;
 		}
@@ -97,7 +97,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(remoteAddress);
 	std::string remoteHostName = remoteEndPoint.IPToString();
 
-	LOG(LogInfo, "Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (unsigned int)remoteEndPoint.port);
+	LOG(LogInfo, "Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (int)remoteEndPoint.port);
 
 	EndPoint localEndPoint;
 	localEndPoint.Reset(); ///\todo Compute the socket local endpoint here.
@@ -148,7 +148,7 @@ void NetworkServer::Process()
 			if (client)
 			{
 				if (!client->Connected())
-					LOG(LogError, "Warning: Accepted an already closed connection!?");
+					LOG(LogError, "Warning: Accepted an already closed connection!");
 
 				LOG(LogInfo, "Client connected from %s.", client->ToString().c_str());
 
@@ -265,7 +265,7 @@ void NetworkServer::EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes)
 {
-	LOG(LogInfo, "New inbound connection attempt from %s with datagram of size %d.", endPoint.ToString().c_str(), numBytes);
+	LOG(LogInfo, "New inbound connection attempt from %s with datagram of size %d.", endPoint.ToString().c_str(), (int)numBytes);
 	if (!acceptNewConnections)
 	{
 		LOG(LogError, "Ignored a new connection attempt since server is set not to accept new connections.");

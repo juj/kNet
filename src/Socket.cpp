@@ -384,7 +384,7 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 
 	if (ret > 0)
 	{
-		LOG(LogData, "Received %d bytes of data from socket 0x%X.", ret, connectSocket);
+		LOG(LogData, "Received %d bytes of data from socket 0x%X.", ret, (unsigned int)connectSocket);
 		return (size_t)ret;
 	}
 	else if (ret == 0)
@@ -600,7 +600,7 @@ void Socket::Disconnect()
 		if (result == KNET_SOCKET_ERROR)
 		{
 			int error = Network::GetLastError();
-			LOG(LogError, "Socket::Disconnect(): TCP socket shutdown(SD_SEND) failed: %s(%u) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
+			LOG(LogError, "Socket::Disconnect(): TCP socket shutdown(SD_SEND) failed: %s(%d) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
 		}
 		else
 		{
@@ -628,7 +628,7 @@ void Socket::Close()
 		if (result == KNET_SOCKET_ERROR)
 		{
 			int error = Network::GetLastError();
-			LOG(LogError, "Socket::Close(): Socket shutdown(SD_BOTH) failed: %s(%u) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
+			LOG(LogError, "Socket::Close(): Socket shutdown(SD_BOTH) failed: %s(%d) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
 		}
 		else
 		{
@@ -639,7 +639,7 @@ void Socket::Close()
 		if (result == KNET_SOCKET_ERROR)
 		{
 			int error = Network::GetLastError();
-			LOG(LogError, "Socket::Close(): closesocket() failed: %s(%u) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
+			LOG(LogError, "Socket::Close(): closesocket() failed: %s(%d) in socket %s.", Network::GetErrorString(error).c_str(), error, ToString().c_str());
 		}
 	}
 
@@ -720,7 +720,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 		else
 			ret = send(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0);
 
-		LOG(LogData, "Sent data to socket 0x%X.", connectSocket);
+		LOG(LogData, "Sent data to socket 0x%X.", (unsigned int)connectSocket);
 //		DumpBuffer("Socket::Send", data + numBytesSent, numBytesLeftToSend);
 
 		if (ret == KNET_SOCKET_ERROR)
@@ -730,7 +730,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 			{
 				if (error != 0)
 					Close();
-				LOG(LogError, "Failed to send %d bytes over socket %s. Error %s(%u)", numBytes, ToString().c_str(), Network::GetErrorString(error).c_str(), error);
+				LOG(LogError, "Failed to send %d bytes over socket %s. Error %s(%d)", (int)numBytes, ToString().c_str(), Network::GetErrorString(error).c_str(), error);
 			}
 			SetBlocking(false);
 			return false;
@@ -767,12 +767,12 @@ bool Socket::Send(const char *data, size_t numBytes)
 	{
 		if (numBytesSent > 0)
 		{
-			LOG(LogError, "Could not send %d bytes to socket %s. Achieved %d bytes, stream has now lost bytes, closing connection!", numBytes, 
-				ToString().c_str(), numBytesSent);
+			LOG(LogError, "Could not send %d bytes to socket %s. Achieved %d bytes, stream has now lost bytes, closing connection!", (int)numBytes, 
+				ToString().c_str(), (int)numBytesSent);
 			Close();
 		}
 		else
-			LOG(LogError, "Could not send %d bytes to socket %s.", numBytes, ToString().c_str());
+			LOG(LogError, "Could not send %d bytes to socket %s.", (int)numBytes, ToString().c_str());
 		return false;
 	}
 
@@ -900,7 +900,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 		if (ret < sendBuffer->buffer.len)
 		{
 			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer!",
-				ret, sendBuffer->buffer.len);
+				ret, (int)sendBuffer->buffer.len);
 			return false;
 		}
 		else

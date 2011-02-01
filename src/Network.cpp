@@ -197,7 +197,7 @@ void Network::PrintAddrInfo(const addrinfo *ptr)
 		LOG(LogInfo, "Other %u\n", ptr->ai_protocol);
 		break;
 	}
-	LOG(LogInfo, "\tLength of this sockaddr: %d\n", ptr->ai_addrlen);
+	LOG(LogInfo, "\tLength of this sockaddr: %d\n", (int)ptr->ai_addrlen);
 	LOG(LogInfo, "\tCanonical name: %s\n", ptr->ai_canonname);
 
 	char address[256];
@@ -230,7 +230,7 @@ void Network::PrintHostNameInfo(const char *hostname, const char *port)
 	unsigned long dwRetval = (unsigned long)getaddrinfo(hostname, port, &hints, &result);
 	if (dwRetval != 0)
 	{
-		LOG(LogError, "getaddrinfo failed with error: %d\n", dwRetval);
+		LOG(LogError, "getaddrinfo failed with error: %d\n", (int)dwRetval);
 		return;
 	}
 
@@ -292,7 +292,7 @@ NetworkWorkerThread *Network::GetOrCreateWorkerThread()
 	NetworkWorkerThread *workerThread = new NetworkWorkerThread();
 	workerThread->StartThread();
 	workerThreads.push_back(workerThread);
-	LOG(LogInfo, "Created a new NetworkWorkerThread. There are now %d worker threads.", workerThreads.size());
+	LOG(LogInfo, "Created a new NetworkWorkerThread. There are now %d worker threads.", (int)workerThreads.size());
 	return workerThread;
 }
 
@@ -306,7 +306,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 	Socket *listenSock = OpenListenSocket(port, transport, allowAddressReuse);
 	if (listenSock == 0)
 	{
-		LOG(LogError, "Failed to start server. Could not open listen port to %d using %s.", (unsigned int)port, 
+		LOG(LogError, "Failed to start server. Could not open listen port to %d using %s.", (int)port, 
 			transport == SocketOverTCP ? "TCP" : "UDP");
 		return 0;
 	}
@@ -319,7 +319,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 
 	GetOrCreateWorkerThread()->AddServer(server);
 
-	LOG(LogInfo, "Server up (%s). Waiting for client to connect...", listenSock->ToString().c_str());
+	LOG(LogInfo, "Server up (%s). Waiting for client to connect.", listenSock->ToString().c_str());
 
 	return server;
 }
@@ -463,12 +463,12 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	}
 
 	SOCKET listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	LOG(LogInfo, "Network::OpenListenSocket: Created listenSocket 0x%8X.", listenSocket);
+	LOG(LogInfo, "Network::OpenListenSocket: Created listenSocket 0x%8X.", (unsigned int)listenSocket);
 
 	if (listenSocket == INVALID_SOCKET)
 	{
 		int error = GetLastError();
-		LOG(LogError, "Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Error at socket(): %s(%d)", GetErrorString(error).c_str(), error);
 		freeaddrinfo(result);
 		return 0;
 	}
@@ -502,8 +502,8 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	if (ret == KNET_SOCKET_ERROR)
 	{
 		int error = GetLastError();
-		LOG(LogError, "bind failed: %s(%u) when trying to bind to port %d with transport %s", 
-			GetErrorString(error).c_str(), error, port, transport == SocketOverTCP ? "TCP" : "UDP");
+		LOG(LogError, "bind failed: %s(%d) when trying to bind to port %d with transport %s", 
+			GetErrorString(error).c_str(), error, (int)port, transport == SocketOverTCP ? "TCP" : "UDP");
 		closesocket(listenSocket);
 		freeaddrinfo(result);
 		return 0;
@@ -519,7 +519,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		if (ret == KNET_SOCKET_ERROR)
 		{
 			int error = GetLastError();
-			LOG(LogError, "Error at listen(): %s(%u)", GetErrorString(error).c_str(), error);
+			LOG(LogError, "Error at listen(): %s(%d)", GetErrorString(error).c_str(), error);
 			closesocket(listenSocket);
 			return 0;
 		}
@@ -563,12 +563,12 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 		NULL, 0, WSA_FLAG_OVERLAPPED);
 #else
 	SOCKET connectSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	LOG(LogInfo, "A call to socket() returned a new socket 0x%8X.", connectSocket);
+	LOG(LogInfo, "A call to socket() returned a new socket 0x%8X.", (unsigned int)connectSocket);
 #endif
 	if (connectSocket == INVALID_SOCKET)
 	{
 		int error = GetLastError();
-		LOG(LogError, "Network::Connect: Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Network::Connect: Error at socket(): %s(%d)", GetErrorString(error).c_str(), error);
 		freeaddrinfo(result);
 		return 0;
 	}
@@ -686,14 +686,14 @@ void Network::SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage)
 		///\todo Craft the proper connection attempt datagram.
 		sendData->buffer.len = std::min<int>(connectMessage->size, sendData->buffer.len);
 		memcpy(sendData->buffer.buf, connectMessage->data, sendData->buffer.len);
-		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending UDP connect message of size %d.", sendData->buffer.len);
+		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending UDP connect message of size %d.", (int)sendData->buffer.len);
 	}
 	else
 	{
 		///\todo Craft the proper connection attempt datagram.
 		sendData->buffer.len = std::min<int>(8, sendData->buffer.len);
 		memset(sendData->buffer.buf, 0, sendData->buffer.len);
-		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending null UDP connect message of size %d.", sendData->buffer.len);
+		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending null UDP connect message of size %d.", (int)sendData->buffer.len);
 	}
 	socket.EndSend(sendData);
 }

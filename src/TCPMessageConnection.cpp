@@ -203,7 +203,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 			return PacketSendSocketFull;
 		}
 
-		LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", writer.BytesFilled(), serializedMessages.size(), socket->ToString().c_str());
+		LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", (int)writer.BytesFilled(), (int)serializedMessages.size(), socket->ToString().c_str());
 		AddOutboundStats(writer.BytesFilled(), 0, numMessagesPacked);
 
 		// The messages in serializedMessages array are now in the TCP driver to handle. It will guarantee
@@ -221,7 +221,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	}
 	else // Not enough bytes to send out. Put all the messages back in the queue.
 	{
-		LOG(LogVerbose, "TCPMessageConnection::SendOutPacket(). Not enough bytes to send out (%d).", writer.BytesFilled());
+		LOG(LogVerbose, "TCPMessageConnection::SendOutPacket(). Not enough bytes to send out (%d).", (int)writer.BytesFilled());
 
 		for(size_t i = 0; i < serializedMessages.size(); ++i)
 			outboundQueue.InsertWithResize(serializedMessages[i]);
@@ -260,7 +260,7 @@ void TCPMessageConnection::ExtractMessages()
 
 			if (messageSize == 0 || messageSize > cMaxTCPMessageSize)
 			{
-				LOG(LogError, "Received an invalid message size %d! Closing connection!", messageSize);
+				LOG(LogError, "Received an invalid message size %d! Closing connection!", (int)messageSize);
 				if (socket)
 					socket->Close();
 				connectionState = ConnectionClosed;
