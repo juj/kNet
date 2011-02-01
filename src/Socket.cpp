@@ -730,7 +730,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 			{
 				if (error != 0)
 					Close();
-				LOGNET("Failed to send %d bytes over socket %s. Error %s(%u)", numBytes, ToString().c_str(), Network::GetErrorString(error).c_str(), error);
+				LOG(LogError, "Failed to send %d bytes over socket %s. Error %s(%u)", numBytes, ToString().c_str(), Network::GetErrorString(error).c_str(), error);
 			}
 			SetBlocking(false);
 			return false;
@@ -752,7 +752,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 			int ret = select(0, 0, &writeSocketSet, &errorSocketSet, &timeout);
 			if (ret == 0 || ret == KNET_SOCKET_ERROR)
 			{
-				LOGNET("Waiting for socket %s to become write-ready failed!", ToString().c_str());
+				LOG(LogError, "Waiting for socket %s to become write-ready failed!", ToString().c_str());
 				// If we did manage to send any bytes through, the stream is now out of sync,
 				// tear it down.
 				if (numBytesSent > 0)

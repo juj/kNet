@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file NetworkLogging.h
-	@brief The LOGNET and LOGNETVERBOSE macros. Provides an unified mechanism for logging. */
+	@brief The LOG and LOGUSER macros. Provides an unified mechanism for logging. */
 
 namespace kNet
 {
@@ -64,12 +64,6 @@ void EnableMemoryLeakLoggingAtExit();
 
 /// Prints out a variadic message to the log channel User.
 #define LOGUSER(msg, ...) kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__)
-
-/// Prints out a variadic message to the log channel Info.
-#define LOGNET(msg, ...) kNet::TimeOutputDebugStringVariadic(LogInfo, __FILE__, __LINE__, msg, ##__VA_ARGS__)
-
-/// Prints out a variadic message to the log channel Verbose.
-#define LOGNETVERBOSE(msg, ...) kNet::TimeOutputDebugStringVariadic(LogVerbose, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 /// Prints out a variadic message to the given log channel.
 #define LOG(channel, msg, ...) kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__)

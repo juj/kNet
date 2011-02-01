@@ -449,7 +449,7 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
         if ((connectionState == ConnectionOK || connectionState == ConnectionDisconnecting) && IsReadOpen())
 		    if (!socket || !socket->IsReadOpen())
 		    {
-			    LOGNET("Peer closed connection.");
+			    LOG(LogInfo, "Peer closed connection.");
 			    SetPeerClosed();
 		    }
 	}
@@ -511,7 +511,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 	const size_t totalNumFragments = (message->dataSize + maxFragmentSize - 1) / maxFragmentSize;
 	assert(totalNumFragments > 1); // Shouldn't be calling this function if the message can well fit into one fragment.
 
-	LOGNET("Splitting a message of %db into %d fragments of %db size at most.",
+	LOG(LogVerbose, "Splitting a message of %db into %d fragments of %db size at most.",
 		message->dataSize, totalNumFragments, maxFragmentSize);
 
 /** \todo Would like to do this:
@@ -533,7 +533,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 	if (!message->reliable)
 	{
-		LOGNET("Upgraded a nonreliable message with ID %d and size %d to a reliable message since it had to be fragmented!", message->id, message->dataSize);
+		LOG(LogVerbose, "Upgraded a nonreliable message with ID %d and size %d to a reliable message since it had to be fragmented!", message->id, message->dataSize);
 	}
 
 	// Split the message into fragments.
@@ -570,7 +570,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 			if (!outboundAcceptQueue.Insert(fragment))
 			{
 				///\todo Is it possible to check beforehand if this criteria is avoided, or if we are doomed?
-				LOGNET("Critical: Failed to add message fragment to outboundAcceptQueue! Queue was full. Do not know how to recover here!");
+				LOG(LogError, "Critical: Failed to add message fragment to outboundAcceptQueue! Queue was full. Do not know how to recover here!");
 				assert(false);
 			}
 		}
@@ -611,7 +611,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 	assert(msg->dataSize <= msg->Capacity());
 	if (msg->dataSize > msg->Capacity())
 	{
-		LOGNET("Critical! User specified a larger NetworkMessage than there is Capacity() for. Call NetworkMessage::Reserve() "
+		LOG(LogError, "Critical! User specified a larger NetworkMessage than there is Capacity() for. Call NetworkMessage::Reserve() "
 			"to ensure there is a proper amount of space for the buffer! Specified: %d bytes, Capacity(): %d bytes.",
 			msg->dataSize, msg->Capacity());
 	}
@@ -916,7 +916,7 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 		}
 		else
 		{
-			LOGNET("Warning! Adding new message ID %u, number %u, content ID %u, priority %u, but it was obsoleted by an already existing message number %u.", 
+			LOG(LogError, "Warning! Adding new message ID %u, number %u, content ID %u, priority %u, but it was obsoleted by an already existing message number %u.", 
 				msg->id, msg->messageNumber, msg->contentID, iter->second->priority, iter->second->messageNumber);
 			msg->obsolete = true;
 		}

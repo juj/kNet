@@ -129,7 +129,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 	if (!socket || !socket->IsWriteOpen())
 	{
-		LOGNETVERBOSE("TCPMessageConnection::SendOutPacket: Socket is not write open %p!", socket);
+		LOG(LogVerbose, "TCPMessageConnection::SendOutPacket: Socket is not write open %p!", socket);
 		if (connectionState == ConnectionOK) ///\todo This is slightly annoying to manually update the state here,
 			connectionState = ConnectionPeerClosed; /// reorganize to be able to have this automatically apply.
 		if (connectionState == ConnectionDisconnecting)
@@ -148,7 +148,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	OverlappedTransferBuffer *overlappedTransfer = socket->BeginSend();
 	if (!overlappedTransfer)
 	{
-		LOGNET("TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
+		LOG(LogError, "TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
 		return PacketSendSocketClosed;
 	}
 
@@ -260,7 +260,7 @@ void TCPMessageConnection::ExtractMessages()
 
 			if (messageSize == 0 || messageSize > cMaxTCPMessageSize)
 			{
-				LOGNET("Received an invalid message size %d! Closing connection!", messageSize);
+				LOG(LogError, "Received an invalid message size %d! Closing connection!", messageSize);
 				if (socket)
 					socket->Close();
 				connectionState = ConnectionClosed;

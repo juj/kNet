@@ -129,7 +129,7 @@ void FragmentedReceiveManager::NewFragmentStartReceived(int transferID, int numT
 	for(size_t i = 0; i < transfers.size(); ++i)
 		if (transfers[i].transferID == transferID)
 		{
-			LOGNET("An existing transfer with ID %d existed! Deleting it.", transferID);
+			LOG(LogError, "An existing transfer with ID %d existed! Deleting it.", transferID);
 			transfers.erase(transfers.begin() + i);
 			--i;
 		}
@@ -149,7 +149,7 @@ bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentN
 
 	if (numBytes == 0)
 	{
-		LOGNET("Discarding fragment of size 0!");
+		LOG(LogError, "Discarding fragment of size 0!");
 		return false;
 	}
 
@@ -161,7 +161,7 @@ bool FragmentedReceiveManager::NewFragmentReceived(int transferID, int fragmentN
 			for(size_t j = 0; j < transfer.fragments.size(); ++j)
 				if (transfer.fragments[j].fragmentIndex == fragmentNumber)
 				{
-					LOGNET("A fragment with fragmentNumber %d already exists for transferID %d. Discarding the new fragment! Old size: %db, discarded size: %db",
+					LOG(LogError, "A fragment with fragmentNumber %d already exists for transferID %d. Discarding the new fragment! Old size: %db, discarded size: %db",
 						fragmentNumber, transferID, transfer.fragments[j].data.size(), numBytes);
 					return false;
 				}

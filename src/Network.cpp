@@ -106,14 +106,14 @@ void PrintLocalIP()
     char ac[80];
     if (gethostname(ac, sizeof(ac)) == KNET_SOCKET_ERROR)
 	 {
-        LOGNET("Error getting local host name!");
+        LOG(LogError, "Error getting local host name!");
         return;
     }
-    LOGNET("Host name is %s", ac);
+    LOG(LogInfo, "Host name is %s", ac);
 
     struct hostent *phe = gethostbyname(ac);
     if (phe == 0) {
-        LOGNET("Bad host lookup.");
+        LOG(LogError, "Bad host lookup.");
         return;
     }
 
@@ -121,7 +121,7 @@ void PrintLocalIP()
 	 {
         struct in_addr addr;
         memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
-        LOGNET("Address %d: %s", i, inet_ntoa(addr)); ///\todo inet_ntoa is deprecated! doesn't handle IPv6!
+        LOG(LogInfo, "Address %d: %s", i, inet_ntoa(addr)); ///\todo inet_ntoa is deprecated! doesn't handle IPv6!
     }
 }
 
@@ -129,82 +129,82 @@ void Network::PrintAddrInfo(const addrinfo *ptr)
 {
 	if (!ptr)
 	{
-		LOGNET("(Null pointer passed to Network::PrintAddrInfo!)");
+		LOG(LogError, "Null pointer passed to Network::PrintAddrInfo!");
 		return;
 	}
 
-	LOGNET("\tFlags: 0x%x\n", ptr->ai_flags);
-	LOGNET("\tFamily: ");
+	LOG(LogInfo, "\tFlags: 0x%x\n", ptr->ai_flags);
+	LOG(LogInfo, "\tFamily: ");
 	switch(ptr->ai_family)
 	{
 	case AF_UNSPEC:
-		LOGNET("Unspecified\n");
+		LOG(LogInfo, "Unspecified\n");
 		break;
 	case AF_INET:
-		LOGNET("AF_INET (IPv4)\n");
+		LOG(LogInfo, "AF_INET (IPv4)\n");
 		break;
 	case AF_INET6:
-		LOGNET("AF_INET6 (IPv6)\n");
+		LOG(LogInfo, "AF_INET6 (IPv6)\n");
 		break;
 #ifdef WIN32
 	case AF_NETBIOS:
-		LOGNET("AF_NETBIOS (NetBIOS)\n");
+		LOG(LogInfo, "AF_NETBIOS (NetBIOS)\n");
 		break;
 #endif
 	default:
-		LOGNET("Other %u\n", ptr->ai_family);
+		LOG(LogInfo, "Other %u\n", ptr->ai_family);
 		break;
 	}
-	LOGNET("\tSocket type: ");
+	LOG(LogInfo, "\tSocket type: ");
 	switch(ptr->ai_socktype)
 	{
 	case 0:
-		LOGNET("Unspecified\n");
+		LOG(LogInfo, "Unspecified\n");
 		break;
 	case SOCK_STREAM:
-		LOGNET("SOCK_STREAM (stream)\n");
+		LOG(LogInfo, "SOCK_STREAM (stream)\n");
 		break;
 	case SOCK_DGRAM:
-		LOGNET("SOCK_DGRAM (datagram) \n");
+		LOG(LogInfo, "SOCK_DGRAM (datagram) \n");
 		break;
 	case SOCK_RAW:
-		LOGNET("SOCK_RAW (raw) \n");
+		LOG(LogInfo, "SOCK_RAW (raw) \n");
 		break;
 	case SOCK_RDM:
-		LOGNET("SOCK_RDM (reliable message datagram)\n");
+		LOG(LogInfo, "SOCK_RDM (reliable message datagram)\n");
 		break;
 	case SOCK_SEQPACKET:
-		LOGNET("SOCK_SEQPACKET (pseudo-stream packet)\n");
+		LOG(LogInfo, "SOCK_SEQPACKET (pseudo-stream packet)\n");
 		break;
 	default:
-		LOGNET("Other %u\n", ptr->ai_socktype);
+		LOG(LogInfo, "Other %u\n", ptr->ai_socktype);
 		break;
 	}
-	LOGNET("\tProtocol: ");
+	LOG(LogInfo, "\tProtocol: ");
 	switch(ptr->ai_protocol)
 	{
 	case 0:
-		LOGNET("Unspecified\n");
+		LOG(LogInfo, "Unspecified\n");
 		break;
 	case IPPROTO_TCP:
-		LOGNET("IPPROTO_TCP (TCP)\n");
+		LOG(LogInfo, "IPPROTO_TCP (TCP)\n");
 		break;
 	case IPPROTO_UDP:
-		LOGNET("IPPROTO_UDP (UDP) \n");
+		LOG(LogInfo, "IPPROTO_UDP (UDP) \n");
 		break;
 	default:
-		LOGNET("Other %u\n", ptr->ai_protocol);
+		LOG(LogInfo, "Other %u\n", ptr->ai_protocol);
 		break;
 	}
-	LOGNET("\tLength of this sockaddr: %d\n", ptr->ai_addrlen);
-	LOGNET("\tCanonical name: %s\n", ptr->ai_canonname);
+	LOG(LogInfo, "\tLength of this sockaddr: %d\n", ptr->ai_addrlen);
+	LOG(LogInfo, "\tCanonical name: %s\n", ptr->ai_canonname);
 
 	char address[256];
 	sprintf(address, "%d.%d.%d.%d",
 		(unsigned int)(unsigned char)ptr->ai_addr->sa_data[2], (unsigned int)(unsigned char)ptr->ai_addr->sa_data[3],
 		(unsigned int)(unsigned char)ptr->ai_addr->sa_data[4], (unsigned int)(unsigned char)ptr->ai_addr->sa_data[5]);
 
-	LOGNET("Address of this sockaddr: %s.\n", address);
+	LOG(LogInfo, "Address of this sockaddr: %s.\n", address);
 
 }
 
@@ -229,18 +229,18 @@ void Network::PrintHostNameInfo(const char *hostname, const char *port)
 	unsigned long dwRetval = (unsigned long)getaddrinfo(hostname, port, &hints, &result);
 	if (dwRetval != 0)
 	{
-		LOGNET("getaddrinfo failed with error: %d\n", dwRetval);
+		LOG(LogError, "getaddrinfo failed with error: %d\n", dwRetval);
 		return;
 	}
 
-	LOGNET("getaddrinfo returned success\n");
+    LOG(LogInfo, "getaddrinfo returned success\n");
 
 	int i = 1;
 
 	// Retrieve each address and print out the hex bytes
 	for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next)
 	{
-		LOGNET("getaddrinfo response %d\n", i++);
+		LOG(LogInfo, "getaddrinfo response %d\n", i++);
 		PrintAddrInfo(ptr);
 	}
 
@@ -256,7 +256,7 @@ void Network::Init()
 	int result = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (result != 0)
 	{
-		LOGNET("WSAStartup failed: %s(%d)", GetErrorString(result).c_str(), result);
+        LOG(LogError, "Network::Init: WSAStartup failed: %s(%d)!", GetErrorString(result).c_str(), result);
 		return;
 	}
 #endif
@@ -305,7 +305,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 	Socket *listenSock = OpenListenSocket(port, transport, allowAddressReuse);
 	if (listenSock == 0)
 	{
-		LOGNET("Failed to start server. Could not open listen port to %d using %s.", (unsigned int)port, 
+		LOG(LogError, "Failed to start server. Could not open listen port to %d using %s.", (unsigned int)port, 
 			transport == SocketOverTCP ? "TCP" : "UDP");
 		return 0;
 	}
@@ -318,7 +318,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 
 	GetOrCreateWorkerThread()->AddServer(server);
 
-	LOGNET("Server up (%s). Waiting for client to connect...", listenSock->ToString().c_str());
+	LOG(LogInfo, "Server up (%s). Waiting for client to connect...", listenSock->ToString().c_str());
 
 	return server;
 }
@@ -328,7 +328,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 {
 	if (listenPorts.size() == 0)
 	{
-		LOGNET("Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
+		LOG(LogError, "Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
 		return 0;
 	}
 
@@ -343,7 +343,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	if (listenSockets.size() == 0)
 	{
-		LOGNET("Failed to start server. No ports to listen to!");
+		LOG(LogError, "Failed to start server. No ports to listen to!");
 		return 0;
 	}
 
@@ -352,14 +352,14 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 	GetOrCreateWorkerThread()->AddServer(server);
 
-	LOGNET("Server up and listening on the following ports: ");
+	LOG(LogInfo, "Server up and listening on the following ports: ");
 	{
 		std::stringstream ss;
 		ss << "UDP ";
 		for(size_t i = 0; i < listenSockets.size(); ++i)
 			if (listenSockets[i]->TransportLayer() == SocketOverUDP)
 				ss << listenSockets[i]->LocalPort() << " ";
-		LOGNET(ss.str().c_str());
+		LOG(LogInfo, ss.str().c_str());
 	}
 	{
 		std::stringstream ss;
@@ -367,7 +367,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 		for(size_t i = 0; i < listenSockets.size(); ++i)
 			if (listenSockets[i]->TransportLayer() == SocketOverTCP)
 				ss << listenSockets[i]->LocalPort() << " ";
-		LOGNET(ss.str().c_str());
+		LOG(LogInfo, ss.str().c_str());
 	}
 
 	return server;
@@ -387,7 +387,7 @@ void Network::CloseSocket(Socket *socket)
 {
 	if (!socket)
 	{
-		LOGNETVERBOSE("Network::CloseSocket() called with a null socket pointer!");
+		LOG(LogError, "Network::CloseSocket() called with a null socket pointer!");
 		return;
 	}
 
@@ -398,10 +398,10 @@ void Network::CloseSocket(Socket *socket)
 			// The Socket pointers MessageConnection objects have are pointers to this list,
 			// so after calling this function with a Socket pointer, the Socket is deleted for good.
 			sockets.erase(iter);
-			LOGNET("Network::CloseSocket: Closed socket %p!", socket);
+			LOG(LogInfo, "Network::CloseSocket: Closed socket %p.", socket);
 			return;
 		}
-	LOGNET("Network::CloseSocket: Tried to close a nonexisting socket %p!", socket);
+	LOG(LogError, "Network::CloseSocket: Tried to close a nonexisting socket %p!", socket);
 }
 
 void Network::CloseConnection(Ptr(MessageConnection) connection)
@@ -457,17 +457,17 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	int ret = getaddrinfo(NULL, strPort, &hints, &result);
 	if (ret != 0)
 	{
-		LOGNET("getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
+		LOG(LogError, "getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
 		return 0;
 	}
 
 	SOCKET listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	LOGNET("Network::OpenListenSocket: Created listenSocket 0x%8X.", listenSocket);
+	LOG(LogInfo, "Network::OpenListenSocket: Created listenSocket 0x%8X.", listenSocket);
 
 	if (listenSocket == INVALID_SOCKET)
 	{
 		int error = GetLastError();
-		LOGNET("Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
 		freeaddrinfo(result);
 		return 0;
 	}
@@ -501,7 +501,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	if (ret == KNET_SOCKET_ERROR)
 	{
 		int error = GetLastError();
-		LOGNET("bind failed: %s(%u) when trying to bind to port %d with transport %s", 
+		LOG(LogError, "bind failed: %s(%u) when trying to bind to port %d with transport %s", 
 			GetErrorString(error).c_str(), error, port, transport == SocketOverTCP ? "TCP" : "UDP");
 		closesocket(listenSocket);
 		freeaddrinfo(result);
@@ -518,7 +518,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		if (ret == KNET_SOCKET_ERROR)
 		{
 			int error = GetLastError();
-			LOGNET("Error at listen(): %s(%u)", GetErrorString(error).c_str(), error);
+			LOG(LogError, "Error at listen(): %s(%u)", GetErrorString(error).c_str(), error);
 			closesocket(listenSocket);
 			return 0;
 		}
@@ -553,7 +553,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 	int ret = getaddrinfo(address, strPort, &hints, &result);
 	if (ret != 0)
 	{
-		LOGNET("Network::Connect: getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
+		LOG(LogError, "Network::Connect: getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
 		return 0;
 	}
 
@@ -562,12 +562,12 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 		NULL, 0, WSA_FLAG_OVERLAPPED);
 #else
 	SOCKET connectSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	LOGNET("Created connectSocket 0x%8X.", connectSocket);
+	LOG(LogInfo, "A call to socket() returned a new socket 0x%8X.", connectSocket);
 #endif
 	if (connectSocket == INVALID_SOCKET)
 	{
 		int error = GetLastError();
-		LOGNET("Network::Connect: Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Network::Connect: Error at socket(): %s(%u)", GetErrorString(error).c_str(), error);
 		freeaddrinfo(result);
 		return 0;
 	}
@@ -589,7 +589,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 
 	if (connectSocket == INVALID_SOCKET)
 	{
-		LOGNET("Unable to connect to server!");
+		LOG(LogError, "Unable to connect to server!");
 		return 0;
 	}
 
@@ -626,10 +626,10 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 	if (transport == SocketOverUDP)
 	{
 		SendUDPConnectDatagram(*socket, connectMessage);
-		LOGNET("Network::Connect: Sent a UDP Connection Start datagram to to %s.", socket->ToString().c_str());
+		LOG(LogInfo, "Network::Connect: Sent a UDP Connection Start datagram to to %s.", socket->ToString().c_str());
 	}
 	else
-		LOGNET("Network::Connect: Connected a TCP socket to %s.", socket->ToString().c_str());
+		LOG(LogInfo, "Network::Connect: Connected a TCP socket to %s.", socket->ToString().c_str());
 
 	Ptr(MessageConnection) connection;
 	if (transport == SocketOverTCP)
@@ -663,7 +663,7 @@ Socket *Network::CreateUDPSlaveSocket(Socket *serverListenSocket, const EndPoint
 	Socket *socket = &sockets.back();
 	socket->SetBlocking(false);
 
-	LOGNET("Network::CreateUDPSlaveSocket: Connected an UDP socket to %s.", socket->ToString().c_str());
+	LOG(LogInfo, "Network::CreateUDPSlaveSocket: Connected an UDP socket to %s.", socket->ToString().c_str());
 	return socket;
 }
 

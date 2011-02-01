@@ -40,16 +40,18 @@ void Clock::InitClockData()
 
 	if (!QueryPerformanceFrequency(&ddwTimerFrequency))
 	{
-		LOGNET("The system doesn't support high-resolution timers!");
+		LOG(LogError, "The system doesn't support high-resolution timers!");
 		ddwTimerFrequency.HighPart = (unsigned long)-1;
 		ddwTimerFrequency.LowPart = (unsigned long)-1;
 	}
 
 	if (ddwTimerFrequency.HighPart > 0)
-		LOGNET("Clock::TicksPerSec will yield invalid timing data!");
+        LOG(LogError, "Warning: Clock::TicksPerSec will yield invalid timing data!");
 
 	if (appStartTime == 0)
 		appStartTime = GetTickCount();
+
+    ///\todo Test here that the return values of QueryPerformanceCounter is nondecreasing.
 }
 
 Clock::Clock()

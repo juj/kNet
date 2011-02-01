@@ -87,7 +87,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 		int error = Network::GetLastError();
 		if (error != KNET_EWOULDBLOCK)
 		{
-			LOGNET("accept failed: %s(%u)", Network::GetErrorString(error).c_str(), error);
+			LOG(LogError, "accept failed: %s(%u)", Network::GetErrorString(error).c_str(), error);
 			closesocket(listenSock);
 			listenSock = INVALID_SOCKET;
 		}
@@ -97,7 +97,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(remoteAddress);
 	std::string remoteHostName = remoteEndPoint.IPToString();
 
-	LOGNET("Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (unsigned int)remoteEndPoint.port);
+	LOG(LogInfo, "Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (unsigned int)remoteEndPoint.port);
 
 	EndPoint localEndPoint;
 	localEndPoint.Reset(); ///\todo Compute the socket local endpoint here.
@@ -122,7 +122,7 @@ void NetworkServer::CleanupDeadConnections()
 		++next;
 		if (!iter->second->Connected())
 		{
-			LOGNET("Client %s disconnected!", iter->second->ToString().c_str());
+			LOG(LogInfo, "Client %s disconnected.", iter->second->ToString().c_str());
 			if (networkServerListener)
 				networkServerListener->ClientDisconnected(iter->second);
 			if (iter->second->GetSocket() && iter->second->GetSocket()->TransportLayer() == SocketOverTCP)
@@ -165,10 +165,10 @@ void NetworkServer::Process()
 				socklen_t socknamelen = sizeof(sockname);
 				int ret = getpeername(client->GetSocketHandle(), (sockaddr*)&sockname, &socknamelen);
 				if (ret != 0)
-					LOGNET("getpeername failed for %s!", client->ToString().c_str());
+					LOG(LogError, "getpeername failed for %s!", client->ToString().c_str());
 
 				EndPoint endPoint = EndPoint::FromSockAddrIn(sockname);
-				std::cout << "Client connected from " << endPoint.ToString() << std::endl;
+                LOG(LogInfo, "Client connected from %s.", endPoint.ToString().c_str());
 
 				{
 					PolledTimer timer;
@@ -210,7 +210,7 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 	if (recvData->bytesContains == 0)
 	{
 		listenSocket->EndReceive(recvData);
-		LOGNET("Received 0 bytes of data in NetworkServer::ReadUDPSocketData!");
+		LOG(LogError, "Received 0 bytes of data in NetworkServer::ReadUDPSocketData!");
 		return;
 	}
 	EndPoint endPoint = EndPoint::FromSockAddrIn(recvData->from); ///\todo Omit this conversion for performance.
@@ -232,7 +232,7 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 		UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(iter->second.ptr());
 		if (!udpConnection)
 		{
-			LOGNET("Critical! UDP socket data received into a TCP socket!");
+			LOG(LogError, "Critical! UDP socket data received into a TCP socket!");
 		}
 		else
 			udpConnection->ExtractMessages(recvData->buffer.buf, recvData->bytesContains);
@@ -258,17 +258,17 @@ void NetworkServer::EnqueueNewUDPConnectionAttempt(Socket *listenSocket, const E
 
 	bool success = udpConnectionAttempts.Insert(desc);
 	if (!success)
-		LOGNET("Too many connection attempts!");
+		LOG(LogError, "Too many connection attempts!");
 	else
-		LOGNET("Queued new connection attempt from %s.", endPoint.ToString().c_str());
+		LOG(LogInfo, "Queued new connection attempt from %s.", endPoint.ToString().c_str());
 }
 
 bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes)
 {
-	LOGNET("New inbound connection attempt from %s with datagram of size %d.", endPoint.ToString().c_str(), numBytes);
+	LOG(LogInfo, "New inbound connection attempt from %s with datagram of size %d.", endPoint.ToString().c_str(), numBytes);
 	if (!acceptNewConnections)
 	{
-		LOGNET("Ignored connection attempt since server is set not to accept new connections.");
+		LOG(LogError, "Ignored a new connection attempt since server is set not to accept new connections.");
 		return false;
 	}
 
@@ -278,7 +278,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 		bool connectionAccepted = networkServerListener->NewConnectionAttempt(endPoint, data, numBytes);
 		if (!connectionAccepted)
 		{
-			LOGNET("Server listener did not accept the new connection.");
+			LOG(LogError, "Server listener did not accept the new connection.");
 			return false;
 		}
 	}
@@ -292,7 +292,7 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	Socket *socket = owner->CreateUDPSlaveSocket(listenSocket, endPoint, remoteHostName.c_str());
 	if (!socket)
 	{
-		LOGNET("Network::ConnectUDP failed! Cannot accept new UDP connection.");
+		LOG(LogError, "Network::ConnectUDP failed! Cannot accept new UDP connection.");
 		return false;
 	}
 
@@ -451,7 +451,7 @@ void NetworkServer::ConnectionClosed(MessageConnection *connection)
 			return;
 		}
 
-	LOGNET("Unknown MessageConnection passed to NetworkServer::Disconnect!");
+    LOG(LogError, "Unknown MessageConnection passed to NetworkServer::Disconnect!");
 }
 
 std::vector<Socket *> &NetworkServer::ListenSockets()
