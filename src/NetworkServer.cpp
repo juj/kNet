@@ -43,7 +43,7 @@ udpConnectionAttempts(64)
 
 NetworkServer::~NetworkServer()
 {
-	LOG(LogObjectAlloc, "Deleting NetworkServer 0x%p.", this);
+	LOG(LogObjectAlloc, "Deleting NetworkServer %p.", this);
 }
 
 void NetworkServer::RegisterServerListener(INetworkServerListener *listener)

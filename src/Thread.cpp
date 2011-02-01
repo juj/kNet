@@ -57,7 +57,7 @@ void Thread::CheckHold()
 {
 	if (threadHoldEvent.Test())
 	{
-		LOG(LogVerbose, "Thread::CheckHold(): suspending thread. this: 0x%p.", this);
+		LOG(LogVerbose, "Thread::CheckHold(): suspending thread. this: %p.", this);
 
 		PolledTimer timer;
 		while(!ShouldQuit())

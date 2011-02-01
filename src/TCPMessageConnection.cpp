@@ -129,7 +129,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 	if (!socket || !socket->IsWriteOpen())
 	{
-		LOGNETVERBOSE("TCPMessageConnection::SendOutPacket: Socket is not write open 0x%d!", socket);
+		LOGNETVERBOSE("TCPMessageConnection::SendOutPacket: Socket is not write open %p!", socket);
 		if (connectionState == ConnectionOK) ///\todo This is slightly annoying to manually update the state here,
 			connectionState = ConnectionPeerClosed; /// reorganize to be able to have this automatically apply.
 		if (connectionState == ConnectionDisconnecting)

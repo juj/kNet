@@ -100,7 +100,7 @@ outboundQueue(16 * 1024), workerThread(0)
 
 MessageConnection::~MessageConnection()
 {
-	LOG(LogObjectAlloc, "Deleting MessageConnection 0x%p.", this);
+	LOG(LogObjectAlloc, "Deleting MessageConnection %p.", this);
 	FreeMessageData();
 	eventMsgsOutAvailable.Close();
 }
@@ -446,11 +446,12 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 
 		// Check if the socket is dead and mark it read-closed.
-		if ((!socket || !socket->IsReadOpen()) && IsReadOpen())
-		{
-			LOGNET("Peer closed connection.");
-			SetPeerClosed();
-		}
+        if ((connectionState == ConnectionOK || connectionState == ConnectionDisconnecting) && IsReadOpen())
+		    if (!socket || !socket->IsReadOpen())
+		    {
+			    LOGNET("Peer closed connection.");
+			    SetPeerClosed();
+		    }
 	}
 
 	// Perform the TCP/UDP -specific connection update.
@@ -460,7 +461,7 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 NetworkMessage *MessageConnection::AllocateNewMessage()
 {
 	NetworkMessage *msg = messagePool.New();
-	LOG(LogObjectAlloc, "MessageConnection::AllocateMessage 0x%p!", msg);
+	LOG(LogObjectAlloc, "MessageConnection::AllocateMessage %p!", msg);
 	return msg;
 }
 
@@ -469,7 +470,7 @@ void MessageConnection::FreeMessage(NetworkMessage *msg)
 	if (!msg)
 		return;
 
-	LOG(LogObjectAlloc, "MessageConnection::FreeMessage 0x%8X!", msg);
+	LOG(LogObjectAlloc, "MessageConnection::FreeMessage %p!", msg);
 	messagePool.Free(msg);
 }
 
@@ -595,7 +596,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 		(internalQueue == false && !IsWriteOpen()))
 	{
 		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Discarded message with ID 0x%X and size %d bytes. "
-			"msg->obsolete: %d. socket ptr: 0x%p. ConnectionState: %s. socket->IsWriteOpen(): %s. msgconn->IsWriteOpen: %s. "
+			"msg->obsolete: %d. socket ptr: %p. ConnectionState: %s. socket->IsWriteOpen(): %s. msgconn->IsWriteOpen: %s. "
 			"internalQueue: %s.",
 			msg->id, numBytes, (int)msg->obsolete, socket, ConnectionStateToString(GetConnectionState()).c_str(), (socket && socket->IsWriteOpen()) ? "true" : "false",
 			IsWriteOpen() ? "true" : "false", internalQueue ? "true" : "false");

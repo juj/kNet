@@ -398,15 +398,15 @@ void Network::CloseSocket(Socket *socket)
 			// The Socket pointers MessageConnection objects have are pointers to this list,
 			// so after calling this function with a Socket pointer, the Socket is deleted for good.
 			sockets.erase(iter);
-			LOGNET("Network::CloseSocket: Closed socket 0x%08X!", socket);
+			LOGNET("Network::CloseSocket: Closed socket %p!", socket);
 			return;
 		}
-	LOGNET("Network::CloseSocket: Tried to close a nonexisting socket 0x%08X!", socket);
+	LOGNET("Network::CloseSocket: Tried to close a nonexisting socket %p!", socket);
 }
 
 void Network::CloseConnection(Ptr(MessageConnection) connection)
 {
-	LOG(LogVerbose, "Network::CloseConnection: Closing down connection 0x%X.", connection.ptr());
+	LOG(LogVerbose, "Network::CloseConnection: Closing down connection %p.", connection.ptr());
 	if (!connection)
 		return;
 

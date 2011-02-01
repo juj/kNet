@@ -43,7 +43,7 @@ FragmentedSendManager::FragmentedTransfer *FragmentedSendManager::AllocateNewFra
 	transfer->id = -1;
 	transfer->totalNumFragments = 0;
 
-	LOG(LogObjectAlloc, "Allocated new fragmented transfer 0x%p.", transfer);
+	LOG(LogObjectAlloc, "Allocated new fragmented transfer %p.", transfer);
 
 	return transfer;
 }
@@ -54,7 +54,7 @@ void FragmentedSendManager::FreeFragmentedTransfer(FragmentedTransfer *transfer)
 		if (&*iter == transfer)
 		{
 			transfers.erase(iter);
-			LOG(LogObjectAlloc, "Freed fragmented transfer ID=%d, numFragments: %d (0x%p).", transfer->id, transfer->totalNumFragments, transfer);
+			LOG(LogObjectAlloc, "Freed fragmented transfer ID=%d, numFragments: %d (%p).", transfer->id, transfer->totalNumFragments, transfer);
 			return;
 		}
 	LOG(LogError, "Tried to free a fragmented send struct that didn't exist!");
@@ -72,7 +72,7 @@ void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkM
 			if (transfer->fragments.size() == 0)
 				FreeFragmentedTransfer(transfer);
 
-			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (0x%p).", message->messageNumber, message->fragmentIndex, transfer->id, transfer);
+			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (%p).", message->messageNumber, message->fragmentIndex, transfer->id, transfer);
 
 			return;
 		}

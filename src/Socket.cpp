@@ -592,7 +592,7 @@ void Socket::Disconnect()
 	if (connectSocket == INVALID_SOCKET)
 		return;
 
-	LOG(LogVerbose, "Socket::Disconnect(), this: 0x%X.", this);
+	LOG(LogVerbose, "Socket::Disconnect(), this: %p.", this);
 
 	if (transport == SocketOverTCP)
 	{
@@ -661,7 +661,7 @@ void Socket::Close()
 #ifdef WIN32
 void Socket::FreeOverlappedTransferBuffers()
 {
-	LOG(LogVerbose, "Socket::FreeOverlappedTransferBuffers(), this: 0x%X.", this);
+	LOG(LogVerbose, "Socket::FreeOverlappedTransferBuffers(), this: %p.", this);
 /// \todo Use CancelIo to tear-down commited OverlappedTransferBuffers before freeing data. http://msdn.microsoft.com/en-us/library/aa363792(VS.85).aspx
 	while(queuedReceiveBuffers.Size() > 0)
 		DeleteOverlappedTransferBuffer(queuedReceiveBuffers.TakeFront());
@@ -968,7 +968,7 @@ std::string Socket::ToString() const
 	EndPoint sockName = EndPoint::FromSockAddrIn(addr);
 
 	char str[256];
-	sprintf(str, "%s:%d (%s, connected=%s, readOpen: %s, writeOpen: %s, maxSendSize=%d, sock: %s, peer: %s, socket: %d, this: 0x%p)", 
+	sprintf(str, "%s:%d (%s, connected=%s, readOpen: %s, writeOpen: %s, maxSendSize=%d, sock: %s, peer: %s, socket: %d, this: %p)", 
 		DestinationAddress(), (unsigned int)DestinationPort(), 
 		(transport == SocketOverTCP) ? "TCP" : (IsUDPServerSocket() ? "UDP server" : (IsUDPSlaveSocket() ? "UDP Slave" : "UDP")), 
 		Connected() ? "true" : "false", readOpen ? "true" : "false", writeOpen ? "true" : "false",
