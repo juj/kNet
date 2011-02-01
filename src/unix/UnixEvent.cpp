@@ -57,14 +57,14 @@ void Event::Create(EventWaitType type_)
 	fd = eventfd(0, 0);
 	if (fd == -1)
 	{
-		LOGNET("Error in Event::Create: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), errno);
 		return;
 	}
 
 	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
 	if (ret == -1)
 	{
-		LOGNET("fcntl call failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "fcntl call failed: %s(%d)!", strerror(errno), errno);
 		return;
 	}
 
@@ -105,28 +105,28 @@ void Event::Reset()
 {
 	if (IsNull())
 	{
-		LOGNET("Event::Reset() failed! Tried to reset an uninitialized Event!");
+		LOG(LogError, "Event::Reset() failed! Tried to reset an uninitialized Event!");
 		return;
 	}
 
 	eventfd_t val = 0;
 	int ret = eventfd_read(fd, &val);
 	if (ret == -1 && errno != EAGAIN)
-		LOGNET("Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), errno);
 }
 
 void Event::Set()
 {
 	if (IsNull())
 	{
-		LOGNET("Event::Set() failed! Tried to set an uninitialized Event!");
+		LOG(LogError, "Event::Set() failed! Tried to set an uninitialized Event!");
 		return;
 	}
 
 	int ret = eventfd_write(fd, 1);
 	if (ret == -1)
 	{
-		LOGNET("Event::Set() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Set() eventfd_write() failed: %s(%d)!", strerror(errno), errno);
 		return;
 	}
 }
@@ -167,7 +167,7 @@ bool Event::Wait(unsigned long msecs) const
 {
 	if (IsNull())
 	{
-//		LOGNET("Event::Wait() failed! Tried to wait on an uninitialized Event!");
+//		LOG(LogError, "Event::Wait() failed! Tried to wait on an uninitialized Event!");
 		return false;
 	}
 
@@ -183,7 +183,7 @@ bool Event::Wait(unsigned long msecs) const
 	int ret = select(fd+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
-		LOGNET("Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), errno);
+		LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), errno);
 		return false;
 	}
 
