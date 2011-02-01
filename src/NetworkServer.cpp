@@ -311,7 +311,8 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	if (networkServerListener)
 		networkServerListener->NewConnectionEstablished(connection);
 
-	connection->SendPingRequestMessage();
+	///\todo Re-enable. Cannot call this here since we are in main thread, and this function can only be called from the worker thread.
+//	connection->SendPingRequestMessage();
 
 	owner->AssignConnectionToWorkerThread(connection);
 

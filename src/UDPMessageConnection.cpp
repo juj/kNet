@@ -531,7 +531,7 @@ bool UDPMessageConnection::HaveReceivedPacketID(packet_id_t packetID) const
 void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 {
 /* \todo add back to enable packet loss computations.
-	ConnectionStatistics &cs = stats.Lock();
+	ConnectionStatistics &cs = statistics.Lock();
 
 	// Simple method to prevent computation errors caused by wraparound - we start from scratch when packet with ID 0 is received.
 //	if (packetID == 0)
@@ -542,7 +542,7 @@ void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 	t.tick = Clock::Tick();
 	t.packetID = packetID;
 //	LOG(LogVerbose, "Marked packet with ID %d received.", (int)packetID);
-	stats.Unlock();
+	statistics.Unlock();
 */
 	// Remember this packet ID for duplicacy detection and pruning purposes.
 	receivedPacketIDs.Add(packetID);
@@ -1009,7 +1009,7 @@ void UDPMessageConnection::PerformFlowControl()
 
 void UDPMessageConnection::ComputePacketLoss()
 {
-	Lockable<ConnectionStatistics>::LockType cs = stats.Acquire();
+	Lockable<ConnectionStatistics>::LockType cs = statistics.Acquire();
 
 	if (cs->recvPacketIDs.size() <= 1)
 	{

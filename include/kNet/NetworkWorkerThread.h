@@ -44,6 +44,8 @@ public:
 	int NumConnections() const;
 	int NumServers() const;
 
+	Thread &ThreadObject() { return workThread; }
+
 private:
 	Lockable<std::vector<Ptr(MessageConnection)> > connections;
 	Lockable<std::vector<Ptr(NetworkServer)> > servers;

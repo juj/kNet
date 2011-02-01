@@ -37,6 +37,7 @@
 #include "MaxHeap.h"
 #include "Clock.h"
 #include "PolledTimer.h"
+#include "Thread.h"
 
 namespace kNet
 {
@@ -129,32 +130,32 @@ public:
 	virtual ~MessageConnection();
 
 	/// Returns the current connection state.
-	ConnectionState GetConnectionState() const;
+	ConnectionState GetConnectionState() const; // [main and worker thread]
 
 	/// Returns true if the peer has signalled it will not send any more data (the connection is half-closed or full-closed).
-	bool IsReadOpen() const;
+	bool IsReadOpen() const; // [main and worker thread]
 	
 	/// Returns true if we have signalled not to send any more data (the connection is half-closed or full-closed).
-	bool IsWriteOpen() const;
+	bool IsWriteOpen() const; // [main and worker thread]
 
 	/// Returns true if the connection is in the ConnectionPending state and waiting for the other end to resolve/establish the connection. 
 	/// When this function returns false, the connection may be half-open, bidirectionally open, timed out on ConnectionPending, or closed.
-	bool IsPending() const;
+	bool IsPending() const; // [main and worker thread]
 
 	/// Returns true if this socket is connected, i.e. at least half-open in one way.
-	bool Connected() const { return IsReadOpen() || IsWriteOpen(); }
+	bool Connected() const { return IsReadOpen() || IsWriteOpen(); } // [main and worker thread]
 
 	/// Runs a modal processing loop and produces events for all inbound received data. Returns when the connection is closed.
 	/// This is an example function mostly useful only for very simple demo applications. In most cases,
 	/// you do not want to call this.
-	void RunModalClient();
+	void RunModalClient(); // [main thread]
 
 	/// Blocks for the given amount of time until the connection has transitioned away from ConnectionPending state.
 	/// @param maxMSecstoWait A positive value that indicates the maximum time to wait until returning.
 	/// @return If the connection was successfully opened, this function returns true. Otherwise returns false, and
 	///         either timeout was encountered and the other end has not acknowledged the connection,
 	///         or the connection is in ConnectionClosed state.
-	bool WaitToEstablishConnection(int maxMSecsToWait = 500);
+	bool WaitToEstablishConnection(int maxMSecsToWait = 500); // [main thread]
 
 	/// Starts a benign disconnect procedure. Transitions ConnectionState to ConnectionDisconnecting. This 
 	/// function will block until the given period expires or the other end acknowledges and also closes 
@@ -167,7 +168,7 @@ public:
 	/// When this function returns, the connection may either be in ConnectionClosing or ConnectionClosed
 	/// state, depending on whether the other end has already acknowledged the disconnection.
 	/// \note You may not call this function in middle of StartNewMessage() - EndAndQueueMessage() function calls.
-	void Disconnect(int maxMSecsToWait = 500);
+	void Disconnect(int maxMSecsToWait = 500); // [main thread]
 
 	/// Starts a forceful disconnect procedure.
 	/// @param maxMSecsToWait If a positive number, Disconnect message will be sent to the peer and if no response
@@ -176,10 +177,7 @@ public:
 	///                       and the function returns immediately. The other end will remain hanging and will timeout.
 	/// When this function returns, the connection is in ConnectionClosed state.
 	/// \note You may not call this function in middle of StartNewMessage() - EndAndQueueMessage() function calls.
-	void Close(int maxMSecsToWait = 500);
-
-	/// Stores all the statistics about the current connection.
-	Lockable<ConnectionStatistics> stats;
+	void Close(int maxMSecsToWait = 500); // [main thread]
 
 	// There are 3 ways to send messages through a MessageConnection:
 	// StartNewMessage/EndAndQueueMessage, SendStruct, and Send. See below.
@@ -195,7 +193,7 @@ public:
 	///         EndAndQueueMessage when you have finished building the message to commit the network send and to release the memory.
 	///         Alternatively, if after calling StartNewMessage, you decide to abort the network send, free up the NetworkMessage
 	///         by calling this->FreeMessage().
-	NetworkMessage *StartNewMessage(unsigned long id, size_t numBytes = 0);
+	NetworkMessage *StartNewMessage(unsigned long id, size_t numBytes = 0); // [main and worker thread]
 
 	/// Finishes building the message and submits it to the outbound send queue.
 	/// @param msg The message to send. After calling this function, this pointer should be considered freed and may not be
@@ -206,52 +204,44 @@ public:
 	///                 value of this parameter will use the size value that was specified in the call to StartNewMessage().
 	/// @param internalQueue If true, specifies that this message was submitted from the network worker thread and not the application
 	///                 thread. Pass in the value 'false' here in the client application, or there is a chance of a race condition.
-	void EndAndQueueMessage(NetworkMessage *msg, size_t numBytes = (size_t)(-1), bool internalQueue = false);
+	void EndAndQueueMessage(NetworkMessage *msg, size_t numBytes = (size_t)(-1), bool internalQueue = false); // [main and worker thread]
 
 	/// This is a conveniency function to access the above StartNewMessage/EndAndQueueMessage pair. The performance of this
 	/// function call is not as good, since a memcpy of the message will need to be made. For performance-critical messages,
 	/// it is better to craft the message directly into the buffer area provided by StartNewMessage.
 	void SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, unsigned long contentID, 
-	                 const char *data, size_t numBytes);
+	                 const char *data, size_t numBytes); // [main thread]
 
 	/// Sends a message using a serializable structure.
 	template<typename SerializableData>
 	void SendStruct(const SerializableData &data, unsigned long id, bool inOrder, 
-		bool reliable, unsigned long priority, unsigned long contentID = 0);
+		bool reliable, unsigned long priority, unsigned long contentID = 0); // [main thread]
 
 	/// Sends a message using a compiled message structure.
 	template<typename SerializableMessage>
-	void Send(const SerializableMessage &data, unsigned long contentID = 0);
-
-	enum PacketSendResult
-	{
-		PacketSendOK, ///< The operating system signalled the packet was successfully sent.
-		PacketSendSocketClosed, ///< The packet could not be sent, since the socket was closed.
-		PacketSendSocketFull, ///< The packet could not be sent, since the OS outbound buffer was full.
-		PacketSendNoMessages, ///< A packet could not be sent, since there was nothing to send.
-		PacketSendThrottled   ///< The packet could not be sent right now, since a throttle timer is in effect.
-	};
+	void Send(const SerializableMessage &data, unsigned long contentID = 0); // [main thread]
 
 	/// Stops all outbound sends until ResumeOutboundSends is called. Use if you need to guarantee that some messages be sent in the same datagram.
 	/// Do not stop outbound sends for long periods, or the other end may time out the connection.
-	void PauseOutboundSends();
+	void PauseOutboundSends(); // [main thread]
 
 	/// Resumes sending of outbound messages.
-	void ResumeOutboundSends();
+	void ResumeOutboundSends(); // [main thread]
 
-	size_t NumInboundMessagesPending() const { return inboundMessageQueue.Size(); }
+	/// Returns the number of messages that have been received from the network but haven't been handled by the application yet.
+	size_t NumInboundMessagesPending() const { return inboundMessageQueue.Size(); } // [main and worker thread]
 
 	/// Returns the number of messages in the outbound queue that are pending to be sent.
-	size_t NumOutboundMessagesPending() const { return outboundQueue.Size() + outboundAcceptQueue.Size(); }
+	size_t NumOutboundMessagesPending() const { return outboundQueue.Size() + outboundAcceptQueue.Size(); } // [main and worker thread]
 
-	/// Returns the underlying raw socket.
+	/// Returns the underlying raw socket. [main and worker thread]
 	Socket *GetSocket() { return socket; }
 
 	/// Returns an object that identifies the local endpoint (IP and port) this connection is connected to.
-	EndPoint LocalEndPoint() const;
+	EndPoint LocalEndPoint() const; // [main and worker thread]
 
 	/// Returns an object that identifies the remote endpoint (IP and port) this connection is connected to.
-	EndPoint RemoteEndPoint() const;
+	EndPoint RemoteEndPoint() const; // [main and worker thread]
 
 	/// Sets an upper limit to the data send rate for this connection.
 	/// The default is not to have an upper limit at all.
@@ -263,7 +253,7 @@ public:
 	void SetMaximumDataSendRate(int numBytesPerSec, int numDatagramsPerSec);
 
 	/// Registers a new listener object for the events of this connection.
-	void RegisterInboundMessageHandler(IMessageHandler *handler) { inboundMessageHandler = handler; }
+	void RegisterInboundMessageHandler(IMessageHandler *handler); // [main thread]
 
 	/// Fetches all newly received messages waiting in the inbound queue, and passes each of these
 	/// to the message handler registered using RegisterInboundMessageHandler.
@@ -275,13 +265,13 @@ public:
 	/// \note It is important to have a non-zero limit in maxMessagesToProcess (unless you're sure what you are doing), since
 	///       otherwise an attacker might affect the performance of the application main loop by sending messages so fast that
 	///       the queue never has time to exhaust, thus giving an infinite loop in practice.
-	void Process(int maxMessagesToProcess = 100);
+	void Process(int maxMessagesToProcess = 100); // [main thread]
 	
 	/// Waits for at most the given amount of time until a new message is received for processing.
 	/// @param maxMSecsToWait If 0, the call will wait indefinitely until a message is received or the connection transitions to
 	///                       closing state.
 	///                       If a positive value is passed, at most that many milliseconds is waited for a new message to be received.
-	void WaitForMessage(int maxMSecsToWait);
+	void WaitForMessage(int maxMSecsToWait); // [main thread]
 
 	/// Returns the next message in the inbound queue. This is an alternative API to RegisterInboundMessageHandler/Process.
 	/// \note When using this function to receive messages, remember to call FreeMessage for each NetworkMessage returned, or you
@@ -294,33 +284,126 @@ public:
 	/// @return A newly allocated object to the received message, or 0 if the queue was empty and no messages were received during
 	///         the wait period, or if the connection transitioned to closing state. When you are finished reading the message,
 	///         call FreeMessage for the returned pointer.
-	NetworkMessage *ReceiveMessage(int maxMSecsToWait = -1);
+	NetworkMessage *ReceiveMessage(int maxMSecsToWait = -1); // [main thread]
 
-	/// Frees up a NetworkMessage struct when it is no longer needed. [Called by both worker and main thread]
+	/// Frees up a NetworkMessage struct when it is no longer needed.
 	/// You need to call this for each message that you received from a call to ReceiveMessage.
-	void FreeMessage(NetworkMessage *msg);
+	void FreeMessage(NetworkMessage *msg); // [main and worker thread]
 	
-	/// Returns the estimated RTT of the connection, in milliseconds. RTT is the time taken to communicate a message from client->host->client.
-	float RoundTripTime() const { return rtt; }
-
-	/// Returns the estimated delay time from this connection to host, in milliseconds.
-	float Latency() const { return rtt / 2.f; }
-
-	/// Returns the number of milliseconds since we last received data from the socket.
-	float LastHeardTime() const { return Clock::TicksToMillisecondsF(Clock::TicksInBetween(Clock::Tick(), lastHeardTime)); }
-
-	float PacketsInPerSec() const { return packetsInPerSec; }
-	float PacketsOutPerSec() const { return packetsOutPerSec; }
-	float MsgsInPerSec() const { return msgsInPerSec; }
-	float MsgsOutPerSec() const { return msgsOutPerSec; }
-	float BytesInPerSec() const { return bytesInPerSec; }
-	float BytesOutPerSec() const { return bytesOutPerSec; }
-
 	/// Returns a single-line message describing the connection state.
-	std::string ToString() const;
+	std::string ToString() const; // [main and worker thread]
 
 	/// Dumps a long multi-line status message of this connection state to stdout.
-	void DumpStatus() const;
+	void DumpStatus() const; // [main thread]
+
+	// MessageConnection Statistics -related functions:
+
+	/// Returns the estimated RTT of the connection, in milliseconds. RTT is the time taken to communicate a message from client->host->client.
+	float RoundTripTime() const { return rtt; } // [main and worker thread]
+
+	/// Returns the estimated delay time from this connection to host, in milliseconds.
+	float Latency() const { return rtt / 2.f; } // [main and worker thread]
+
+	/// Returns the number of milliseconds since we last received data from the socket.
+	float LastHeardTime() const { return Clock::TicksToMillisecondsF(Clock::TicksInBetween(Clock::Tick(), lastHeardTime)); } // [main and worker thread]
+
+	float PacketsInPerSec() const { return packetsInPerSec; } // [main and worker thread]
+	float PacketsOutPerSec() const { return packetsOutPerSec; } // [main and worker thread]
+	float MsgsInPerSec() const { return msgsInPerSec; } // [main and worker thread]
+	float MsgsOutPerSec() const { return msgsOutPerSec; } // [main and worker thread]
+	float BytesInPerSec() const { return bytesInPerSec; } // [main and worker thread]
+	float BytesOutPerSec() const { return bytesOutPerSec; } // [main and worker thread]
+
+	/// Stores all the statistics about the current connection. This data is periodically recomputed
+	/// by the network worker thread and shared to the client through a lock.
+	Lockable<ConnectionStatistics> statistics; // [main and worker thread]
+
+protected:
+	friend class NetworkWorkerThread;
+
+	/// The Network object inside which this MessageConnection lives.
+	Network *owner; // [set and read only by the main thread]
+
+	/// If this MessageConnection represents a client connection on the server side, this gives the owner.
+	NetworkServer *ownerServer; // [set and read only by the main thread]
+
+	/// Stores the thread that manages the background processing of this connection. The same thread can manage multiple
+	/// connections and servers, and not just this one.
+	NetworkWorkerThread *workerThread; // [set and read only by worker thread]
+
+#ifdef _DEBUG
+	/// In debug mode, we track and enforce thread safety constraints through this ID. 
+	ThreadId workerThreadId; // [set by worker thread on thread startup, read by both main and worker thread]
+
+	/// Returns true if the current thread of execution is in the network worker thread.
+	bool InWorkerThreadContext() const; // [main and worker thread]
+
+	/// Returns true if the current thread of execution is not in the network worker thread (it is in the main thread).
+	bool InMainThreadContext() const; // [main and worker thread]
+
+	/// Returns true if this MessageConnection is associated to a NetworkWorkerThread to maintain.
+	bool IsWorkerThreadRunning() const { return workerThread != 0; } // [main and worker thread]
+#endif
+
+	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
+	WaitFreeQueue<NetworkMessage*> outboundAcceptQueue; // [produced by main thread, consumed by worker thread]
+
+	/// A queue populated by the networking thread to hold all the incoming messages until the application can process them.	
+	WaitFreeQueue<NetworkMessage*> inboundMessageQueue; // [produced by worker thread, consumed by main thread]
+
+	/// A priority queue that maintains in order all the messages that are going out the pipe.
+	///\todo Make the choice of which of the following structures to use a runtime option.
+//	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
+	WaitFreeQueue<NetworkMessage*> outboundQueue; // [worker thread]
+
+	/// Tracks all the message sends that are fragmented.
+	Lockable<FragmentedSendManager> fragmentedSends; // [worker thread]
+
+	/// Tracks all the receives of fragmented messages and helps reconstruct the original messages from fragments.
+	FragmentedReceiveManager fragmentedReceives; // [worker thread]
+
+	/// Allocations of NetworkMessage structures go through a pool to avoid dynamic new/delete calls when sending messages.
+	/// This structure is shared between the main and worker thread through a lockfree construct.
+	LockFreePoolAllocator<NetworkMessage> messagePool; // [main and worker thread]
+
+	/// Tracks when it is time to send the next PingRequest to the peer.
+	PolledTimer pingTimer; // [worker thread]
+
+	/// Tracks when it is time to update the statistics structure.
+	PolledTimer statsRefreshTimer; // [worker thread]
+
+	/// Specifies the return value for the functions that send out network packets.
+	enum PacketSendResult
+	{
+		PacketSendOK, ///< The operating system signalled the packet was successfully sent.
+		PacketSendSocketClosed, ///< The packet could not be sent, since the socket was closed.
+		PacketSendSocketFull, ///< The packet could not be sent, since the OS outbound buffer was full.
+		PacketSendNoMessages, ///< A packet could not be sent, since there was nothing to send.
+		PacketSendThrottled   ///< The packet could not be sent right now, since a throttle timer is in effect.
+	};
+
+	/// Serializes several messages into a single UDP/TCP packet and sends it out to the wire.
+	virtual PacketSendResult SendOutPacket() = 0; // [worker thread]
+
+	/// Sends out as many packets at one go as is allowed by the current send rate of the connection.
+	virtual void SendOutPackets() = 0; // [worker thread]
+
+	/// Returns how many milliseconds need to be waited before this socket can try sending data the next time.
+	virtual unsigned long TimeUntilCanSendPacket() const = 0; // [worker thread]
+
+	/// Performs the internal work tick that updates this connection.
+	void UpdateConnection(); // [worker thread]
+
+	/// Overridden by a subclass of MessageConnection to do protocol-specific updates (private implementation -pattern)
+	virtual void DoUpdateConnection() {} // [worker thread]
+
+	/// Marks that the peer has closed the connection and will not send any more application-level data.
+	void SetPeerClosed(); // [worker thread]
+
+	virtual void DumpConnectionStatus() const {} // [main thread]
+
+	/// Posted when the application has pushed us some messages to handle.
+	Event NewOutboundMessagesEvent() const; // [main and worker thread]
 
 	/// Specifies the result of a Socket read activity.
 	enum SocketReadResult
@@ -330,147 +413,88 @@ public:
 		SocketReadThrottled, ///< There was so much data to read that we need to pause and make room for sends as well.
 	};
 
-protected:
-	friend class NetworkWorkerThread;
-
-	/// The Network object inside which this MessageConnection lives. [main thread]
-	Network *owner;
-	/// If this MessageConnection represents a client connection on the server side, this gives the owner. [main thread]
-	NetworkServer *ownerServer;
-	/// Stores the thread that manages the background processing of this connection. The same thread can manage multiple
-	/// connections and servers, and not just this one.
-	NetworkWorkerThread *workerThread;
-
-	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
-	/// [produced by main thread, consumed by worker thread]
-	WaitFreeQueue<NetworkMessage*> outboundAcceptQueue;
-
-	/// A queue populated by the networking thread to hold all the incoming messages until the application can process them.
-	/// [produced by worker thread, consumed by main thread]
-	WaitFreeQueue<NetworkMessage*> inboundMessageQueue;
-
-	/// A priority queue that maintains in order all the messages that are going out the pipe. [worker thread]
-	///\todo Make the choice of which of the following structures to use a runtime option.
-//	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
-	WaitFreeQueue<NetworkMessage*> outboundQueue; 
-
-	/// Tracks all the message sends that are fragmented. [worker thread]
-	Lockable<FragmentedSendManager> fragmentedSends;
-
-	/// Tracks all the receives of fragmented messages and helps reconstruct the original messages from fragments. [worker thread]
-	FragmentedReceiveManager fragmentedReceives;
-
-	/// Allocations of NetworkMessage structures go through a pool to avoid dynamic new/delete calls when sending messages.
-	/// [main and worker thread]
-	LockFreePoolAllocator<NetworkMessage> messagePool;
-
-	float rtt; ///< The currently estimated round-trip time, in milliseconds.
-
-	PolledTimer pingTimer;
-	PolledTimer statsRefreshTimer;
-
-	/// Serializes several messages into a single UDP/TCP packet and sends it out to the wire.
-	virtual PacketSendResult SendOutPacket() = 0;
-
-	/// Sends out as many packets at one go as is allowed by the current send rate of the connection.
-	virtual void SendOutPackets() = 0;
-
-	/// Returns how many milliseconds need to be waited before this socket can try sending data the next time.
-	virtual unsigned long TimeUntilCanSendPacket() const = 0;
-
-	/// Performs the internal work tick that updates this connection.
-	void UpdateConnection();
-
-	/// Overridden by a subclass of MessageConnection to do protocol-specific updates (private implementation -pattern)
-	virtual void DoUpdateConnection() {}
-
-	/// Marks that the peer has closed the connection and will not send any more application-level data.
-	void SetPeerClosed();
-
-	virtual void DumpConnectionStatus() const {}
-
-	/// Posted when the application has pushed us some messages to handle.
-	Event NewOutboundMessagesEvent() const;
-
-	/// Reads all the new bytes available in the socket. [used internally by worker thread]
+	/// Reads all the new bytes available in the socket.
 	/// This data will be read into the connection's internal data queue, where it will be 
 	/// parsed to messages.
 	/// @param bytesRead [out] This field will get the number of bytes successfully read.
 	/// @return The return code of the operation.
-	virtual SocketReadResult ReadSocket(size_t &bytesRead) = 0;
+	virtual SocketReadResult ReadSocket(size_t &bytesRead) = 0; // [worker thread]
 
-	SocketReadResult ReadSocket() { size_t ignored = 0; return ReadSocket(ignored); }
+	SocketReadResult ReadSocket(); // [worker thread]
 
 	/// Sets the worker thread object that will handle this connection.
-	void SetWorkerThread(NetworkWorkerThread *thread) { workerThread = thread; }
+	void SetWorkerThread(NetworkWorkerThread *thread); // [worker thread]
 
-	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes);
+	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes); // [worker thread]
 
 	/// Allocates a new NetworkMessage struct. [both worker and main thread]
 	NetworkMessage *AllocateNewMessage();
 
 	// Ping/RTT management operations:
-	void SendPingRequestMessage();
-	void HandlePingRequestMessage(const char *data, size_t numBytes);
-	void HandlePingReplyMessage(const char *data, size_t numBytes);
+	void SendPingRequestMessage(); // [worker thread]
+
+	void HandlePingRequestMessage(const char *data, size_t numBytes); // [worker thread]
+
+	void HandlePingReplyMessage(const char *data, size_t numBytes); // [worker thread]
 
 	// Frees all internal dynamically allocated message data.
-	void FreeMessageData();
+	void FreeMessageData(); // [main thread]
 
 	/// Checks if the connection has been silent too long and has now timed out.
-	void DetectConnectionTimeOut();
+	void DetectConnectionTimeOut(); // [worker thread]
 
 	/// Refreshes RTT and other connection related statistics.
-	void ComputeStats();
+	void ComputeStats(); // [worker thread]
 	
 	/// Adds a new entry for outbound data statistics.
-	void AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
+	void AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages); // [worker thread]
 
 	/// Adds a new entry for inbound data statistics.
-	void AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages);
+	void AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages); // [worker thread]
 
-	/// Pulls in all new messages from the main thread to the worker thread side and admits them to the send priority queue. [worker thread only]
-	void AcceptOutboundMessages();
+	/// Pulls in all new messages from the main thread to the worker thread side and admits them to the send priority queue.
+	void AcceptOutboundMessages(); // [worker thread]
 
 	/// Starts the socket-specific disconnection procedure.
-	virtual void PerformDisconnection() = 0;
+	virtual void PerformDisconnection() = 0; 
 
 	/// The object that receives notifications of all received data.
-	IMessageHandler *inboundMessageHandler;
+	IMessageHandler *inboundMessageHandler; // [main thread]
 
 	/// The underlying socket on top of which this connection operates.
-	Socket *socket;
+	Socket *socket; // [set by main thread before the worker thread is running. Read-only when worker thread is running. Read by main and worker thread]
 
 	/// Specifies the current connection state.
-	ConnectionState connectionState;
+	ConnectionState connectionState; // [main and worker thread]
 
 	/// If true, all sends to the socket are on hold, until ResumeOutboundSends() is called.
-	bool bOutboundSendsPaused;
+	bool bOutboundSendsPaused; // [set by main thread, read by worker thread]
 
 	friend class NetworkServer;
 	friend class Network;
 
 	/// Posted when the application has pushed us some messages to handle.
-	Event eventMsgsOutAvailable;
+	Event eventMsgsOutAvailable; // [main and worker thread]
 
 	void operator=(const MessageConnection &); ///< Noncopyable, N/I.
 	MessageConnection(const MessageConnection &); ///< Noncopyable, N/I.
 
-	tick_t lastHeardTime; ///< The tick since last successful receive from the socket.	
-	float packetsInPerSec; ///< The average number of datagrams we are receiving/second.
-	float packetsOutPerSec; ///< The average number of datagrams we are sending/second.
-	float msgsInPerSec; ///< The average number of kNet messages we are receiving/second.
-	float msgsOutPerSec; ///< The average number of kNet messages we are sending/second.
-	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes kNet headers.
-	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers.
+	float rtt; ///< The currently estimated round-trip time, in milliseconds. [main and worker thread]
+	tick_t lastHeardTime; ///< The tick since last successful receive from the socket. [main and worker thread]
+	float packetsInPerSec; ///< The average number of datagrams we are receiving/second. [main and worker thread]
+	float packetsOutPerSec; ///< The average number of datagrams we are sending/second. [main and worker thread]
+	float msgsInPerSec; ///< The average number of kNet messages we are receiving/second. [main and worker thread]
+	float msgsOutPerSec; ///< The average number of kNet messages we are sending/second. [main and worker thread]
+	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes kNet headers. [main and worker thread]
+	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers. [main and worker thread]
 
 	/// A running number attached to each outbound message (not present in network stream) to 
 	/// break ties when deducing which message should come before which.
-	unsigned long outboundMessageNumberCounter;
+	unsigned long outboundMessageNumberCounter; // [worker thread]
 
 	/// A running number that is assigned to each outbound reliable message. This is used to
 	/// enforce proper ordering of ordered messages.
-	unsigned long outboundReliableMessageNumberCounter;
+	unsigned long outboundReliableMessageNumberCounter; // [worker thread]
 
 	/// A (messageID, contentID) pair.
 	typedef std::pair<u32, u32> MsgContentIDPair;
@@ -479,46 +503,45 @@ protected:
 
 	/// Each (messageID, contentID) pair has a packetID "stamp" associated to them to track 
 	/// and decimate out-of-order received obsoleted messages.
-	ContentIDReceiveTrack inboundContentIDStamps;
+	ContentIDReceiveTrack inboundContentIDStamps; // [worker thread]
 
 	typedef std::map<MsgContentIDPair, NetworkMessage*> ContentIDSendTrack;
 
-	ContentIDSendTrack outboundContentIDMessages;
+	ContentIDSendTrack outboundContentIDMessages; // [worker thread]
 
-	void CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg);
+	void CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg); // [worker thread]
 
-	void ClearOutboundMessageWithContentID(NetworkMessage *msg);
+	void ClearOutboundMessageWithContentID(NetworkMessage *msg); // [worker thread]
 
 	/// Checks whether the given (messageID, contentID)-pair is already out-of-date and obsoleted
 	/// by a newer packet and should not be processed.
 	/// @return True if the packet should be processed (there was no superceding record), and
 	///         false if the packet is old and should be discarded.
-	bool CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID);
+	bool CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID); // [worker thread]
 
-	void SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize);
+	void SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize); // [main and worker thread]
 
-	static const unsigned long MsgIdPingRequest = 0;
-	static const unsigned long MsgIdPingReply = 1;
-	static const unsigned long MsgIdFlowControlRequest = 2;
-	static const unsigned long MsgIdPacketAck = 3;
+	static const unsigned long MsgIdPingRequest = 1;
+	static const unsigned long MsgIdPingReply = 2;
+	static const unsigned long MsgIdFlowControlRequest = 3;
+	static const unsigned long MsgIdPacketAck = 4;
 	static const unsigned long MsgIdDisconnect = 0x3FFFFFFF;
 	static const unsigned long MsgIdDisconnectAck = 0x3FFFFFFE;
 
 	/// Private ctor - MessageConnections are instantiated by Network and NetworkServer classes.
 	explicit MessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
 
-	void StartWorkerThread();
-	void StopWorkerThread();
+	virtual void Initialize() {} // [main thread]
 
-	virtual void Initialize() {}
-
-	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; }
+	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; } // [main thread]
 };
 
 template<typename SerializableData>
 void MessageConnection::SendStruct(const SerializableData &data, unsigned long id, bool inOrder, 
 		bool reliable, unsigned long priority, unsigned long contentID)
 {
+	assert(InMainThreadContext());
+
 	const size_t dataSize = data.Size();
 
 	NetworkMessage *msg = StartNewMessage(id, dataSize);
@@ -542,6 +565,8 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
+	assert(InMainThreadContext());
+
 	const size_t dataSize = data.Size();
 
 	NetworkMessage *msg = StartNewMessage(data.MessageID(), dataSize);

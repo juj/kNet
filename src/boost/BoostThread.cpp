@@ -86,4 +86,14 @@ void Thread::Sleep(int msecs)
 	boost::this_thread::sleep(boost::posix_time::millisec(msecs));
 }
 
+ThreadId Thread::Id()
+{
+	return thread.get_id();
+}
+
+ThreadId Thread::CurrentThreadId()
+{
+	return boost::this_thread::get_id();
+}
+
 } // ~kNet

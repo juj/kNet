@@ -281,7 +281,7 @@ void Network::Init()
 
 NetworkWorkerThread *Network::GetOrCreateWorkerThread()
 {
-	static const int maxConnectionsPerThread = 1;
+	static const int maxConnectionsPerThread = 8;
 
 	// Find an existing thread with sufficiently low load.
 	for(size_t i = 0; i < workerThreads.size(); ++i)
@@ -298,7 +298,9 @@ NetworkWorkerThread *Network::GetOrCreateWorkerThread()
 
 void Network::AssignConnectionToWorkerThread(Ptr(MessageConnection) connection)
 {
-	GetOrCreateWorkerThread()->AddConnection(connection);
+	NetworkWorkerThread *workerThread = GetOrCreateWorkerThread();
+	connection->SetWorkerThread(workerThread);
+	workerThread->AddConnection(connection);
 }
 
 NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener, bool allowAddressReuse)
@@ -639,7 +641,7 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 		connection = new UDPMessageConnection(this, 0, socket, ConnectionPending);
 
 	connection->RegisterInboundMessageHandler(messageHandler);
-	GetOrCreateWorkerThread()->AddConnection(connection);
+	AssignConnectionToWorkerThread(connection);
 
 	return connection;
 }

@@ -33,6 +33,7 @@
 #include "kNet/FragmentedTransferManager.h"
 #include "kNet/NetworkServer.h"
 #include "kNet/Clock.h"
+#include "kNet/NetworkWorkerThread.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
@@ -152,6 +153,8 @@ bool MessageConnection::IsPending() const
 
 void MessageConnection::RunModalClient()
 {
+	assert(InMainThreadContext());
+
 	while(GetConnectionState() != ConnectionClosed)
 	{
 		Process();
@@ -163,6 +166,8 @@ void MessageConnection::RunModalClient()
 
 bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 {
+	assert(InMainThreadContext());
+
 	if (!IsPending())
 		return Connected();
 	if (GetConnectionState() != ConnectionPending)
@@ -172,16 +177,16 @@ bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 	while(GetConnectionState() == ConnectionPending && !timer.Test())
 		Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
 
-//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
 	LOG(LogWaits, "MessageConnection::WaitToEstablishConnection: Waited %f msecs for connection. Result: %s.",
 		timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
-//#endif
 
 	return GetConnectionState() == ConnectionOK;
 }
 
 void MessageConnection::Disconnect(int maxMSecsToWait)
 {
+	assert(InMainThreadContext());
+
 	if (!socket || !socket->IsWriteOpen())
 		return;
 /*
@@ -247,10 +252,8 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 */
 		}
 
-//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
 		LOG(LogWaits, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
 			timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str());
-//#endif
 	}
 
 	if (GetConnectionState() == ConnectionClosed)
@@ -259,6 +262,8 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 
 void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 {
+	assert(InMainThreadContext());
+
 //	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
 //		return;
 /*
@@ -284,12 +289,14 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 		LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
 		owner->CloseConnection(this);
 		owner = 0;
+		ownerServer = 0;
 	}
 
 	if (socket && socket->IsReadOpen())
 	{
 		socket->Close();
 		socket = 0;
+		assert(!IsWorkerThreadRunning());
 	}
 
 	connectionState = ConnectionClosed;
@@ -314,12 +321,16 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 
 void MessageConnection::PauseOutboundSends()
 {
+	assert(InMainThreadContext());
+
 	eventMsgsOutAvailable.Reset();
 	bOutboundSendsPaused = true;
 }
 
 void MessageConnection::ResumeOutboundSends()
 {
+	assert(InMainThreadContext());
+
 	bOutboundSendsPaused = false;
 	if (NumOutboundMessagesPending() > 0)
 		eventMsgsOutAvailable.Set();
@@ -327,6 +338,8 @@ void MessageConnection::ResumeOutboundSends()
 
 void MessageConnection::SetPeerClosed()
 {
+	assert(InWorkerThreadContext());
+
 	switch(connectionState)
 	{
 	case ConnectionPending:
@@ -350,6 +363,8 @@ void MessageConnection::SetPeerClosed()
 
 void MessageConnection::FreeMessageData() // [main thread ONLY]
 {
+	assert(!IsWorkerThreadRunning());
+
 	while(outboundAcceptQueue.Size() > 0)
 	{
 		NetworkMessage *msg = outboundAcceptQueue.TakeFront();
@@ -378,7 +393,7 @@ void MessageConnection::FreeMessageData() // [main thread ONLY]
 
 	fragmentedReceives.transfers.clear();
 
-	Lockable<ConnectionStatistics>::LockType stats_ = stats.Acquire();
+	Lockable<ConnectionStatistics>::LockType stats_ = statistics.Acquire();
 	stats_->ping.clear();
 	stats_->recvPacketIDs.clear();
 	stats_->traffic.clear();
@@ -386,6 +401,8 @@ void MessageConnection::FreeMessageData() // [main thread ONLY]
 
 void MessageConnection::DetectConnectionTimeOut()
 {
+	assert(InWorkerThreadContext());
+
 	if (connectionState == ConnectionClosed)
 		return;
 
@@ -400,6 +417,8 @@ void MessageConnection::DetectConnectionTimeOut()
 
 void MessageConnection::AcceptOutboundMessages() // [worker thread]
 {
+	assert(InWorkerThreadContext());
+
 	if (connectionState != ConnectionOK)
 		return;
 
@@ -425,6 +444,8 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 
 void MessageConnection::UpdateConnection() // [Called from the worker thread]
 {
+	assert(InWorkerThreadContext());
+
 	if (!socket)
 		return;
 
@@ -439,7 +460,7 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		pingTimer.StartMSecs(pingIntervalMSecs);
 	}
 
-	// Produce stats back to the application about the current connection state.
+	// Produce statistics back to the application about the current connection state.
 	if (statsRefreshTimer.TriggeredOrNotRunning())
 	{
 		ComputeStats();
@@ -545,7 +566,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 		fragment->contentID = message->contentID;
 		fragment->inOrder = message->inOrder;
 		fragment->reliable = true; // We don't send fragmented messages as unreliable messages - the risk of a fragment getting lost wastes bandwidth.
-		fragment->messageNumber = outboundMessageNumberCounter++;
+		fragment->messageNumber = outboundMessageNumberCounter++; ///\todo Convert to atomic increment, or this is a race condition.
 		fragment->reliableMessageNumber = message->reliableMessageNumber;
 		fragment->priority = message->priority;
 		fragment->sendCount = 0;
@@ -628,8 +649,8 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 		return;
 	}
 
-	msg->messageNumber = outboundMessageNumberCounter++;
-	msg->reliableMessageNumber = (msg->reliable ? outboundReliableMessageNumberCounter++ : 0);
+	msg->messageNumber = outboundMessageNumberCounter++; ///\todo Convert to atomic increment, or this is a race condition.
+	msg->reliableMessageNumber = (msg->reliable ? outboundReliableMessageNumberCounter++ : 0); ///\todo Convert to atomic increment, or this is a race condition.
 	msg->sendCount = 0;
 
 	if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
@@ -663,6 +684,8 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, 
                                     unsigned long contentID, const char *data, size_t numBytes)
 {
+	assert(InMainThreadContext());
+
 	NetworkMessage *msg = StartNewMessage(id, numBytes);
 	if (!msg)
 	{
@@ -682,6 +705,8 @@ void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrde
 /// Called from the main thread to fetch & handle all new inbound messages.
 void MessageConnection::Process(int maxMessagesToProcess)
 {
+	assert(InMainThreadContext());
+
 	assert(maxMessagesToProcess >= 0);
 
 	// Check the status of the connection worker thread.
@@ -720,6 +745,8 @@ void MessageConnection::Process(int maxMessagesToProcess)
 
 void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 {
+	assert(InMainThreadContext());
+
 	// If we have a message to process, no need to wait.
 	if (inboundMessageQueue.Size() > 0)
 		return;
@@ -747,20 +774,18 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 		while(inboundMessageQueue.Size() == 0 && GetConnectionState() == ConnectionOK && !timer.Test())
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
 
-//#ifdef VERBOSELOGGING ///\todo Enable conditionally disabling these prints.
 		if (timer.MSecsElapsed() >= 1000.f)
 		{
 				LOG(LogWaits, "MessageConnection::WaitForMessage: Waited %f msecs for a new message. ConnectionState: %s. %d messages in queue.",
 				timer.MSecsElapsed(), ConnectionStateToString(GetConnectionState()).c_str(), (int)inboundMessageQueue.Size());
 		}
-
-//#endif
-
 	}
 }
 
 NetworkMessage *MessageConnection::ReceiveMessage(int maxMSecsToWait) // [main thread]
 {
+	assert(InMainThreadContext());
+
 	// Check the status of the connection worker thread.
 	if (connectionState == ConnectionClosed)
 	{
@@ -812,10 +837,12 @@ int NetworkMessage::GetTotalDatagramPackedSize() const
 
 void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)
 {
+	assert(InWorkerThreadContext());
+
 	if (numBytes == 0 && numMessages == 0 && numPackets == 0)
 		return;
 
-	ConnectionStatistics &cs = stats.LockGet();
+	ConnectionStatistics &cs = statistics.LockGet();
 	cs.traffic.push_back(ConnectionStatistics::TrafficTrack());
 	ConnectionStatistics::TrafficTrack &t = cs.traffic.back();
 	t.bytesIn = t.messagesIn = t.packetsIn = 0;
@@ -823,15 +850,17 @@ void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long n
 	t.packetsOut = numPackets;
 	t.messagesOut = numMessages;
 	t.tick = Clock::Tick();
-	stats.Unlock();
+	statistics.Unlock();
 }
 
 void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)
 {
+	assert(InWorkerThreadContext());
+
 	if (numBytes == 0 && numMessages == 0 && numPackets == 0)
 		return;
 
-	ConnectionStatistics &cs = stats.LockGet();
+	ConnectionStatistics &cs = statistics.LockGet();
 	cs.traffic.push_back(ConnectionStatistics::TrafficTrack());
 	ConnectionStatistics::TrafficTrack &t = cs.traffic.back();
 	t.bytesOut = t.messagesOut = t.packetsOut = 0;
@@ -839,12 +868,14 @@ void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long nu
 	t.packetsIn = numPackets;
 	t.messagesIn = numMessages;
 	t.tick = Clock::Tick();
-	stats.Unlock();
+	statistics.Unlock();
 }
 
 void MessageConnection::ComputeStats()
 {
-	ConnectionStatistics &cs = stats.LockGet();
+	assert(InWorkerThreadContext());
+
+	ConnectionStatistics &cs = statistics.LockGet();
 
 	const tick_t maxEntryAge = Clock::TicksPerSec() * 5;
 	const tick_t timeNow = Clock::Tick();
@@ -860,7 +891,7 @@ void MessageConnection::ComputeStats()
 	if (cs.traffic.size() <= 1)
 	{
 		bytesInPerSec = bytesOutPerSec = msgsInPerSec = msgsOutPerSec = packetsInPerSec = packetsOutPerSec = 0.f;
-		stats.Unlock();
+		statistics.Unlock();
 		return;
 	}
 
@@ -889,11 +920,12 @@ void MessageConnection::ComputeStats()
 	msgsInPerSec = (float)totalMsgsIn / secs;
 	msgsOutPerSec = (float)totalMsgsOut / secs;
 
-	stats.Unlock();
+	statistics.Unlock();
 }
 
 void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg)
 {
+	assert(InWorkerThreadContext());
 	assert(msg);
 
 	if (msg->contentID == 0)
@@ -929,6 +961,8 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 
 void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 {
+	assert(InWorkerThreadContext());
+
 	///\bug Possible race condition here. Accessed by both main and worker thread through a call from FreeMessage.
 	assert(msg);
 	if (msg->contentID == 0)
@@ -942,6 +976,8 @@ void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 
 bool MessageConnection::CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID)
 {
+	assert(InWorkerThreadContext());
+
 	assert(contentID != 0);
 
 	tick_t now = Clock::Tick();
@@ -967,6 +1003,8 @@ bool MessageConnection::CheckAndSaveContentIDStamp(u32 messageID, u32 contentID,
 
 void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes)
 {
+	assert(InWorkerThreadContext());
+
 	assert(data && numBytes > 0);
 	assert(socket);
 
@@ -1019,9 +1057,18 @@ void MessageConnection::SetMaximumDataSendRate(int numBytesPerSec, int numDatagr
 {
 }
 
+void MessageConnection::RegisterInboundMessageHandler(IMessageHandler *handler)
+{ 
+	assert(InMainThreadContext());
+
+	inboundMessageHandler = handler;
+}
+
 void MessageConnection::SendPingRequestMessage()
 {
-	ConnectionStatistics &cs = stats.LockGet();
+	assert(InWorkerThreadContext());
+
+	ConnectionStatistics &cs = statistics.LockGet();
 	
 	u8 pingID = (u8)((cs.ping.size() == 0) ? 1 : (cs.ping.back().pingID + 1));
 	cs.ping.push_back(ConnectionStatistics::PingTrack());
@@ -1030,7 +1077,7 @@ void MessageConnection::SendPingRequestMessage()
 	pingTrack.pingSentTick = Clock::Tick();
 	pingTrack.pingID = pingID;
 
-	stats.Unlock();
+	statistics.Unlock();
 
 	NetworkMessage *msg = StartNewMessage(MsgIdPingRequest, 1);
 	msg->data[0] = pingID;
@@ -1041,6 +1088,8 @@ void MessageConnection::SendPingRequestMessage()
 
 void MessageConnection::HandlePingRequestMessage(const char *data, size_t numBytes)
 {
+	assert(InWorkerThreadContext());
+
 	if (numBytes != 1)
 	{
 		LOG(LogError, "Malformed PingRequest message received! Size was %d bytes, expected 1 byte!", (int)numBytes);
@@ -1057,13 +1106,15 @@ void MessageConnection::HandlePingRequestMessage(const char *data, size_t numByt
 
 void MessageConnection::HandlePingReplyMessage(const char *data, size_t numBytes)
 {
+	assert(InWorkerThreadContext());
+
 	if (numBytes != 1)
 	{
 		LOG(LogError, "Malformed PingReply message received! Size was %d bytes, expected 1 byte!", (int)numBytes);
 		return;
 	}
 
-	ConnectionStatistics &cs = stats.LockGet();
+	ConnectionStatistics &cs = statistics.LockGet();
 
 	// How much to bias the new rtt value against the old rtt estimation. 1.f - 100% biased to the new value. near zero - very stable and nonfluctuant.
 	const float rttPredictBias = 0.5f;
@@ -1075,14 +1126,14 @@ void MessageConnection::HandlePingReplyMessage(const char *data, size_t numBytes
 			cs.ping[i].pingReplyTick = Clock::Tick();
 			float newRtt = (float)Clock::TicksToMillisecondsD(Clock::TicksInBetween(cs.ping[i].pingReplyTick, cs.ping[i].pingSentTick));
 			cs.ping[i].replyReceived = true;
-			stats.Unlock();
+			statistics.Unlock();
 			rtt = rttPredictBias * newRtt + (1.f * rttPredictBias) * rtt;
 
 			LOG(LogVerbose, "HandlePingReplyMessage: %d.", (int)pingID);
 			return;
 		}
 
-	stats.Unlock();
+	statistics.Unlock();
 	LOG(LogError, "Received PingReply with ID %d in socket %s, but no matching PingRequest was ever sent!", (int)pingID, socket->ToString().c_str());
 }
 
@@ -1096,6 +1147,8 @@ std::string MessageConnection::ToString() const
 
 void MessageConnection::DumpStatus() const
 {
+	assert(InMainThreadContext());
+
 	char str[4096];
 
 	sprintf(str, "Connection Status: %s.\n"
@@ -1153,6 +1206,41 @@ Event MessageConnection::NewOutboundMessagesEvent() const
 	assert(!eventMsgsOutAvailable.IsNull());
 
 	return eventMsgsOutAvailable;
+}
+
+MessageConnection::SocketReadResult MessageConnection::ReadSocket()
+{ 
+	assert(InWorkerThreadContext());
+
+	size_t ignored = 0; 
+	return ReadSocket(ignored); 
+}
+
+#ifdef _DEBUG
+
+bool MessageConnection::InWorkerThreadContext() const
+{
+	bool ret = workerThread != 0 && Thread::CurrentThreadId() == workerThreadId;
+	return ret;
+}
+
+bool MessageConnection::InMainThreadContext() const
+{ 
+//	bool ret = !InWorkerThreadContext();
+	bool ret = workerThread == 0 || Thread::CurrentThreadId() != workerThreadId;
+
+	return ret;
+}
+#endif
+
+void MessageConnection::SetWorkerThread(NetworkWorkerThread *thread)
+{
+	workerThread = thread;
+#ifdef _DEBUG
+	workerThreadId = thread->ThreadObject().Id();
+#endif
+	
+	assert(InMainThreadContext());
 }
 
 EndPoint MessageConnection::LocalEndPoint() const

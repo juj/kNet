@@ -87,7 +87,7 @@ void Thread::Stop()
 
 		if (result == 0)
 		{
-			LOGNET("Warning: Received error %d from GetExitCodeThread in Thread::Stop()!", GetLastError());
+			LOG(LogError, "Warning: Received error %d from GetExitCodeThread in Thread::Stop()!", GetLastError());
 			break;
 		}
 		else if (exitCode != STILL_ACTIVE)
@@ -102,10 +102,10 @@ void Thread::Stop()
 	{
 		TerminateThread(threadHandle, -1);
 //		CloseHandle(threadHandle);
-		LOGNET("Warning: Had to forcibly terminate thread!");
+		LOG(LogError, "Warning: Had to forcibly terminate thread!");
 	}
 
-	LOGNET("Thread::Stop() called.");
+	LOG(LogInfo, "Thread::Stop() called.");
 
 	threadHandle = NULL;
 
@@ -119,12 +119,12 @@ void Thread::Stop()
 
 DWORD WINAPI ThreadEntryPoint(LPVOID lpParameter)
 {
-	LOGNET("ThreadEntryPoint: Thread started with param 0x%08X.", lpParameter);
+	LOG(LogInfo, "ThreadEntryPoint: Thread started with param 0x%08X.", lpParameter);
 
 	Thread *thread = reinterpret_cast<Thread*>(lpParameter);
 	if (!thread)
 	{
-		LOGNET("Invalid thread start parameter 0!");
+		LOG(LogError, "Invalid thread start parameter 0!");
 		return -1;
 	}
 	thread->_ThreadRun();
@@ -138,20 +138,20 @@ void Thread::_ThreadRun()
 	{
 		if (!threadEnabled)
 		{
-			LOGNET("ThreadEntryPoint: Thread immediately requested to quit.");
+			LOG(LogError, "ThreadEntryPoint: Thread immediately requested to quit.");
 			return;
 		}
 
 		invoker->Invoke();
 	} catch(NetException &e)
 	{
-		LOGNET("NetException thrown in thread: %s.", e.what());
+		LOG(LogError, "NetException thrown in thread: %s.", e.what());
 	} catch(std::exception &e)
 	{
-		LOGNET("std::exception thrown in thread: %s.", e.what());
+		LOG(LogError, "std::exception thrown in thread: %s.", e.what());
 	} catch(...)
 	{
-		LOGNET("Unknown exception thrown in thread.");
+		LOG(LogError, "Unknown exception thrown in thread.");
 	}
 }
 
@@ -169,13 +169,19 @@ void Thread::StartThread()
 	if (threadHandle == NULL)
 		throw NetException("Failed to create thread!");
 	else
-		LOGNET("Thread::Run(): Thread created.");
+		LOG(LogInfo, "Thread::Run(): Thread created.");
 }
 
 void Thread::Sleep(int msecs)
 {
 	///\todo Allow interruption between sleep.
 	Clock::Sleep(msecs);
+}
+
+ThreadId Thread::CurrentThreadId()
+{
+	assert(false && "Not Implemented!"); ///\todo
+	return 0;
 }
 
 } // ~kNet

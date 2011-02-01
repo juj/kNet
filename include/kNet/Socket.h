@@ -151,7 +151,7 @@ public:
 	/// the data for all clients is received through this same socket, and there are no individual sockets created for
 	/// each new connection, like is done with TCP.
 	bool IsUDPServerSocket() const { return transport == SocketOverUDP && type == ServerListenSocket; }
-	/// Returns whether this socket is a UDP slave socket.
+	/// Returns whether this socket is a UDP slave socket. [worker thread]
 	bool IsUDPSlaveSocket() const { return transport == SocketOverUDP && type == ServerClientSocket; }
 
 	/// Performs a write close operation on the socket, signalling the other end that no more data will be sent. Any data
@@ -220,7 +220,7 @@ public:
 	/// Returns true if there is new data to be read in. In that case, BeginReceive() will not return 0.
 	bool IsOverlappedReceiveReady() const;
 	/// Returns the event object that will be notified whenever data is available to be read from the socket.
-	Event GetOverlappedReceiveEvent();
+	Event GetOverlappedReceiveEvent(); // [worker thread]
 
 	/// Returns which transport layer the connection is using. This value is either SocketOverUDP or SocketOverTCP.
 	SocketTransportLayer TransportLayer() const { return transport; }

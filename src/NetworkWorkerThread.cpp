@@ -166,7 +166,6 @@ void NetworkWorkerThread::MainLoop()
 		for(size_t i = 0; i < connectionList.size(); ++i)
 		{
 			MessageConnection &connection = *connectionList[i];
-			UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection*>(&connection);
 
 			connection.UpdateConnection();
 			if (connection.GetConnectionState() == ConnectionClosed || !connection.GetSocket() || !connection.GetSocket()->Connected()) // This does not need to be checked each iteration.
@@ -255,6 +254,7 @@ void NetworkWorkerThread::MainLoop()
 			if ((index >> 1) < (int)connectionList.size())
 			{
 				MessageConnection *connection = connectionList[index>>1];
+				assert(connection);
 
 				try
 				{
@@ -272,7 +272,7 @@ void NetworkWorkerThread::MainLoop()
 					///\todo Could Close(0) the connection here.
 				}
 			}
-			else // An UDP server received a message.
+			else // A UDP server received a message.
 			{
 				int socketIndex = index - connectionList.size() * 2;
 				if (serverList.size() > 0)

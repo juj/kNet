@@ -73,6 +73,9 @@ public:
 		return true;
 	}
 
+	/// Inserts the new value into the queue.
+	/// \note This function is not thread-safe. Do not call this if you cannot guarantee that the other
+	///       thread will not be accessing the queue at the same time.
 	void InsertWithResize(const T &value)
 	{
 		bool success = Insert(value);
@@ -103,6 +106,9 @@ public:
 		maxElementsMask = newSize - 1;
 	}
 
+	/// Resizes this queue to hold twice the amount of maximum elements.
+	/// \note This function is not thread-safe. Do not call this if you cannot guarantee that the other
+	///       thread will not be accessing the queue at the same time.
 	void DoubleCapacity() { Resize(2*(maxElementsMask+1)); }
 
 	/// Returns a pointer to the first item in the queue. Can be called only from a single consumer thread.
@@ -120,12 +126,14 @@ public:
 		return &data[(head + index) & maxElementsMask];
 	}
 
+	/// Returns a pointer to the item at the given index. Can be called only from a single consumer thread.
 	const T *ItemAt(int index) const
 	{
 		assert(index < (int)Size());
 		return &data[(head + index) & maxElementsMask];
 	}
 
+	/// Returns true if the given element exists in the queue. Can be called only from a single consumer thread.
 	bool Contains(const T &item) const
 	{
 		for(int i = 0; i < (int)Size(); ++i)
@@ -134,6 +142,7 @@ public:
 		return false;
 	}
 
+	/// Removes the element at the given index.
 	///\note Not thread-safe.
 	void EraseItemAt(int index)
 	{
@@ -141,26 +150,6 @@ public:
 			EraseItemAtMoveFront(index);
 		else
 			EraseItemAtMoveBack(index);
-	}
-
-	///\note Not thread-safe.
-	void EraseItemAtMoveFront(int index)
-	{
-		assert(Size() > 0);
-		int numItemsToMove = index;
-		for(int i = 0; i < numItemsToMove; ++i)
-			data[(head+index + maxElementsMask+1 -i)&maxElementsMask] = data[(head+index + maxElementsMask+1 -i-1) &maxElementsMask];
-		head = (head+1) & maxElementsMask;
-	}
-
-	///\note Not thread-safe.
-	void EraseItemAtMoveBack(int index)
-	{
-		assert(Size() > 0);
-		int numItemsToMove = Size()-1-index;
-		for(int i = 0; i < numItemsToMove; ++i)
-			data[(head+index+i)&maxElementsMask] = data[(head+index+i+1)&maxElementsMask];
-		tail = (tail + maxElementsMask+1 - 1) & maxElementsMask;
 	}
 
 	/// Returns a pointer to the first item in the queue. Can be called only from a single consumer thread.
@@ -186,7 +175,7 @@ public:
 		tail = head;
 	}
 
-	/// Returns the number of elements currently filled in the queue.
+	/// Returns the number of elements currently filled in the queue. Can be called from either the consumer or producer thread.
 	unsigned long Size() const
 	{
 		unsigned long head_ = head;
@@ -197,6 +186,7 @@ public:
 			return maxElementsMask + 1 - (head_ - tail_);
 	}
 
+	/// Removes the first item in the queue. Can be called only from a single consumer thread.
 	void PopFront()
 	{
 		assert(head != tail);
@@ -218,6 +208,29 @@ private:
 
 	WaitFreeQueue(const WaitFreeQueue<T> &rhs);
 	void operator=(const WaitFreeQueue<T> &rhs);
+
+	/// Removes the element at the given index, but instead of filling the contiguous gap that forms by moving elements to the
+	/// right, this function will instead move items at the front of the queue.
+	///\note Not thread-safe.
+	void EraseItemAtMoveFront(int index)
+	{
+		assert(Size() > 0);
+		int numItemsToMove = index;
+		for(int i = 0; i < numItemsToMove; ++i)
+			data[(head+index + maxElementsMask+1 -i)&maxElementsMask] = data[(head+index + maxElementsMask+1 -i-1) &maxElementsMask];
+		head = (head+1) & maxElementsMask;
+	}
+
+	/// Removes the element at the given index, and fills the contiguous gap that forms by shuffling each item after index one space down.
+	///\note Not thread-safe.
+	void EraseItemAtMoveBack(int index)
+	{
+		assert(Size() > 0);
+		int numItemsToMove = Size()-1-index;
+		for(int i = 0; i < numItemsToMove; ++i)
+			data[(head+index+i)&maxElementsMask] = data[(head+index+i+1)&maxElementsMask];
+		tail = (tail + maxElementsMask+1 - 1) & maxElementsMask;
+	}
 };
 
 template<typename T>

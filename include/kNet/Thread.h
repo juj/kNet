@@ -37,6 +37,12 @@ typedef void (*ThreadEntryFunc)(void *threadStartData);
 namespace kNet
 {
 
+#ifdef KNET_USE_BOOST
+typedef boost::thread::id ThreadId;
+#else
+typedef unsigned int ThreadId;
+#endif
+
 class Thread : public RefCountable
 {
 public:
@@ -74,6 +80,9 @@ public:
 	/// to quit in between.
 	static void Sleep(int msecs);
 
+	ThreadId Id();
+
+	static ThreadId CurrentThreadId();
 private:
 	Thread(const Thread &);
 	void operator =(const Thread &);
