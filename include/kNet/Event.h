@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file Event.h
-	@brief The class \ref Event Event. Provides a mechanism for inter-thread signalling. */
+	@brief The class \ref kNet::Event Event. Provides a mechanism for inter-thread signalling. */
 
 #ifdef WIN32
 #include "win32/WS2Include.h"
@@ -33,22 +33,22 @@ enum EventWaitType
 
 /// Event is an inter-thread synchronization primitive that can be in one of two states: Set or Cleared. 
 /** A thread can avoid busy-waiting on a condition by using an Event to represent the triggering of that condition
-	and calling its \ref Event::Wait "Wait()" function to observe when the condition occurs.
+	and calling its \ref kNet::Event::Wait "Wait()" function to observe when the condition occurs.
 
-	Network socket read and write availability can be represented as an Event as well. The \ref EventArray 
+	Network socket read and write availability can be represented as an Event as well. The \ref kNet::EventArray 
 	EventArray class can be used to wait on list of events. This allows a mixture of socket and application events to
 	be handled using a single select() call.
 
-	To create a new event, call \ref CreateNewEvent CreateNewEvent with the wait type of EventWaitSignal.
+	To create a new event, call \ref kNet::CreateNewEvent CreateNewEvent with the wait type of EventWaitSignal.
 
 	The Event class does not follow RAII or data sharing patterns to avoid thread-safety issues. Therefore it is important
 	to note that:
 	- The default ctor initializes a "null" event - one that is not initialized.
 	- The default copy-ctor copies the event. The two events will be the same, i.e. does not matter which of them to wait or signal.
 	- The default assignment operator also copies the event, but does NOT free up the internal data used by the old event. When
-	  assigning over an Event that is not needed any more, call \ref Event::Close "Close()" on that event.
+	  assigning over an Event that is not needed any more, call \ref kNet::Event::Close "Close()" on that event.
 	- The default destructor of an Event does NOT delete the event. Before letting the last copy of an Event go out of scope,
-	  manually call \ref Event::Close "Close()" on that Event.
+	  manually call \ref kNet::Event::Close "Close()" on that Event.
 
 	This class represents a WSAEVENT on Windows, and socket or an eventfd on unix. */
 class Event

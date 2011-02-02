@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file EventArray.h
-	@brief The class \ref EventArray EventArray. Allows listening to multiple events at once.*/
+	@brief The class \ref kNet::EventArray EventArray. Allows listening to multiple events at once.*/
 
 #include <vector>
 

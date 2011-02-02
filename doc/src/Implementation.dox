@@ -17,7 +17,7 @@ We have built a reference implementation of the protocol in C++ using the WinSoc
 
 \section CoreComponents Core Components
 
-The structure of KristalliNet is presented in the diagram below.
+The structure of kNet is presented in the diagram below.
 
 \image html kNetStructure.png
 

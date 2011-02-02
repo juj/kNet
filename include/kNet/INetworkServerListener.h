@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file INetworkServerListener.h
-	@brief The \ref INetworkServerListener INetworkServerListener interface. Implementable by the client application. */
+	@brief The \ref kNet::INetworkServerListener INetworkServerListener interface. Implementable by the client application. */
 
 namespace kNet
 {

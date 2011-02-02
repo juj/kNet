@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file DataDeserializer.h
-	@brief The class \ref DataDeserializer DataDeserializer. */
+	@brief The class \ref kNet::DataDeserializer DataDeserializer. */
 
 #include "kNet/Types.h"
 

@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file IMessageHandler.h
-	@brief The \ref IMessageHandler IMessageHandler interface. Implementable by the client application. */
+	@brief The \ref kNet::IMessageHandler IMessageHandler interface. Implementable by the client application. */
 
 #include "kNet/Types.h"
 

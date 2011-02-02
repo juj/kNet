@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file Datagram.h
-	@brief The struct \ref Datagram Datagram. */
+	@brief The struct \ref kNet::Datagram Datagram. */
 
 namespace kNet
 {

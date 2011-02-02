@@ -1,21 +1,21 @@
 /**
 
-\page KristalliNetServer Implementing a KristalliNet Server
+\page kNetServer Implementing a kNet Server
 
-\section KristalliNetServerSec Implementing a KristalliNet Server
+\section kNetServerSec Implementing a kNet Server
 
-To write a server for KristalliNet, proceed through the following steps:
+To write a server for kNet, proceed through the following steps:
 <ol>
-<li>#include "KristalliNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
+<li>#include "kNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
 <li>Instantiate a \ref kNet::Network "Network" object. Make sure this object stays alive for the duration that the server is running.</li>
-<li>Define a class that implements the \ref kNet::INetworkServerListener "INetworkServerListener" interface. See the chapter \ref KristalliNetServerListener "" for more details.</li>
+<li>Define a class that implements the \ref kNet::INetworkServerListener "INetworkServerListener" interface. See the chapter \ref kNetServerListener "" for more details.</li>
 <li>Start listening for inbound connections by calling \ref kNet::Network::StartServer "Network::StartServer". This method returns a newly created \ref kNet::NetworkServer "NetworkServer" object, which will be used to manage all server-related operations.</li>
 <li>a) <b>Polled mode:</b> Perform processing in your main server loop, and periodically call \ref kNet::NetworkServer::ProcessMessages "NetworkServer::ProcessMessages" to manage new connection attempts and to receive new data from the client.
 <br />
 b) <b>Event mode:</b> Call \ref kNet::NetworkServer::RunModalServer "NetworkServer::RunModalServer" to have the server start its own event-based processing loop. It will notify about new connections through the listener object you registered when starting the server, until you shut down by calling \ref NetworkServer::StopModalServer "".</li>
 </ol>
 
-\section KristalliNetServerListener The INetworkServerListener Methods
+\section kNetServerListener The INetworkServerListener Methods
 
 The \ref kNet::INetworkServerListener "INetworkServerListener" interface is a callback that needs to be implemented in order to receive notifications from a running \ref NetworkServer "". There are three events that are sent by the server. 
 
@@ -56,7 +56,7 @@ The default implementation is not to do anything.
 
 \code
 
-#include "KristalliNet.h"
+#include "kNet.h"
 
 // Define a MessageID for our a custom message.
 const message_id_t cHelloMessageID = 10;

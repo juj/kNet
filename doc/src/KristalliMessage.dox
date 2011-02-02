@@ -1,14 +1,14 @@
 /**
-\page KristalliMessage KristalliNet Message Model
+\page KristalliMessage kNet Message Model
 
-\section KristalliMessageSec KristalliNet Message Model
+\section KristalliMessageSec kNet Message Model
 
-This page defines the KristalliNet Message Model, which is a set of features that promotes the transport-level messages from bytes of raw data to a more complete model for communication, by associating with each message additional information that specifies how the messages are be treated in the channel and with respect to other messages.
+This page defines the kNet Message Model, which is a set of features that promotes the transport-level messages from bytes of raw data to a more complete model for communication, by associating with each message additional information that specifies how the messages are be treated in the channel and with respect to other messages.
   
-In the KristalliNet message model, a message is a structure containing the following fields:
+In the kNet message model, a message is a structure containing the following fields:
 
 <div style="background-color: #E0B0B0; padding: 5px; border: solid 1px black;">
-<b>KristalliNet Message</b>
+<b>kNet Message</b>
 <br />
 <table style="border: 0px;">
 <tr><td style="border: 0px;"><b>MessageID</b></td><td style="border: 0px;">Specifies the type of the message.</td></tr>
@@ -24,16 +24,16 @@ To understand this section, it is important to have fresh in mind the following 
 <ol>
 <li>Segments are lost.</li>
 <li>Segments are received out of order.</li>
-<li>(For thoroughness, segments can be duplicated, but KristalliNet transport layer detects this and removes all duplication, so this does not apply here.)</li>
+<li>(For thoroughness, segments can be duplicated, but kNet transport layer detects this and removes all duplication, so this does not apply here.)</li>
 </ol>
 
 The approach taken by the TCP protocol is to hide these issues from the user, whereas the UDP protocol leaves it up to the application to handle these in whatever way it pleases.
 
-Under perfect network conditions IP segments arrive in a timely manner and in their proper order without packet loss. In these cases, it matters very little whether KristalliNet is used over TCP or UDP and they effectively perform the same (transport channel -wise).
+Under perfect network conditions IP segments arrive in a timely manner and in their proper order without packet loss. In these cases, it matters very little whether kNet is used over TCP or UDP and they effectively perform the same (transport channel -wise).
  
 It is during times of network congestion and packet loss when the differences are visible. It is not possible to develop a fit-all solution on the transport layer that would hide these problems from the application completely, while providing optimal bandwidth and latency. A robust network application should have proper mechanisms built into its application level protocol to give it resiliency against periods of network choke and loss. 
 
-Some network protocols take the approach of letting the application build virtual transmission channels inside a single established connection. Reliability and ordering are treated as parameters of the channels. KristalliNet Message Model differs from this by defining these parameters at the level of individual message instances. 
+Some network protocols take the approach of letting the application build virtual transmission channels inside a single established connection. Reliability and ordering are treated as parameters of the channels. kNet Message Model differs from this by defining these parameters at the level of individual message instances. 
 
 This page describes the different relationships that can be defined for application-level messages. The techniques presented here can be used to minimize unnecessary application-induced message latency. Applications that do not have a requirement for real-time messaging can benefit from these techniques as well by using the message replacement feature, which cuts down bandwidth consumption and eases network recovery in the presence of packet loss.
 
@@ -79,11 +79,11 @@ It is not always possible to develop a protocol where each message is logically 
 Some application-level messages can be seen "equivalent", in the sense that they either carry the same information, or the information in one message is a subset of the information carried in the other. It can be that the messages are of the same type and one is just a newer version of itself. In this case, we can conclude that the newer message renders the older message obsolete, and so the old message can be discarded immediately, even if the old message was marked as reliable. This optimization is implemented at two levels:
 
 <ul>
-<li>In the outbound message queue of the sender, message replacement is constantly tracked and if a new message is admitted that replaces a message existing in the queue, the existing one is removed immediately. <b>This feature is the major reason why KristalliNet over UDP can utilize bandwidth effectively even in the presence of network congestion.</b> Data will not "pile up" in the outbound queue as it would do with TCP, thus avoiding fat bursted transfers after the network recovers from a period of data loss. This optimization is commonly called <b>late data choice</b> in research papers.</li>
+<li>In the outbound message queue of the sender, message replacement is constantly tracked and if a new message is admitted that replaces a message existing in the queue, the existing one is removed immediately. <b>This feature is the major reason why kNet over UDP can utilize bandwidth effectively even in the presence of network congestion.</b> Data will not "pile up" in the outbound queue as it would do with TCP, thus avoiding fat bursted transfers after the network recovers from a period of data loss. This optimization is commonly called <b>late data choice</b> in research papers.</li>
 <li>At the receiving end, when each message is decoded, it is checked whether the new message was already obsoleted by a previously received message. If so, the new message can be ignored. This effectively removes problems caused by possible out-of-order received messages while avoiding application-induced latency.</li>
 </ul>
 
-This optimization can only be applied when KristalliNet is operating over UDP. Each message <b>instance</b> can be associated with a <b>ContentID</b> value. Messages of the same type (equal PacketIDs) that also have the same ContentID are understood to contain different versions of the same data. The send queue uses these IDs to recognize when old data is being replaced with a newer version of the same data, and will discard the old data.
+This optimization can only be applied when kNet is operating over UDP. Each message <b>instance</b> can be associated with a <b>ContentID</b> value. Messages of the same type (equal PacketIDs) that also have the same ContentID are understood to contain different versions of the same data. The send queue uses these IDs to recognize when old data is being replaced with a newer version of the same data, and will discard the old data.
 
 For the same reasons as with message prioritization, using this method over a TCP connection has very little effect.   
 
@@ -134,7 +134,7 @@ It is somewhat common of the messages to form a graph of dependencies in many-to
 \dotfile OneDependsOnMany.dot "Message A depends on messages B, C and D being applied first."
 </div>
 
-KristalliNet supports many-to-one and one-to-many message dependencies. However, every time when you face a situation like this, you may want to consider one of the following:
+kNet supports many-to-one and one-to-many message dependencies. However, every time when you face a situation like this, you may want to consider one of the following:
 
 <ol>
 <li>Model the dependency as is and preserve the plurality in the dependency chain.</li>

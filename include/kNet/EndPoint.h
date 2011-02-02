@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file EndPoint.h
-	@brief The class \ref EndPoint Endpoint. Represents an endpoint of a network connection. */
+	@brief The class \ref kNet::EndPoint Endpoint. Represents an endpoint of a network connection. */
 
 #ifdef LINUX
 #include <sys/types.h>

@@ -14,8 +14,8 @@
 #pragma once
 
 /** @file FragmentedTransferManager.h
-	@brief The classes \ref FragmentedSendManager FragmentedSendManager and 
-	\ref FragmentedSendManager FragmentedReceiveManager. For managing partial transfers. */
+	@brief The classes \ref kNet::FragmentedSendManager FragmentedSendManager and 
+	\ref kNet::FragmentedSendManager FragmentedReceiveManager. For managing partial transfers. */
 
 #include <map>
 #include <vector>

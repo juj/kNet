@@ -1,10 +1,10 @@
 /**
  \mainpage
 
-<div style="color: darkgray; font-size:50%; ">Document version 2.4 <br />2010/09/27</div> 
-  KristalliNet is a connection-oriented network protocol for transmitting arbitrary application-specific messages between network hosts. It is designed primarily for applications that require a method for rapid space-efficient real-time communication. 
+<div style="color: darkgray; font-size:50%; ">Document version 2.5 <br />2011/02/02</div> 
+  kNet is a connection-oriented network protocol for transmitting arbitrary application-specific messages between network hosts. It is designed primarily for applications that require a method for rapid space-efficient real-time communication. 
 
-KristalliNet consists of two major specifications. At a lower level, the <b>Transport-level specification</b> defines methods like:
+kNet consists of two major specifications. At a lower level, the <b>Transport-level specification</b> defines methods like:
 <ul>
 <li>How a session is initialized, maintained and shut down.</li>
 <li>How data bytes are transferred between hosts.</li>
@@ -58,8 +58,8 @@ This documentation was generated as a part of the C++ reference implementation o
 <td valign="top">
 <ul style="padding-left: 10px; padding-top: 0px; margin-top: 0px;">
 <li>\ref ImplementationOverview ""</li>
-<li>\ref KristalliNetServer ""</li>
-<li>\ref KristalliNetClient ""</li>
+<li>\ref kNetServer ""</li>
+<li>\ref kNetClient ""</li>
 <li>\ref ImmediateModeSerialization ""</li>
 <li>\ref DeclarativeModeSerialization ""</li>
 </td>
@@ -96,6 +96,6 @@ The following samples demonstrate how to use the protocol library.
 
 \section DownloadLinks Download
 
-Download packages of the library or the samples are not yet available. We are looking into providing these as soon as possible.
+Downloadable prebuilt packages of the library or the samples are not yet available. The official source repository of kNet is hosted at https://bitbucket.org/clb/knet/ . 
 
 */

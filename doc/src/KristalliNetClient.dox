@@ -1,21 +1,21 @@
 /**
 
-\page KristalliNetClient Writing a KristalliNet Client
+\page kNetClient Writing a kNet Client
 
-\section KristalliNetClientSec Writing a KristalliNet Client
+\section kNetClientSec Writing a kNet Client
 
-To write a client application for KristalliNet, proceed through the following steps:
+To write a client application for kNet, proceed through the following steps:
 <ol>
-<li>#include "KristalliNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
+<li>#include "kNet.h". Make sure this #include is positioned before #include <windows.h>, or alternatively add a project-wide #define _WINSOCKAPI_. See \ref WS2Include.h "" for more details.</li>
 <li>Instantiate a \ref kNet::Network "Network" object. Make sure this object stays alive for the duration that the server is running.</li>
-<li>Define a class that implements the \ref kNet::IMessageHandler "IMessageHandler" interface. See \ref KristalliNetClientMsgHandler "" for more details.</li>
-<li>Connect to a KristalliNet server by calling \ref kNet::Network::Connect "Network::Connect". You need to know the hostname and listen port of the server, as well as whether the server is in TCP or UDP mode. This method immediately returns a \ref MessageConnection "" object, but that connection might not have been established yet.</li>
+<li>Define a class that implements the \ref kNet::IMessageHandler "IMessageHandler" interface. See \ref kNetClientMsgHandler "" for more details.</li>
+<li>Connect to a kNet server by calling \ref kNet::Network::Connect "Network::Connect". You need to know the hostname and listen port of the server, as well as whether the server is in TCP or UDP mode. This method immediately returns a \ref MessageConnection "" object, but that connection might not have been established yet.</li>
 <li>a) <b>Polled mode:</b>Drive the application through your own main client loop, and periodically call \ref kNet::MessageConnection::ProcessMessages "MessageConnection::ProcessMessages" to receive new data from the server.
 <br />
 b) <b>Event mode:</b> Call \ref kNet::MessageConnection::RunModalClient "MessageConnection::RunModalClient" to have the MessageConnection object start up its own event-based processing loop. It will notify about new connections through the listener object your registered when connecting. To return from the event loop, call \ref MessageConnection::Disconnect "". </li>
 </ol>
 
-\section KristalliNetClientMsgHandler MessageConnection Event Listener
+\section kNetClientMsgHandler MessageConnection Event Listener
 
 For each MessageConnection that is created, the application needs to associate a listener object to manage the messages that are received.
 
@@ -30,7 +30,7 @@ This concept of processing incoming messages through a message listener is demon
 
 \code
 
-#include "KristalliNet.h"
+#include "kNet.h"
 
 // Define a MessageID for our a custom message.
 const message_id_t cHelloMessageID = 10;

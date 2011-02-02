@@ -1,9 +1,9 @@
 /**
-\page KristalliXML Describing KristalliNet Messages in XML
+\page KristalliXML Describing kNet Messages in XML
   
-\section KristalliXMLSec Describing KristalliNet Messages in XML
+\section KristalliXMLSec Describing kNet Messages in XML
   
-Letting the (de)serialization code serve as the sole reference and documentation of your application-level protocol can be very fragile for maintenance and future development. The KristalliNet Application-level specification provides an XML schema for defining messages in the KristalliNet Message Model. These XML files have the following uses: 
+Letting the (de)serialization code serve as the sole reference and documentation of your application-level protocol can be very fragile for maintenance and future development. The kNet Application-level specification provides an XML schema for defining messages in the kNet Message Model. These XML files have the following uses: 
 
 <ul>
 <li>They serve as a good single source reference for the whole protocol.</li>

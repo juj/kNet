@@ -51,7 +51,7 @@ The \ref SerializationStructCompilerSampleSec "MessageCompiler" tool produces st
  
 \section SerializeStructCompile Compiling serialization structures from message description files
 
-While the application developer can define its messages by writing Serializable Structures by hand, this is not even necessary, due to the help of \ref SerializationStructCompilerSampleSec "MessageCompiler". This tool generates C++ headers out of \ref KristalliXML "KristalliNet Message XML files". See the \ref MessageCompiler "MessageCompiler" page for instructions on how to use this tool.
+While the application developer can define its messages by writing Serializable Structures by hand, this is not even necessary, due to the help of \ref SerializationStructCompilerSampleSec "MessageCompiler". This tool generates C++ headers out of \ref KristalliXML "kNet Message XML files". See the \ref MessageCompiler "MessageCompiler" page for instructions on how to use this tool.
 
 The code generation process performed by the tool is best explained using an example.
 
