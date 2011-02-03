@@ -64,12 +64,12 @@ void EventArray::AddEvent(const Event &e)
 	{
 	case EventWaitRead:
 	case EventWaitSignal:
-		FD_SET(e.fd, &readfds);
-		nfds = max(nfds, e.fd+1);
+		FD_SET(e.fd[0], &readfds);
+		nfds = max(nfds, e.fd[0]+1);
 		break;
-	case EventWaitWrite:
-		FD_SET(e.fd, &writefds);
-		nfds = max(nfds, e.fd+1);
+	case EventWaitWrite: // The Event represents write-availability of the socket, in which case, e.fd[0] is the socket (e.fd[1] is left unused)
+		FD_SET(e.fd[0], &writefds);
+		nfds = max(nfds, e.fd[0]+1);
 	default:
 		break;
 	}
@@ -115,11 +115,11 @@ int EventArray::Wait(int msecs)
 		{
 		case EventWaitRead:
 		case EventWaitSignal:
-			if (FD_ISSET(cachedEvents[i].fd, &readfds))
+			if (FD_ISSET(cachedEvents[i].fd[0], &readfds))
 				return i;
 			break;
 		case EventWaitWrite:
-			if (FD_ISSET(cachedEvents[i].fd, &writefds))
+			if (FD_ISSET(cachedEvents[i].fd[0], &writefds))
 				return i;
 		default:
 			break; // The dummy events are skipped over.

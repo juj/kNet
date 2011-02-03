@@ -99,7 +99,7 @@ public:
 	explicit Event(WSAEVENT wsaEvent, EventWaitType eventType);
 #elif LINUX
 public:
-	int fd;
+	int fd[2]; // fd[0] is used for reading, fd[1] for writing.
 
 	/// Wraps the given socket file descriptor into this event.
 	explicit Event(int /*SOCKET*/ fd, EventWaitType eventType);

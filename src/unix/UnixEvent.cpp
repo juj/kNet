@@ -21,24 +21,28 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/eventfd.h>
 #include <errno.h>
 #include <string.h>
 
 #include "kNet/Event.h"
+#include "kNet/Types.h"
 #include "kNet/NetworkLogging.h"
 
 namespace kNet
 {
 
 Event::Event()
-:fd(-1)
 {
+	fd[0] = -1;
+	fd[1] = -1;
+	type = EventWaitDummy;
 }
 
 Event::Event(int /*SOCKET*/ fd_, EventWaitType eventType)
-:type(eventType), fd(fd_)
+:type(eventType)
 {
+	fd[0] = fd_;
+	fd[1] = -1; // When creating an Event off a SOCKET, this Event is never Set manually, so leave the write descriptor null.
 }
 
 Event CreateNewEvent(EventWaitType type)
@@ -53,18 +57,22 @@ void Event::Create(EventWaitType type_)
 {
 	type = type_;
 
-	// eventfd() reference: see http://linux.die.net/man/2/eventfd
-	fd = eventfd(0, 0);
-	if (fd == -1)
+	if (pipe(fd) == -1)
 	{
-		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), (int)errno);
+		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), errno);
 		return;
 	}
 
-	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+	int ret = fcntl(fd[0], F_SETFL, O_NONBLOCK);
 	if (ret == -1)
 	{
-		LOG(LogError, "fcntl call failed: %s(%d)!", strerror(errno), (int)errno);
+		LOG(LogError, "Event::Create: fcntl failed to set fd[0] in nonblocking mode: %s(%d)", strerror(errno), errno);
+		return;
+	}
+	ret = fcntl(fd[1], F_SETFL, O_NONBLOCK);
+	if (ret == -1)
+	{
+		LOG(LogError, "Event::Create: fcntl failed to set fd[1] in nonblocking mode: %s(%d)", strerror(errno), errno);
 		return;
 	}
 
@@ -89,16 +97,22 @@ void Event::Create(EventWaitType type_)
 
 void Event::Close()
 {
-	if (fd != -1)
+	if (fd[0] != -1)
 	{
-		close(fd);
-		fd = -1;
+		close(fd[0]);
+		fd[0] = -1;
+	}
+	if (fd[1] != -1)
+	{
+		close(fd[1]);
+		fd[1] = -1;
 	}
 }
 
 bool Event::IsNull() const
 {
-	return fd == -1;
+	// An Event is null iff it is not readable. (There can be read-only Events which are not writable)
+	return fd[0] == -1;
 }
 
 void Event::Reset()
@@ -109,8 +123,8 @@ void Event::Reset()
 		return;
 	}
 
-	eventfd_t val = 0;
-	int ret = eventfd_read(fd, &val);
+	uint64_t val = 0;
+	int ret = read(fd[0], &val, sizeof(val));
 	if (ret == -1 && errno != EAGAIN)
 		LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
 }
@@ -122,11 +136,17 @@ void Event::Set()
 		LOG(LogError, "Event::Set() failed! Tried to set an uninitialized Event!");
 		return;
 	}
+	if (fd[1] == -1)
+	{
+		LOG(LogError, "Event::Set() failed! Tried to set a read-only Event! (This event is probably a Socket read descriptor");
+		return;
+	}
 
-	int ret = eventfd_write(fd, 1);
+	uint64_t val = 1;
+	int ret = write(fd[1], &val, sizeof(val));
 	if (ret == -1)
 	{
-		LOG(LogError, "Event::Set() eventfd_write() failed: %s(%d)!", strerror(errno), (int)errno);
+		LOG(LogError, "Event::Set() write() failed: %s(%d)!", strerror(errno), (int)errno);
 		return;
 	}
 }
@@ -141,18 +161,19 @@ bool Event::Test() const
 
 	if (type == EventWaitSignal)
 	{
-		eventfd_t val = 0;
-		int ret = eventfd_read(fd, &val);
+		uint64_t val = 0;
+		int ret = read(fd[0], &val, sizeof(val));
 		if (ret == -1 && errno != EAGAIN)
 		{
-			LOG(LogError, "Event::Test() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+			LOG(LogError, "Event::Test() read() failed: %s(%d)!", strerror(errno), (int)errno);
 			return false;
 		}
-		if (val != 0)
+		if (val != 0 && fd[1] != -1) // We must re-set this event since reading it resets the event, and Test() isn't supposed to clear the event after reading.
 		{
-			int ret = eventfd_write(fd, 1);
+			uint64_t val = 1;
+			int ret = write(fd[1], &val, sizeof(val));
 			if (ret == -1)
-				LOG(LogError, "Event::Test() eventfd_write() failed: %s(%d)!", strerror(errno), (int)errno);
+				LOG(LogError, "Event::Test() write() failed: %s(%d)!", strerror(errno), (int)errno);
 		}
 		return val != 0;
 	}
@@ -177,10 +198,10 @@ bool Event::Wait(unsigned long msecs) const
 	tv.tv_usec = (msecs - tv.tv_sec * 1000) * 1000;
 
 	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-	// Wait on a read state, since http://linux.die.net/man/2/eventfd :
+	FD_SET(fd[0], &fds);
+	// Wait on a read state.
 	// "The file descriptor is readable if the counter has a value greater than 0."
-	int ret = select(fd+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
+	int ret = select(fd[0]+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{
 		LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), (int)errno);
