@@ -23,6 +23,7 @@
 #endif
 
 #include <cstring>
+#include <cstdio>
 #include <string>
 
 namespace kNet

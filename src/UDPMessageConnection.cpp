@@ -17,6 +17,7 @@
 	\todo Flow control currently disabled since testing out the performance of UDT. */
 
 #include <cmath>
+#include <cstdio>
 
 #include "kNet/Allocator.h"
 #include "kNet/MessageConnection.h"
