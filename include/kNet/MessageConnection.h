@@ -331,19 +331,19 @@ protected:
 	/// connections and servers, and not just this one.
 	NetworkWorkerThread *workerThread; // [set and read only by worker thread]
 
-#ifdef _DEBUG
+#ifdef THREAD_CHECKING_ENABLED
 	/// In debug mode, we track and enforce thread safety constraints through this ID. 
 	ThreadId workerThreadId; // [set by worker thread on thread startup, read by both main and worker thread]
-
-	/// Returns true if the current thread of execution is in the network worker thread.
-	bool InWorkerThreadContext() const; // [main and worker thread]
-
-	/// Returns true if the current thread of execution is not in the network worker thread (it is in the main thread).
-	bool InMainThreadContext() const; // [main and worker thread]
-
-	/// Returns true if this MessageConnection is associated to a NetworkWorkerThread to maintain.
-	bool IsWorkerThreadRunning() const { return workerThread != 0; } // [main and worker thread]
 #endif
+
+	/// Performs a check that asserts that the current thread of execution is in the network worker thread.
+	void AssertInWorkerThreadContext() const; // [main and worker thread]
+
+	/// Performs a check that asserts that the current thread of execution is not in the network worker thread (it is the main thread).
+	void AssertInMainThreadContext() const; // [main and worker thread]
+
+	/// Returns true if this MessageConnection is associated with a NetworkWorkerThread to maintain.
+	bool IsWorkerThreadRunning() const { return workerThread != 0; } // [main and worker thread]
 
 	/// A queue populated by the main thread to give out messages to the MessageConnection work thread to process.
 	WaitFreeQueue<NetworkMessage*> outboundAcceptQueue; // [produced by main thread, consumed by worker thread]
@@ -540,7 +540,7 @@ template<typename SerializableData>
 void MessageConnection::SendStruct(const SerializableData &data, unsigned long id, bool inOrder, 
 		bool reliable, unsigned long priority, unsigned long contentID)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	const size_t dataSize = data.Size();
 
@@ -565,7 +565,7 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	const size_t dataSize = data.Size();
 

@@ -153,7 +153,7 @@ bool MessageConnection::IsPending() const
 
 void MessageConnection::RunModalClient()
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	while(GetConnectionState() != ConnectionClosed)
 	{
@@ -166,7 +166,7 @@ void MessageConnection::RunModalClient()
 
 bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	if (!IsPending())
 		return Connected();
@@ -185,7 +185,7 @@ bool MessageConnection::WaitToEstablishConnection(int maxMSecsToWait)
 
 void MessageConnection::Disconnect(int maxMSecsToWait)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	if (!socket || !socket->IsWriteOpen())
 		return;
@@ -262,7 +262,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 
 void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 //	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
 //		return;
@@ -321,7 +321,7 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
 
 void MessageConnection::PauseOutboundSends()
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	eventMsgsOutAvailable.Reset();
 	bOutboundSendsPaused = true;
@@ -329,7 +329,7 @@ void MessageConnection::PauseOutboundSends()
 
 void MessageConnection::ResumeOutboundSends()
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	bOutboundSendsPaused = false;
 	if (NumOutboundMessagesPending() > 0)
@@ -338,7 +338,7 @@ void MessageConnection::ResumeOutboundSends()
 
 void MessageConnection::SetPeerClosed()
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	switch(connectionState)
 	{
@@ -401,7 +401,7 @@ void MessageConnection::FreeMessageData() // [main thread ONLY]
 
 void MessageConnection::DetectConnectionTimeOut()
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (connectionState == ConnectionClosed)
 		return;
@@ -417,7 +417,7 @@ void MessageConnection::DetectConnectionTimeOut()
 
 void MessageConnection::AcceptOutboundMessages() // [worker thread]
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (connectionState != ConnectionOK)
 		return;
@@ -444,7 +444,7 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 
 void MessageConnection::UpdateConnection() // [Called from the worker thread]
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (!socket)
 		return;
@@ -684,7 +684,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrder, unsigned long priority, 
                                     unsigned long contentID, const char *data, size_t numBytes)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	NetworkMessage *msg = StartNewMessage(id, numBytes);
 	if (!msg)
@@ -705,7 +705,7 @@ void MessageConnection::SendMessage(unsigned long id, bool reliable, bool inOrde
 /// Called from the main thread to fetch & handle all new inbound messages.
 void MessageConnection::Process(int maxMessagesToProcess)
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	assert(maxMessagesToProcess >= 0);
 
@@ -745,7 +745,7 @@ void MessageConnection::Process(int maxMessagesToProcess)
 
 void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	// If we have a message to process, no need to wait.
 	if (inboundMessageQueue.Size() > 0)
@@ -784,7 +784,7 @@ void MessageConnection::WaitForMessage(int maxMSecsToWait) // [main thread]
 
 NetworkMessage *MessageConnection::ReceiveMessage(int maxMSecsToWait) // [main thread]
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	// Check the status of the connection worker thread.
 	if (connectionState == ConnectionClosed)
@@ -837,7 +837,7 @@ int NetworkMessage::GetTotalDatagramPackedSize() const
 
 void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (numBytes == 0 && numMessages == 0 && numPackets == 0)
 		return;
@@ -855,7 +855,7 @@ void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long n
 
 void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (numBytes == 0 && numMessages == 0 && numPackets == 0)
 		return;
@@ -873,7 +873,7 @@ void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long nu
 
 void MessageConnection::ComputeStats()
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	ConnectionStatistics &cs = statistics.LockGet();
 
@@ -925,7 +925,7 @@ void MessageConnection::ComputeStats()
 
 void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage *msg)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 	assert(msg);
 
 	if (msg->contentID == 0)
@@ -961,7 +961,7 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 
 void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	///\bug Possible race condition here. Accessed by both main and worker thread through a call from FreeMessage.
 	assert(msg);
@@ -976,7 +976,7 @@ void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 
 bool MessageConnection::CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	assert(contentID != 0);
 
@@ -1003,7 +1003,7 @@ bool MessageConnection::CheckAndSaveContentIDStamp(u32 messageID, u32 contentID,
 
 void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	assert(data && numBytes > 0);
 	assert(socket);
@@ -1059,14 +1059,14 @@ void MessageConnection::SetMaximumDataSendRate(int numBytesPerSec, int numDatagr
 
 void MessageConnection::RegisterInboundMessageHandler(IMessageHandler *handler)
 { 
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	inboundMessageHandler = handler;
 }
 
 void MessageConnection::SendPingRequestMessage()
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	ConnectionStatistics &cs = statistics.LockGet();
 	
@@ -1088,7 +1088,7 @@ void MessageConnection::SendPingRequestMessage()
 
 void MessageConnection::HandlePingRequestMessage(const char *data, size_t numBytes)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (numBytes != 1)
 	{
@@ -1106,7 +1106,7 @@ void MessageConnection::HandlePingRequestMessage(const char *data, size_t numByt
 
 void MessageConnection::HandlePingReplyMessage(const char *data, size_t numBytes)
 {
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	if (numBytes != 1)
 	{
@@ -1147,7 +1147,7 @@ std::string MessageConnection::ToString() const
 
 void MessageConnection::DumpStatus() const
 {
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 
 	char str[4096];
 
@@ -1210,37 +1210,37 @@ Event MessageConnection::NewOutboundMessagesEvent() const
 
 MessageConnection::SocketReadResult MessageConnection::ReadSocket()
 { 
-	assert(InWorkerThreadContext());
+	AssertInWorkerThreadContext();
 
 	size_t ignored = 0; 
 	return ReadSocket(ignored); 
 }
 
-#ifdef _DEBUG
-
-bool MessageConnection::InWorkerThreadContext() const
+void MessageConnection::AssertInWorkerThreadContext() const
 {
+#ifdef THREAD_CHECKING_ENABLED
 	bool ret = workerThread != 0 && Thread::CurrentThreadId() == workerThreadId;
-	return ret;
+	assert(ret);
+#endif
 }
 
-bool MessageConnection::InMainThreadContext() const
-{ 
+void MessageConnection::AssertInMainThreadContext() const
+{
+#ifdef THREAD_CHECKING_ENABLED
 //	bool ret = !InWorkerThreadContext();
 	bool ret = workerThread == 0 || Thread::CurrentThreadId() != workerThreadId;
-
-	return ret;
-}
+	assert(ret);
 #endif
+}
 
 void MessageConnection::SetWorkerThread(NetworkWorkerThread *thread)
 {
 	workerThread = thread;
-#ifdef _DEBUG
+#ifdef THREAD_CHECKING_ENABLED
 	workerThreadId = thread->ThreadObject().Id();
 #endif
 	
-	assert(InMainThreadContext());
+	AssertInMainThreadContext();
 }
 
 EndPoint MessageConnection::LocalEndPoint() const

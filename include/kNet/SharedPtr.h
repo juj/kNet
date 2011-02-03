@@ -16,7 +16,6 @@
 /** @file SharedPtr.h
 	@brief SharedPtr, intrusive reference counting for multiple pointer owners. */
 
-#include <malloc.h>
 #include <cstdlib>
 #include <cassert>
 

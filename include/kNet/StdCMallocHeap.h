@@ -16,7 +16,7 @@
 /** @file StdCMallocHeap.h
 	@brief Implements the allocator object for allocating memory using malloc and free. */
 
-#include <malloc.h>
+#include <cstdlib>
 #include <cassert>
 
 #include "Allocator.h"
