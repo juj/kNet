@@ -1169,7 +1169,7 @@ void MessageConnection::DumpStatus() const
 		"\tOverlapped out: %d (event: %s)\n"
 		"\tTime until next send: %d\n",
 		ConnectionStateToString(GetConnectionState()).c_str(),
-		NumOutboundMessagesPending(),
+		(int)NumOutboundMessagesPending(),
 		Connected() ? "connected" : "",
 		IsReadOpen() ? "readOpen" : "",
 		IsWriteOpen() ? "writeOpen" : "",

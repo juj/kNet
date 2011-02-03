@@ -1139,8 +1139,8 @@ void UDPMessageConnection::DumpConnectionStatus() const
 	datagramSendRate,
 	smoothedRTT,
 	rttVariation,
-	outboundPacketAckTrack.Size(), ///\todo Accessing this variable is not thread-safe.
-	inboundPacketAckTrack.size(), ///\todo Accessing this variable is not thread-safe.
+	(int)outboundPacketAckTrack.Size(), ///\todo Accessing this variable is not thread-safe.
+	(int)inboundPacketAckTrack.size(), ///\todo Accessing this variable is not thread-safe.
 	packetLossCount,
 	packetLossRate,
 	PacketsInPerSec(), 

@@ -969,10 +969,10 @@ std::string Socket::ToString() const
 
 	char str[256];
 	sprintf(str, "%s:%d (%s, connected=%s, readOpen: %s, writeOpen: %s, maxSendSize=%d, sock: %s, peer: %s, socket: %d, this: %p)", 
-		DestinationAddress(), (unsigned int)DestinationPort(), 
+		DestinationAddress(), (int)DestinationPort(), 
 		(transport == SocketOverTCP) ? "TCP" : (IsUDPServerSocket() ? "UDP server" : (IsUDPSlaveSocket() ? "UDP Slave" : "UDP")), 
 		Connected() ? "true" : "false", readOpen ? "true" : "false", writeOpen ? "true" : "false",
-		maxSendSize, sockRet == 0 ? sockName.ToString().c_str() : "(-)", 
+		(int)maxSendSize, sockRet == 0 ? sockName.ToString().c_str() : "(-)", 
 		peerRet == 0 ? peerName.ToString().c_str() : "(-)", (int)connectSocket,
 		this);
 
