@@ -78,6 +78,7 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 			break;
 		}
 
+		assert(socket);
 		OverlappedTransferBuffer *buffer = socket->BeginReceive();
 		if (!buffer)
 			break; // Nothing to receive.

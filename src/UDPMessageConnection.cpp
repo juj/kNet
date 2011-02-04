@@ -72,7 +72,7 @@ UDPMessageConnection::~UDPMessageConnection()
 
 UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &bytesRead)
 {
-	assert(socket->TransportLayer() == SocketOverUDP);
+	assert(!socket || socket->TransportLayer() == SocketOverUDP);
 
 	SocketReadResult readResult = SocketReadOK;
 		
@@ -82,7 +82,8 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 	if (bytesRead > 0 && connectionState == ConnectionPending)
 	{
 		connectionState = ConnectionOK;
-		LOG(LogUser, "UDPMessageConnection::ReadSocket: Received data from socket %s. Transitioned from ConnectionPending to ConnectionOK state.", socket->ToString().c_str());
+		LOG(LogUser, "UDPMessageConnection::ReadSocket: Received data from socket %s. Transitioned from ConnectionPending to ConnectionOK state.", 
+			(socket ? socket->ToString().c_str() : "(null)"));
 	}
 	if (readResult == SocketReadError)
 		return SocketReadError;
@@ -133,6 +134,7 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 	int maxReads = cMaxDatagramsToReadInOneFrame;
 	while(maxReads-- > 0)
 	{
+		assert(socket);
 		OverlappedTransferBuffer *data = socket->BeginReceive();
 		if (!data || data->bytesContains == 0)
 			break;
@@ -158,7 +160,10 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 /// Checks whether any reliably sent packets have timed out.
 void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 {
-	assert(socket->TransportLayer() == SocketOverUDP);
+	if (!socket)
+		return;
+
+	assert(!socket || socket->TransportLayer() == SocketOverUDP);
 
 	const tick_t now = Clock::Tick();
 
@@ -956,15 +961,16 @@ void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBy
 
 void UDPMessageConnection::HandleDisconnectMessage()
 {
-	if (socket)
-		socket->MarkReadClosed();
-
 	if (connectionState != ConnectionClosed)
 		connectionState = ConnectionDisconnecting;
 	else
 		LOG(LogError, "UDPMessageConnection::HandleDisconnectMessage: Received Disconnect message when in ConnectionClosed state!");
 
-	SendDisconnectAckMessage();
+	if (socket)
+	{
+		socket->MarkReadClosed();
+		SendDisconnectAckMessage();
+	}
 }
 
 void UDPMessageConnection::HandleDisconnectAckMessage()
