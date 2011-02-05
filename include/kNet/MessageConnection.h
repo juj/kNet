@@ -423,7 +423,7 @@ protected:
 	SocketReadResult ReadSocket(); // [worker thread]
 
 	/// Sets the worker thread object that will handle this connection.
-	void SetWorkerThread(NetworkWorkerThread *thread); // [worker thread]
+	void SetWorkerThread(NetworkWorkerThread *thread); // [main thread]
 
 	NetworkWorkerThread *WorkerThread() const { return workerThread; }
 

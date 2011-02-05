@@ -35,7 +35,10 @@ namespace kNet
 
 NetworkServer::NetworkServer(Network *owner_, std::vector<Socket *> listenSockets_)
 :owner(owner_), listenSockets(listenSockets_), acceptNewConnections(true), networkServerListener(0),
-udpConnectionAttempts(64)
+udpConnectionAttempts(64), workerThread(0)
+#ifdef THREAD_CHECKING_ENABLED
+,workerThreadId(Thread::NullThreadId())
+#endif
 {
 	assert(owner);
 	assert(listenSockets.size() > 0);
@@ -54,6 +57,14 @@ void NetworkServer::RegisterServerListener(INetworkServerListener *listener)
 void NetworkServer::SetAcceptNewConnections(bool acceptNewConnections_)
 {
 	acceptNewConnections = acceptNewConnections_;
+}
+
+void NetworkServer::SetWorkerThread(NetworkWorkerThread *thread) // [main thread]
+{
+	workerThread = thread;
+#ifdef THREAD_CHECKING_ENABLED
+	workerThreadId = thread ? thread->ThreadObject().Id() : Thread::NullThreadId();
+#endif
 }
 
 void NetworkServer::CloseListenSockets()
@@ -87,7 +98,7 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 		int error = Network::GetLastError();
 		if (error != KNET_EWOULDBLOCK)
 		{
-			LOG(LogError, "accept failed: %s(%d)", Network::GetErrorString(error).c_str(), error);
+			LOG(LogError, "NetworkServer::AcceptConnections: accept failed: %s", Network::GetErrorString(error).c_str());
 			closesocket(listenSock);
 			listenSock = INVALID_SOCKET;
 		}

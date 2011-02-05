@@ -90,6 +90,9 @@ rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0),
 msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
 lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
 outboundQueue(16 * 1024), workerThread(0)
+#ifdef THREAD_CHECKING_ENABLED
+,workerThreadId(Thread::NullThreadId())
+#endif
 {
 	connectionState = startingState;
 
@@ -260,7 +263,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 		Close(0);
 }
 
-void MessageConnection::Close(int maxMSecsToWait) // [main thread ONLY]
+void MessageConnection::Close(int maxMSecsToWait) // [main thread]
 {
 	AssertInMainThreadContext();
 
@@ -361,7 +364,7 @@ void MessageConnection::SetPeerClosed()
 	}
 }
 
-void MessageConnection::FreeMessageData() // [main thread ONLY]
+void MessageConnection::FreeMessageData() // [main thread]
 {
 	assert(!IsWorkerThreadRunning());
 

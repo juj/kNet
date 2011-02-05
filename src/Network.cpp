@@ -52,12 +52,14 @@ std::string Network::GetErrorString(int error)
 		0, hresult, 0 /*Default language*/, (LPTSTR) &lpMsgBuf, 0, 0);
 
 	// Copy message to C++ -style string, since the data need to be freed before return.
-	std::string message = (LPCSTR)lpMsgBuf;
-
+	std::stringstream ss;
+	ss << (LPCSTR)lpMsgBuf << "(" << error << ")";
 	LocalFree(lpMsgBuf);
-	return message;
+	return ss.str();
 #else
-	return std::string(strerror(error));
+	std::stringstream ss;
+	ss << strerror(error) << "(" << error << ")";
+	return ss.str();
 #endif
 }
 
@@ -257,7 +259,7 @@ void Network::Init()
 	int result = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (result != 0)
 	{
-		LOG(LogError, "Network::Init: WSAStartup failed: %s(%d)!", GetErrorString(result).c_str(), result);
+		LOG(LogError, "Network::Init: WSAStartup failed: %s!", GetErrorString(result).c_str());
 		return;
 	}
 #endif
@@ -273,8 +275,7 @@ void Network::Init()
 	}
 	else
 	{
-		int error = GetLastError();
-		LOG(LogError, "Network::Init: gethostname failed! Error: %s(%d). Using 'localhost' as the local host name", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Network::Init: gethostname failed! Error: %s. Using 'localhost' as the local host name", GetLastErrorString().c_str());
 		localHostName = "localhost";
 	}
 }
@@ -303,6 +304,69 @@ void Network::AssignConnectionToWorkerThread(Ptr(MessageConnection) connection)
 	workerThread->AddConnection(connection);
 }
 
+void Network::AssignServerToWorkerThread(NetworkServer *server)
+{
+	NetworkWorkerThread *workerThread = GetOrCreateWorkerThread();
+	server->SetWorkerThread(workerThread);
+	workerThread->AddServer(server);
+}
+
+void Network::RemoveConnectionFromItsWorkerThread(Ptr(MessageConnection) connection)
+{
+	if (!connection)
+		return;
+
+	NetworkWorkerThread *workerThread = connection->WorkerThread();
+	if (workerThread)
+	{
+		workerThread->RemoveConnection(connection);
+		connection->SetWorkerThread(0);
+
+		if (workerThread->NumConnections() + workerThread->NumServers() == 0)
+			CloseWorkerThread(workerThread);
+	}
+}
+
+void Network::RemoveServerFromItsWorkerThread(NetworkServer *server)
+{
+	if (!server)
+		return;
+
+	NetworkWorkerThread *workerThread = server->WorkerThread();
+	if (workerThread)
+	{
+		workerThread->RemoveServer(server);
+		server->SetWorkerThread(0);
+
+		if (workerThread->NumConnections() + workerThread->NumServers() == 0)
+			CloseWorkerThread(workerThread);
+	}
+}
+
+void Network::CloseWorkerThread(NetworkWorkerThread *workerThread)
+{
+	if (!workerThread)
+		return;
+
+	// We (should) never close a worker thread until we have first removed all the connections and servers it handles.
+	if (workerThread->NumConnections() + workerThread->NumServers() > 0)
+		LOG(LogError, "Warning: Closing a worker thread %p when it still has %d connections and %d servers to handle.", workerThread, workerThread->NumConnections(), workerThread->NumServers());
+
+	for(size_t i = 0; i < workerThreads.size(); ++i)
+		if (workerThreads[i] == workerThread)
+		{
+			// Remove the thread pointer from internal list.
+			std::swap(workerThreads[i], workerThreads[workerThreads.size()-1]);
+			workerThreads.pop_back();
+
+			workerThread->StopThread();
+			delete workerThread;
+			return;
+		}
+
+	LOG(LogError, "Network::CloseWorkerThread: Asked to close worker thread %p, but no such thread is tracked by this Network object! Ignoring the request.", workerThread);
+}
+
 NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer transport, INetworkServerListener *serverListener, bool allowAddressReuse)
 {
 	Socket *listenSock = OpenListenSocket(port, transport, allowAddressReuse);
@@ -319,7 +383,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 	server = new NetworkServer(this, listenSockets);
 	server->RegisterServerListener(serverListener);
 
-	GetOrCreateWorkerThread()->AddServer(server);
+	AssignServerToWorkerThread(server);
 
 	LOG(LogInfo, "Server up (%s). Waiting for client to connect.", listenSock->ToString().c_str());
 
@@ -353,7 +417,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 	server = new NetworkServer(this, listenSockets);
 	server->RegisterServerListener(serverListener);
 
-	GetOrCreateWorkerThread()->AddServer(server);
+	AssignServerToWorkerThread(server);
 
 	LOG(LogInfo, "Server up and listening on the following ports: ");
 	{
@@ -378,8 +442,10 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 
 void Network::StopServer()
 {
-	for(size_t i = 0; i < workerThreads.size(); ++i)
-		workerThreads[i]->RemoveServer(server);
+	if (!server)
+		return;
+
+	RemoveServerFromItsWorkerThread(server);
 
 	///\todo This is a forceful stop. Perhaps have a benign teardown as well?
 	server = 0;
@@ -413,13 +479,7 @@ void Network::CloseConnection(Ptr(MessageConnection) connection)
 	if (!connection)
 		return;
 
-	NetworkWorkerThread *workerThread = connection->WorkerThread();
-	if (workerThread)
-	{
-		workerThread->RemoveConnection(connection);
-		connection->SetWorkerThread(0);
-	}
-
+	RemoveConnectionFromItsWorkerThread(connection);
 	CloseSocket(connection->socket);
 	connection->socket = 0;
 }
@@ -429,12 +489,8 @@ void Network::DeInit()
 	LOG(LogVerbose, "Network::DeInit: Closing down network worker thread.");
 	PolledTimer timer;
 
-	for(size_t i = 0; i < workerThreads.size(); ++i)
-	{
-		workerThreads[i]->StopThread();
-		delete workerThreads[i];
-	}
-	workerThreads.clear();
+	while(workerThreads.size() > 0)
+		CloseWorkerThread(workerThreads.front());
 
 	while(sockets.size() > 0)
 	{
@@ -464,7 +520,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	int ret = getaddrinfo(NULL, strPort, &hints, &result);
 	if (ret != 0)
 	{
-		LOG(LogError, "getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
+		LOG(LogError, "getaddrinfo failed: %s", GetErrorString(ret).c_str());
 		return 0;
 	}
 
@@ -473,8 +529,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 
 	if (listenSocket == INVALID_SOCKET)
 	{
-		int error = GetLastError();
-		LOG(LogError, "Error at socket(): %s(%d)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Error at socket(): %s", GetLastErrorString().c_str());
 		freeaddrinfo(result);
 		return 0;
 	}
@@ -492,10 +547,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		ret = setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
 #endif
 		if (ret != 0)
-		{
-			int error = GetLastError();
-			LOG(LogError, "setsockopt to SO_REUSEADDR failed: %s(%d)", GetErrorString(error).c_str(), error);
-		}
+			LOG(LogError, "setsockopt to SO_REUSEADDR failed: %s", GetLastErrorString().c_str());
 	}
 
 	// It is safe to cast to a sockaddr_in, since we've specifically queried for AF_INET addresses.
@@ -507,9 +559,8 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 	ret = bind(listenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (ret == KNET_SOCKET_ERROR)
 	{
-		int error = GetLastError();
-		LOG(LogError, "bind failed: %s(%d) when trying to bind to port %d with transport %s", 
-			GetErrorString(error).c_str(), error, (int)port, transport == SocketOverTCP ? "TCP" : "UDP");
+		LOG(LogError, "bind failed: %s when trying to bind to port %d with transport %s", 
+			GetLastErrorString().c_str(), (int)port, transport == SocketOverTCP ? "TCP" : "UDP");
 		closesocket(listenSocket);
 		freeaddrinfo(result);
 		return 0;
@@ -524,8 +575,7 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 		ret = listen(listenSocket, SOMAXCONN);
 		if (ret == KNET_SOCKET_ERROR)
 		{
-			int error = GetLastError();
-			LOG(LogError, "Error at listen(): %s(%d)", GetErrorString(error).c_str(), error);
+			LOG(LogError, "Error at listen(): %s", GetLastErrorString().c_str());
 			closesocket(listenSocket);
 			return 0;
 		}
@@ -560,7 +610,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 	int ret = getaddrinfo(address, strPort, &hints, &result);
 	if (ret != 0)
 	{
-		LOG(LogError, "Network::Connect: getaddrinfo failed: %s(%d)", GetErrorString(ret).c_str(), ret);
+		LOG(LogError, "Network::Connect: getaddrinfo failed: %s", GetErrorString(ret).c_str());
 		return 0;
 	}
 
@@ -573,8 +623,7 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 #endif
 	if (connectSocket == INVALID_SOCKET)
 	{
-		int error = GetLastError();
-		LOG(LogError, "Network::Connect: Error at socket(): %s(%d)", GetErrorString(error).c_str(), error);
+		LOG(LogError, "Network::Connect: Error at socket(): %s", GetLastErrorString().c_str());
 		freeaddrinfo(result);
 		return 0;
 	}

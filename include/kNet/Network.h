@@ -86,9 +86,6 @@ public:
 	/// Returns the error id corresponding to the last error that occurred in the networking library.
 	static int GetLastError();
 
-	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
-	void AssignConnectionToWorkerThread(Ptr(MessageConnection) connection);
-
 	/// Returns the amount of currently executing background network worker threads.
 	int NumWorkerThreads() const { return workerThreads.size(); }
 
@@ -133,6 +130,24 @@ private:
 	/// or creates a new thread and returns it if no such thread exists. The thread is added and maintained
 	/// in the workerThreads list.
 	NetworkWorkerThread *GetOrCreateWorkerThread();
+
+	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
+	void AssignConnectionToWorkerThread(Ptr(MessageConnection) connection);
+
+	/// Takes the given server and associates a NetworkWorkerThread for it.
+	void AssignServerToWorkerThread(NetworkServer *server);
+
+	/// Closes the given workerThread and deletes it (do not reference the passed pointer afterwards). 
+	/// Call this function only after first removing all MessageConnections and NetworkServers from the thread.
+	void CloseWorkerThread(NetworkWorkerThread *workerThread);
+
+	/// Dissociates the given connection from its worker thread, and closes the worker thread if it does not
+	/// have any servers or connections to work on any more.
+	void RemoveConnectionFromItsWorkerThread(Ptr(MessageConnection) connection);
+
+	/// Dissociates the given server from its worker thread, and closes the worker thread if it does not
+	/// have any servers or connections to work on any more.
+	void RemoveServerFromItsWorkerThread(NetworkServer *server);
 
 	void Init();
 	void DeInit();

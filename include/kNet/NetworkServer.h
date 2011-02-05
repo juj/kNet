@@ -121,10 +121,24 @@ private:
 	/// The Network object this NetworkServer was spawned from.
 	Network *owner;
 
+	/// Stores the thread that manages the background processing of this server. The same thread can manage multiple
+	/// connections and servers, and not just this one.
+	NetworkWorkerThread *workerThread; // [set and read only by worker thread]
+
+#ifdef THREAD_CHECKING_ENABLED
+	/// In debug mode, we track and enforce thread safety constraints through this ID. 
+	ThreadId workerThreadId; // [set by worker thread on thread startup, read by both main and worker thread]
+#endif
+
 	/// If true, new connection attempts are processed. Otherwise, just discard all connection packets.
 	bool acceptNewConnections;
 
 	INetworkServerListener *networkServerListener;
+
+	/// Sets the worker thread object that will handle this server.
+	void SetWorkerThread(NetworkWorkerThread *thread); // [main thread]
+
+	NetworkWorkerThread *WorkerThread() const { return workerThread; }
 
 	void RegisterServerListener(INetworkServerListener *listener);
 
