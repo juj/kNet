@@ -46,10 +46,10 @@ private:
 	RingBuffer tcpInboundSocketData;
 
 	/// Reads all available bytes from a stream socket.
-	SocketReadResult ReadSocket(size_t &bytesRead);
+	SocketReadResult ReadSocket(size_t &bytesRead); // [worker thread]
 
-	PacketSendResult SendOutPacket();
-	void SendOutPackets();
+	PacketSendResult SendOutPacket(); // [worker thread]
+	void SendOutPackets(); // [worker thread]
 
 	unsigned long TimeUntilCanSendPacket() const;
 

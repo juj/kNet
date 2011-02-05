@@ -69,45 +69,45 @@ public:
 	void SetDatagramInFlowRatePerSecond(int newDatagramReceiveRate, bool internalCall);
 
 private:
-	/// Reads all the new bytes available in the socket. [used internally by worker thread]
+	/// Reads all the new bytes available in the socket.
 	/// @return The number of bytes successfully read.
-	virtual SocketReadResult ReadSocket(size_t &bytesRead);
+	virtual SocketReadResult ReadSocket(size_t &bytesRead); // [worker thread]
 
 	/// Parses bytes with have previously been read from the socket to actual application-level messages.
-	void ExtractMessages(const char *data, size_t numBytes);
+	void ExtractMessages(const char *data, size_t numBytes); // [worker thread]
 
 	/// Reads all available bytes from a datagram socket. This function will read in multiple datagrams
 	/// as long as there are available ones to process.
 	/// @param bytesRead [out] Returns the total number of bytes containes in the datagrams that were read.
-	SocketReadResult UDPReadSocket(size_t &bytesRead);
+	SocketReadResult UDPReadSocket(size_t &bytesRead); // [worker thread]
 
 	// Congestion control and data rate management:
-	void PerformFlowControl();
-	void HandleFlowControlRequestMessage(const char *data, size_t numBytes);
+	void PerformFlowControl(); // [worker thread]
+	void HandleFlowControlRequestMessage(const char *data, size_t numBytes); // [worker thread]
 
-	void UpdateRTOCounterOnPacketAck(float rtt);
-	void UpdateRTOCounterOnPacketLoss();
+	void UpdateRTOCounterOnPacketAck(float rtt); // [worker thread]
+	void UpdateRTOCounterOnPacketLoss(); // [worker thread]
 
 	// Closing down the connection:
-	void SendDisconnectMessage(bool isInternal);
-	void HandleDisconnectMessage();
-	void SendDisconnectAckMessage();
-	void HandleDisconnectAckMessage();
+	void SendDisconnectMessage(bool isInternal); // [main thread]
+	void HandleDisconnectMessage(); // [worker thread]
+	void SendDisconnectAckMessage(); // [worker thread]
+	void HandleDisconnectAckMessage(); // [worker thread]
 
 	// Acknowledging reliable datagrams:
-	void PerformPacketAckSends();
-	void SendPacketAckMessage();
-	void HandlePacketAckMessage(const char *data, size_t numBytes);
+	void PerformPacketAckSends(); // [worker thread]
+	void SendPacketAckMessage(); // [worker thread]
+	void HandlePacketAckMessage(const char *data, size_t numBytes); // [worker thread]
 	
-	bool HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes);
+	bool HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes); // [worker thread]
 
 	/// Refreshes Packet Loss related statistics.
-	void ComputePacketLoss();
+	void ComputePacketLoss(); // [worker thread]
 
 	/// Marks that we have received a datagram with the given ID.
-	void AddReceivedPacketIDStats(packet_id_t packetID);
+	void AddReceivedPacketIDStats(packet_id_t packetID); // [worker thread]
 	/// @return True if we have received a packet with the given packetID already.
-	bool HaveReceivedPacketID(packet_id_t packetID) const;
+	bool HaveReceivedPacketID(packet_id_t packetID) const; // [worker thread]
 
 	/// Specifies the PacketID of the last received datagram with InOrder flag set.
 	packet_id_t lastReceivedInOrderPacketID;
@@ -177,22 +177,22 @@ private:
 		static int Hash(int key, int maxElemsMask) { return key & maxElemsMask; }
 	};
 
-	void ProcessPacketTimeouts();
-	void HandleFlowControl();
+	void ProcessPacketTimeouts(); // [worker thread]
+	void HandleFlowControl(); // [worker thread]
 
-	void DoUpdateConnection();
+	void DoUpdateConnection(); // [worker thread]
 
-	PacketSendResult SendOutPacket();
-	void SendOutPackets();
-	unsigned long TimeUntilCanSendPacket() const;
+	PacketSendResult SendOutPacket(); // [worker thread]
+	void SendOutPackets(); // [worker thread]
+	unsigned long TimeUntilCanSendPacket() const; // [worker thread]
 
-	void PerformDisconnection();
+	void PerformDisconnection(); // [main thread]
 
 	/// Returns OK if it is acceptable by the flow control timer to send out a new datagram.
-	bool CanSendOutNewDatagram() const;
+	bool CanSendOutNewDatagram() const; // [worker thread]
 
 	/// Called whenever we have sent a new datagram to recompute the datagram send throttle timer.
-	void NewDatagramSent();
+	void NewDatagramSent(); // [worker thread]
 
 	/// Used to perform flow control on outbound UDP messages.
 	mutable tick_t lastDatagramSendTime; ///\todo. No mutable. Rename to nextDatagramSendTime.
@@ -211,7 +211,7 @@ private:
 
 	static int BiasedBinarySearchFindPacketIndex(UDPMessageConnection::PacketAckTrackQueue &queue, int packetID);
 
-	void FreeOutboundPacketAckTrack(packet_id_t packetID);
+	void FreeOutboundPacketAckTrack(packet_id_t packetID); // [worker thread]
 
 	// Contains a list of all messages we've received that we need to Ack at some point.
 	PacketAckTrackMap inboundPacketAckTrack;

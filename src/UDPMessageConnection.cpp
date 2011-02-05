@@ -75,6 +75,8 @@ UDPMessageConnection::~UDPMessageConnection()
 
 UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &bytesRead)
 {
+	AssertInWorkerThreadContext();
+
 	assert(!socket || socket->TransportLayer() == SocketOverUDP);
 
 	SocketReadResult readResult = SocketReadOK;
@@ -113,6 +115,8 @@ void UDPMessageConnection::Initialize()
 
 void UDPMessageConnection::PerformPacketAckSends()
 {
+	AssertInWorkerThreadContext();
+
 	tick_t now = Clock::Tick();
 	while(inboundPacketAckTrack.size() > 0)
 	{
@@ -126,6 +130,8 @@ void UDPMessageConnection::PerformPacketAckSends()
 
 UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_t &totalBytesRead)
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket || !socket->IsReadOpen())
 		return SocketReadError;
 
@@ -163,6 +169,8 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::UDPReadSocket(size_
 /// Checks whether any reliably sent packets have timed out.
 void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket)
 		return;
 
@@ -202,6 +210,8 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 
 void UDPMessageConnection::HandleFlowControl()
 {
+	AssertInWorkerThreadContext();
+
 	// In packets/second.
 	const float totalEstimatedBandwidth = 50; ///\todo Make this estimation dynamic as in UDT or similar.
 	const float additiveIncreaseAggressiveness = 5e-2f;
@@ -243,6 +253,8 @@ void UDPMessageConnection::HandleFlowControl()
 
 void UDPMessageConnection::SendOutPackets()
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket || !socket->IsWriteOpen())
 		return;
 
@@ -256,6 +268,8 @@ void UDPMessageConnection::SendOutPackets()
 /// @return False if the send was a failure and sending should not be tried again at this time, true otherwise.
 MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket || !socket->IsWriteOpen())
 		return PacketSendSocketClosed;
 
@@ -496,6 +510,8 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 
 void UDPMessageConnection::DoUpdateConnection()
 {
+	AssertInWorkerThreadContext();
+
 	if (udpUpdateTimer.TriggeredOrNotRunning())
 	{
 		// We can send out data now. Perform connection management before sending out any messages.
@@ -539,7 +555,9 @@ bool UDPMessageConnection::HaveReceivedPacketID(packet_id_t packetID) const
 
 void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 {
-/* \todo add back to enable packet loss computations.
+	AssertInWorkerThreadContext();
+
+	/* \todo add back to enable packet loss computations.
 	ConnectionStatistics &cs = statistics.Lock();
 
 	// Simple method to prevent computation errors caused by wraparound - we start from scratch when packet with ID 0 is received.
@@ -559,6 +577,8 @@ void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 
 void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 {
+	AssertInWorkerThreadContext();
+
 	assert(data);
 	assert(numBytes > 0);
 
@@ -719,6 +739,8 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 
 void UDPMessageConnection::PerformDisconnection()
 {
+	AssertInMainThreadContext();
+
 	SendDisconnectMessage(false);
 }
 
@@ -744,6 +766,8 @@ void UDPMessageConnection::NewDatagramSent()
 
 void UDPMessageConnection::SendDisconnectMessage(bool isInternal)
 {
+	AssertInMainThreadContext();
+
 	NetworkMessage *msg = StartNewMessage(MsgIdDisconnect, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = true;
@@ -754,6 +778,8 @@ void UDPMessageConnection::SendDisconnectMessage(bool isInternal)
 
 void UDPMessageConnection::SendDisconnectAckMessage()
 {
+	AssertInWorkerThreadContext();
+
 	NetworkMessage *msg = StartNewMessage(MsgIdDisconnectAck, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = false;
@@ -763,7 +789,9 @@ void UDPMessageConnection::SendDisconnectAckMessage()
 }
 
 void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, size_t numBytes)
-{/*
+{
+	AssertInWorkerThreadContext();
+	/*
 	if (numBytes != 2)
 	{
 		LOG(LogError, "Malformed FlowControlRequest message received! Size was %d bytes, expected 2 bytes!", (int)numBytes);
@@ -823,6 +851,8 @@ int UDPMessageConnection::BiasedBinarySearchFindPacketIndex(PacketAckTrackQueue 
 
 void UDPMessageConnection::FreeOutboundPacketAckTrack(packet_id_t packetID)
 {
+	AssertInWorkerThreadContext();
+
 	OrderedHashTable<PacketAckTrack, PacketAckTrack>::Node *item = outboundPacketAckTrack.Find(packetID);
 	if (!item)
 		return;
@@ -858,6 +888,8 @@ static const float maxRTOTimeoutValue = 5000.f;
 /// @param rtt The round trip time that was measured on the packet that was just acked.
 void UDPMessageConnection::UpdateRTOCounterOnPacketAck(float rtt)
 {
+	AssertInWorkerThreadContext();
+
 	using namespace std;
 
 	const float alpha = 1.f / 8.f;
@@ -894,6 +926,8 @@ void UDPMessageConnection::UpdateRTOCounterOnPacketAck(float rtt)
 
 void UDPMessageConnection::UpdateRTOCounterOnPacketLoss()
 {
+	AssertInWorkerThreadContext();
+
 	using namespace std;
 
 	retransmissionTimeout = smoothedRTT = min(maxRTOTimeoutValue, max(minRTOTimeoutValue, smoothedRTT * 2.f));
@@ -911,6 +945,8 @@ void UDPMessageConnection::UpdateRTOCounterOnPacketLoss()
 
 void UDPMessageConnection::SendPacketAckMessage()
 {
+	AssertInWorkerThreadContext();
+
 	while(inboundPacketAckTrack.size() > 0)
 	{
 		packet_id_t packetID = inboundPacketAckTrack.begin()->first;
@@ -941,6 +977,8 @@ void UDPMessageConnection::SendPacketAckMessage()
 
 void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBytes)
 {
+	AssertInWorkerThreadContext();
+
 	if (numBytes != 7)
 	{
 		LOG(LogError, "Malformed PacketAck message received! Size was %d bytes, expected 7 bytes!", (int)numBytes);
@@ -964,6 +1002,8 @@ void UDPMessageConnection::HandlePacketAckMessage(const char *data, size_t numBy
 
 void UDPMessageConnection::HandleDisconnectMessage()
 {
+	AssertInWorkerThreadContext();
+
 	if (connectionState != ConnectionClosed)
 		connectionState = ConnectionDisconnecting;
 	else
@@ -978,6 +1018,8 @@ void UDPMessageConnection::HandleDisconnectMessage()
 
 void UDPMessageConnection::HandleDisconnectAckMessage()
 {
+	AssertInWorkerThreadContext();
+
 	if (socket)
 	{
 		socket->MarkReadClosed();
@@ -995,6 +1037,8 @@ void UDPMessageConnection::HandleDisconnectAckMessage()
 
 void UDPMessageConnection::PerformFlowControl()
 {
+	AssertInWorkerThreadContext();
+
 	/*
 	// The manual flow control only applies to UDP connections.
 	if (socket->TransportLayer() == SocketOverTCP)
@@ -1019,6 +1063,8 @@ void UDPMessageConnection::PerformFlowControl()
 
 void UDPMessageConnection::ComputePacketLoss()
 {
+	AssertInWorkerThreadContext();
+
 	Lockable<ConnectionStatistics>::LockType cs = statistics.Acquire();
 
 	if (cs->recvPacketIDs.size() <= 1)
@@ -1095,6 +1141,8 @@ void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceive
 
 bool UDPMessageConnection::HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes)
 {
+	AssertInWorkerThreadContext();
+
 	switch(messageID)
 	{
 	case MsgIdPingRequest:

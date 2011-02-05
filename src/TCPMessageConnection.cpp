@@ -41,6 +41,8 @@ tcpInboundSocketData(2 * 1024 * 1024)
 
 MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &totalBytesRead)
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket || !socket->IsReadOpen())
 		return SocketReadError;
 
@@ -127,6 +129,8 @@ bool ContainerUniqueAndNoNullElements(const std::vector<T> &cont)
 /// @return False if the send was a failure and sending should not be tried again at this time, true otherwise.
 MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 {
+	AssertInWorkerThreadContext();
+
 	if (bOutboundSendsPaused || outboundQueue.Size() == 0)
 		return PacketSendNoMessages;
 
@@ -237,6 +241,8 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 void TCPMessageConnection::SendOutPackets()
 {
+	AssertInWorkerThreadContext();
+
 	if (!socket || !socket->IsWriteOpen() || !socket->IsOverlappedSendReady())
 		return;
 
@@ -248,6 +254,8 @@ void TCPMessageConnection::SendOutPackets()
 
 void TCPMessageConnection::ExtractMessages()
 {
+	AssertInWorkerThreadContext();
+
 	try
 	{
 		size_t numMessagesReceived = 0;
@@ -299,6 +307,8 @@ void TCPMessageConnection::ExtractMessages()
 
 void TCPMessageConnection::PerformDisconnection()
 {
+	AssertInMainThreadContext();
+
 	if (socket)
 		socket->Disconnect();
 }
