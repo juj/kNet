@@ -16,8 +16,9 @@
 	@brief Represents a serializable network message. */
 
 #include <string.h>
-#include "kNet/NetworkMessage.h"
+
 #include "kNet/DebugMemoryLeakCheck.h"
+#include "kNet/NetworkMessage.h"
 
 namespace kNet
 {

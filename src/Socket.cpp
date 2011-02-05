@@ -19,9 +19,13 @@
 #include <cassert>
 #include <utility>
 
-#include "kNet/Network.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/Network.h"
 
 #include "kNet/Socket.h"
 #include "kNet/NetworkLogging.h"

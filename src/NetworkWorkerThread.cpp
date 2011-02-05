@@ -17,9 +17,13 @@
 
 #include <utility>
 
-#include "kNet/UDPMessageConnection.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/UDPMessageConnection.h"
 
 #include "kNet/NetworkWorkerThread.h"
 #include "kNet/NetworkLogging.h"

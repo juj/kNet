@@ -20,9 +20,12 @@
 #include <cstdio>
 
 #include "kNet/Allocator.h"
-#include "kNet/MessageConnection.h"
-#include "kNet/DebugMemoryLeakCheck.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
+#include "kNet/DebugMemoryLeakCheck.h"
+#include "kNet/MessageConnection.h"
 #include "kNet/UDPMessageConnection.h"
 
 #include "kNet/NetworkLogging.h"

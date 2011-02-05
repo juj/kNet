@@ -15,10 +15,13 @@
 /** @file NetworkServer.cpp
 	@brief */
 
-#include "kNet/Network.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
+#include "kNet/Network.h"
 #include "kNet/NetworkServer.h"
 #include "kNet/TCPMessageConnection.h"
 #include "kNet/UDPMessageConnection.h"

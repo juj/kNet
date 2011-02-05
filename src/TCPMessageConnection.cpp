@@ -15,10 +15,12 @@
 /** @file TCPMessageConnection.cpp
 	@brief */
 
-#include "kNet/TCPMessageConnection.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
-
+#include "kNet/TCPMessageConnection.h"
 #include "kNet/NetworkLogging.h"
 #include "kNet/DataSerializer.h"
 #include "kNet/DataDeserializer.h"

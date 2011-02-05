@@ -15,6 +15,11 @@
 /** @file Thread.cpp
 	@brief Implements platform-generic Thread functions. */
 
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
+
+#include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/Event.h" ///\todo Investigate the inclusion chain of these two files. Is this #include necessary?
 #include "kNet/NetworkLogging.h"
 #include "kNet/Thread.h"

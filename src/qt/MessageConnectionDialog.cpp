@@ -21,8 +21,13 @@
 #include <QLabel>
 #include <QTreeWidget>
 
-#include "kNet/qt/MessageConnectionDialog.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
+
 #include "kNet/DebugMemoryLeakCheck.h"
+
+#include "kNet/qt/MessageConnectionDialog.h"
 
 namespace kNet
 {

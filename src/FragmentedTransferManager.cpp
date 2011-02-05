@@ -17,10 +17,13 @@
 
 #include <cstring>
 
-#include "kNet/MessageConnection.h"
+#ifdef KNET_USE_BOOST
+#include <boost/thread/thread.hpp>
+#endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
+#include "kNet/MessageConnection.h"
 #include "kNet/FragmentedTransferManager.h"
 #include "kNet/NetworkLogging.h"
 
