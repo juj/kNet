@@ -301,9 +301,6 @@ public:
 	/// Returns the estimated RTT of the connection, in milliseconds. RTT is the time taken to communicate a message from client->host->client.
 	float RoundTripTime() const { return rtt; } // [main and worker thread]
 
-	/// Returns the estimated delay time from this connection to host, in milliseconds.
-	float Latency() const { return rtt / 2.f; } // [main and worker thread]
-
 	/// Returns the number of milliseconds since we last received data from the socket.
 	float LastHeardTime() const { return Clock::TicksToMillisecondsF(Clock::TicksInBetween(Clock::Tick(), lastHeardTime)); } // [main and worker thread]
 
@@ -313,6 +310,12 @@ public:
 	float MsgsOutPerSec() const { return msgsOutPerSec; } // [main and worker thread]
 	float BytesInPerSec() const { return bytesInPerSec; } // [main and worker thread]
 	float BytesOutPerSec() const { return bytesOutPerSec; } // [main and worker thread]
+
+	/// Returns the total number of bytes (excluding IP and TCP/UDP headers) that have been received from this connection.
+	uint64_t BytesInTotal() const { return bytesInTotal; } // [main and worker thread]
+
+	/// Returns the total number of bytes (excluding IP and TCP/UDP headers) that have been sent from this connection.
+	uint64_t BytesOutTotal() const { return bytesOutTotal; } // [main and worker thread]
 
 	/// Stores all the statistics about the current connection. This data is periodically recomputed
 	/// by the network worker thread and shared to the client through a lock.
@@ -433,7 +436,7 @@ protected:
 	NetworkMessage *AllocateNewMessage();
 
 	// Ping/RTT management operations:
-	void SendPingRequestMessage(); // [worker thread]
+	void SendPingRequestMessage(bool internalQueue); // [main or worker thread]
 
 	void HandlePingRequestMessage(const char *data, size_t numBytes); // [worker thread]
 
@@ -489,6 +492,8 @@ protected:
 	float msgsOutPerSec; ///< The average number of kNet messages we are sending/second. [main and worker thread]
 	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes kNet headers. [main and worker thread]
 	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers. [main and worker thread]
+	uint64_t bytesInTotal;
+	uint64_t bytesOutTotal;
 
 	/// A running number attached to each outbound message (not present in network stream) to 
 	/// break ties when deducing which message should come before which.

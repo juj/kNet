@@ -77,15 +77,22 @@ std::string Network::GetLastErrorString()
 	return GetErrorString(GetLastError());
 }
 
-std::string FormatBytes(size_t numBytes)
+std::string FormatBytes(uint64_t numBytes)
+{
+	return FormatBytes((double)numBytes);
+}
+
+std::string FormatBytes(double numBytes)
 {
 	char str[256];
-	if (numBytes >= 1000 * 1000)
-		sprintf(str, "%.3fMB", (float)numBytes / 1024.f / 1024.f);
-	else if (numBytes >= 1000)
-		sprintf(str, "%.3fKB", (float)numBytes / 1024.f);
+	if (numBytes >= 1000.0 * 1000.0 * 1000.0)
+		sprintf(str, "%.3f GB", (float)(numBytes / (1024.0 * 1024.0 * 1024.0)));
+	else if (numBytes >= 1000.0 * 1000.0)
+		sprintf(str, "%.3f MB", (float)(numBytes / (1024.0 * 1024.0)));
+	else if (numBytes >= 1000.0)
+		sprintf(str, "%.3f KB", (float)(numBytes / 1024.0));
 	else
-		sprintf(str, "%dB", (int)numBytes);
+		sprintf(str, "%.2f B", (float)numBytes);
 	return std::string(str);
 }
 
@@ -208,7 +215,6 @@ void Network::PrintAddrInfo(const addrinfo *ptr)
 		(unsigned int)(unsigned char)ptr->ai_addr->sa_data[4], (unsigned int)(unsigned char)ptr->ai_addr->sa_data[5]);
 
 	LOG(LogInfo, "Address of this sockaddr: %s.\n", address);
-
 }
 
 void Network::PrintHostNameInfo(const char *hostname, const char *port)
@@ -483,25 +489,48 @@ void Network::CloseConnection(MessageConnection *connection)
 	RemoveConnectionFromItsWorkerThread(connection);
 	DeleteSocket(connection->socket);
 	connection->socket = 0;
+	connection->owner = 0;
+	connection->ownerServer = 0;
+	connections.erase(connection);
 }
 
 void Network::DeInit()
 {
-	LOG(LogVerbose, "Network::DeInit: Closing down network worker thread.");
+	LOG(LogVerbose, "Network::DeInit: Closing down.");
 	PolledTimer timer;
 
-	while(workerThreads.size() > 0)
-		CloseWorkerThread(workerThreads.front());
+	// Kill all connections.
+	while(connections.size() > 0)
+	{
+		MessageConnection *connection = *connections.begin();
+		CloseConnection(connection); // CloseConnection erases connection from the connections list, so this loop terminates.
+	}
 
+	// Kill the server, if it's running.
+	StopServer();
+
+	// Kill all worker threads.
+	while(workerThreads.size() > 0)
+		CloseWorkerThread(workerThreads.front()); // Erases the item from workerThreads, so this loop terminates.
+
+	// Clean up any sockets that might be remaining.
 	while(sockets.size() > 0)
 	{
 		sockets.front().Close();
 		sockets.pop_front();
 	}
+
+	// Deinitialize network subsystem.
 #ifdef WIN32
 	WSACleanup();
 #endif
+
 	LOG(LogWaits, "Network::DeInit: Deinitialized kNet Network object, took %f msecs.", timer.MSecsElapsed());
+}
+
+void Network::NewMessageConnectionCreated(MessageConnection *connection)
+{
+	connections.insert(connection);
 }
 
 Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport, bool allowAddressReuse)
@@ -697,6 +726,7 @@ Ptr(MessageConnection) Network::Connect(const char *address, unsigned short port
 	connection->RegisterInboundMessageHandler(messageHandler);
 	AssignConnectionToWorkerThread(connection);
 
+	connections.insert(connection);
 	return connection;
 }
 

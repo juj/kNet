@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>NetworkDialog</class>
+ <widget class="QWidget" name="NetworkDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>767</width>
-    <height>453</height>
+    <width>524</width>
+    <height>372</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,7 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="2">
+     <item row="0" column="1">
       <widget class="QLabel" name="machineIP">
        <property name="text">
         <string>Machine IP text.</string>
@@ -37,7 +37,7 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="2">
+     <item row="2" column="1">
       <widget class="QTreeWidget" name="connectionsTree">
        <column>
         <property name="text">
@@ -53,7 +53,7 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
+     <item row="1" column="1">
       <widget class="QLabel" name="numRunningThreads">
        <property name="text">
         <string># threads text.</string>

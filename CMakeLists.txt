@@ -69,15 +69,17 @@ if (USE_QT)
    
    file(GLOB kNetMocHeaderFiles ./include/kNet/qt/*.h)
    file(GLOB kNetQtSourceFiles ./src/qt/*.cpp)
+   file(GLOB kNetQtUiFiles ./ui/*.ui)
    QT4_WRAP_CPP(kNetMocSrcFiles ${kNetMocHeaderFiles})
-   set(QT4_UI_OUTPUT_DIR ./include/kNet/generatedui)
+   set(QT4_UI_OUTPUT_DIR ./include/kNet/qt/ui)
    
    MACRO(QT4_WRAP_UI_CUSTOM_OUTPUT outfiles)
      QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
      FOREACH(it ${ui_files})
        GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
        GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-       SET(outfile ${QT4_UI_OUTPUT_DIR}/ui_${outfile}.h) # Here we set output
+       SET(outfile ${QT4_UI_OUTPUT_DIR}/ui_${outfile}.h)
+       GET_FILENAME_COMPONENT(outfile ${outfile} ABSOLUTE)
        ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
          COMMAND ${QT_UIC_EXECUTABLE}
          ARGS ${ui_options} -o ${outfile} ${infile}
@@ -86,13 +88,12 @@ if (USE_QT)
      ENDFOREACH()    
    ENDMACRO()   
    
-#   QT4_WRAP_UI(kNetUiHeaderFiles ./ui/*.ui)
-   set(kNetSourceFiles ${kNetSourceFiles} ${kNetMocSrcFiles} ${kNetQtSourceFiles})
-   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles})
-#   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles} ${kNetUiHeaderFiles})
-   include(${QT_USE_FILE})
-   set(kNetLinkLibraries ${kNetLinkLibraries} ${QT_LIBRARIES})
-#   include_directories(${QT4_UI_OUTPUT_DIR})
+  include_directories(${QT4_UI_OUTPUT_DIR})
+  QT4_WRAP_UI_CUSTOM_OUTPUT(kNetUiHeaderFiles ${kNetQtUiFiles})
+  set(kNetSourceFiles ${kNetSourceFiles} ${kNetMocSrcFiles} ${kNetQtSourceFiles})
+  set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles} ${kNetUiHeaderFiles})
+  include(${QT_USE_FILE})
+  set(kNetLinkLibraries ${kNetLinkLibraries} ${QT_LIBRARIES})
 endif()
 
 if (USE_BOOST)

@@ -90,7 +90,11 @@ public:
 	/// Returns the amount of currently executing background network worker threads.
 	int NumWorkerThreads() const { return workerThreads.size(); }
 
+	/// Returns the NetworkServer object, or null if no server has been started.
 	Ptr(NetworkServer) GetServer() { return server; }
+
+	/// Returns all current connections in the system.
+	std::set<MessageConnection *> Connections() const { return connections; }
 
 private:
 	/// Specifies the local network address of the system. This name is cached here on initialization
@@ -103,6 +107,9 @@ private:
 
 	/// Contains all active sockets in the system.
 	std::list<Socket> sockets;
+
+	/// Tracks all existing connections in the system.
+	std::set<MessageConnection *> connections;
 
 	/// Takes the ownership of the given socket, and returns a pointer to the owned one.
 	Socket *StoreSocket(const Socket &cp);
@@ -132,6 +139,10 @@ private:
 	/// in the workerThreads list.
 	NetworkWorkerThread *GetOrCreateWorkerThread();
 
+	/// A notification function that is called by NetworkServer whenever it creates a new MessageConnection object.
+	/// The Network subsystem will store this new connection for tracking purposes.
+	void NewMessageConnectionCreated(MessageConnection *connection);
+
 	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
 	void AssignConnectionToWorkerThread(MessageConnection *connection);
 
@@ -159,6 +170,8 @@ private:
 };
 
 /// Outputs the given number of bytes formatted to KB or MB suffix for readability.
-std::string FormatBytes(size_t numBytes);
+std::string FormatBytes(uint64_t numBytes);
+
+std::string FormatBytes(double numBytes);
 
 } // ~kNet

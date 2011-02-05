@@ -91,7 +91,8 @@ outboundAcceptQueue(256*1024), inboundMessageQueue(512*1024),
 rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0), 
 msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
 lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
-outboundQueue(16 * 1024), workerThread(0)
+outboundQueue(16 * 1024), workerThread(0),
+bytesInTotal(0), bytesOutTotal(0)
 #ifdef THREAD_CHECKING_ENABLED
 ,workerThreadId(Thread::NullThreadId())
 #endif
@@ -466,7 +467,7 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 	if (connectionState == ConnectionOK && pingTimer.TriggeredOrNotRunning())
 	{
 		if (!bOutboundSendsPaused)
-			SendPingRequestMessage();
+			SendPingRequestMessage(true);
 		DetectConnectionTimeOut();
 		pingTimer.StartMSecs(pingIntervalMSecs);
 	}
@@ -535,6 +536,13 @@ NetworkMessage *MessageConnection::StartNewMessage(unsigned long id, size_t numB
 void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize)
 {
 	using namespace std;
+
+#ifdef THREAD_CHECKING_ENABLED
+	if (internalQueue)
+		AssertInWorkerThreadContext();
+	else
+		AssertInMainThreadContext();
+#endif
 
 	assert(message);
 	assert(!message->obsolete);
@@ -619,6 +627,13 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes, bool internalQueue)
 {
+#ifdef THREAD_CHECKING_ENABLED
+	if (internalQueue)
+		AssertInWorkerThreadContext();
+	else
+		AssertInMainThreadContext();
+#endif
+
 	assert(msg);
 	if (!msg)
 		return;
@@ -862,6 +877,7 @@ void MessageConnection::AddOutboundStats(unsigned long numBytes, unsigned long n
 	t.messagesOut = numMessages;
 	t.tick = Clock::Tick();
 	statistics.Unlock();
+	bytesOutTotal += numBytes;
 }
 
 void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long numPackets, unsigned long numMessages)
@@ -880,6 +896,7 @@ void MessageConnection::AddInboundStats(unsigned long numBytes, unsigned long nu
 	t.messagesIn = numMessages;
 	t.tick = Clock::Tick();
 	statistics.Unlock();
+	bytesInTotal += numBytes;
 }
 
 void MessageConnection::ComputeStats()
@@ -1075,9 +1092,14 @@ void MessageConnection::RegisterInboundMessageHandler(IMessageHandler *handler)
 	inboundMessageHandler = handler;
 }
 
-void MessageConnection::SendPingRequestMessage()
+void MessageConnection::SendPingRequestMessage(bool internalQueue)
 {
-	AssertInWorkerThreadContext();
+#ifdef THREAD_CHECKING_ENABLED
+	if (internalQueue)
+		AssertInWorkerThreadContext();
+	else
+		AssertInMainThreadContext();
+#endif
 
 	ConnectionStatistics &cs = statistics.LockGet();
 	
@@ -1093,7 +1115,7 @@ void MessageConnection::SendPingRequestMessage()
 	NetworkMessage *msg = StartNewMessage(MsgIdPingRequest, 1);
 	msg->data[0] = pingID;
 	msg->priority = NetworkMessage::cMaxPriority - 2;
-	EndAndQueueMessage(msg, 1, true);
+	EndAndQueueMessage(msg, 1, internalQueue);
 	LOG(LogVerbose, "Enqueued ping message %d.", (int)pingID);
 }
 
@@ -1167,7 +1189,6 @@ void MessageConnection::DumpStatus() const
 		"\tMessageConnection: %s %s %s.\n"
 		"\tSocket: %s %s %s %s.\n"
 		"\tRound-Trip Time: %.2fms.\n"
-		"\tLatency: %.2fms.\n"
 		"\tLastHeardTime: %.2fms.\n"
 		"\tDatagrams in: %.2f/sec.\n"
 		"\tDatagrams out: %.2f/sec.\n"
@@ -1188,10 +1209,9 @@ void MessageConnection::DumpStatus() const
 		(socket && socket->Connected()) ? "connected" : "",
 		(socket && socket->IsReadOpen()) ? "readOpen" : "",
 		(socket && socket->IsWriteOpen()) ? "writeOpen" : "",
-		RoundTripTime(),
-		Latency(), LastHeardTime(), PacketsInPerSec(), PacketsOutPerSec(),
+		RoundTripTime(), LastHeardTime(), PacketsInPerSec(), PacketsOutPerSec(),
 		MsgsInPerSec(), MsgsOutPerSec(), 
-		FormatBytes((size_t)BytesInPerSec()).c_str(), FormatBytes((size_t)BytesOutPerSec()).c_str(),
+		FormatBytes(BytesInPerSec()).c_str(), FormatBytes(BytesOutPerSec()).c_str(),
 		(int)eventMsgsOutAvailable.Test(), 
 #ifdef WIN32
 		socket ? socket->NumOverlappedReceivesInProgress() : -1,

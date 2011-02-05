@@ -15,7 +15,6 @@
 /** @file NetworkDialog.cpp
 	@brief */
 
-#include <QUiLoader>
 #include <QFile>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -28,6 +27,7 @@
 #include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/qt/NetworkDialog.h"
 #include "kNet/qt/MessageConnectionDialog.h"
+#include "kNet/qt/ui/ui_NetworkDialog.h"
 
 namespace kNet
 {
@@ -37,11 +37,15 @@ const int dialogUpdateInterval = 1000;
 NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 :network(network_), QWidget(parent)
 {
+	dialog = new Ui_NetworkDialog;
+	dialog->setupUi(this);
+/*
 	QUiLoader loader;
 	QFile file("NetworkDialog.ui");
 	file.open(QFile::ReadOnly);
 	QWidget *myWidget = loader.load(&file, this);
 	file.close();
+	*/
 /*
 	QVBoxLayout *layout = new QVBoxLayout;
 	layout->addWidget(myWidget);
@@ -54,6 +58,11 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 	updateTimer = new QTimer(this);
 	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();
+}
+
+NetworkDialog::~NetworkDialog()
+{
+	delete dialog;
 }
 
 class MessageConnectionTreeItem : public QTreeWidgetItem
@@ -111,6 +120,10 @@ void NetworkDialog::Update()
 		}
 	}
 
+	std::set<MessageConnection*> connections = network->Connections();
+	for(std::set<MessageConnection*>::iterator iter = connections.begin(); iter != connections.end(); ++iter)
+		new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
+
 	updateTimer->start(dialogUpdateInterval);
 }
 
@@ -122,6 +135,7 @@ void NetworkDialog::ItemDoubleClicked(QTreeWidgetItem *item)
 
 	MessageConnectionDialog *dialog = new MessageConnectionDialog(0, msgItem->connection);
 	dialog->show();
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 }
 
 } // ~kNet

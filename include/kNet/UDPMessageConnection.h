@@ -68,6 +68,21 @@ public:
 
 	void SetDatagramInFlowRatePerSecond(int newDatagramReceiveRate, bool internalCall);
 
+	float RetransmissionTimeout() const { return retransmissionTimeout; }
+
+	float DatagramSendRate() const { return datagramSendRate; }
+
+	float SmoothedRtt() const { return smoothedRTT; }
+
+	float RttVariation() const { return rttVariation; }
+
+	size_t NumOutboundUnackedDatagrams() const { return outboundPacketAckTrack.Size(); }
+
+	size_t NumReceivedUnackedDatagrams() const { return inboundPacketAckTrack.size(); }
+
+	float PacketLossCount() const { return packetLossCount; }
+
+	float PacketLossRate() const { return packetLossRate; }
 private:
 	/// Reads all the new bytes available in the socket.
 	/// @return The number of bytes successfully read.

@@ -23,6 +23,8 @@
 #include "kNet/MessageConnection.h"
 #include "kNet/SharedPtr.h"
 
+class Ui_MessageConnectionDialog;
+
 namespace kNet
 {
 
@@ -32,6 +34,7 @@ class MessageConnectionDialog : public QWidget
 
 	Ptr(MessageConnection) connection;
 	QTimer *updateTimer;
+	Ui_MessageConnectionDialog *dialog;
 
 public:
 	MessageConnectionDialog(QWidget *parent, Ptr(MessageConnection) connection);

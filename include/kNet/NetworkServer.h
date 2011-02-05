@@ -166,6 +166,7 @@ private:
 	bool ProcessNewUDPConnectionAttempt(Socket *listenSocket, const EndPoint &endPoint, const char *data, size_t numBytes);
 
 	friend class Network;
+	friend class NetworkWorkerThread;
 };
 
 } // ~kNet

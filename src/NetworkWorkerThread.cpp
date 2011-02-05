@@ -107,6 +107,23 @@ void NetworkWorkerThread::StartThread()
 void NetworkWorkerThread::StopThread()
 {
 	workThread.Stop();
+
+	{
+		Lockable<std::vector<NetworkServer *> >::LockType lock = servers.Acquire();
+		for(size_t i = 0; i < lock->size(); ++i)
+		{
+			LOG(LogError, "NetworkWorkerThread::StopThread: Warning: NetworkServer %p was not detached from workerThread %p prior to stopping the thread!.", (*lock)[i], this);
+			(*lock)[i]->SetWorkerThread(0);
+		}
+	}
+	{
+		Lockable<std::vector<MessageConnection *> >::LockType lock = connections.Acquire();
+		for(size_t i = 0; i < lock->size(); ++i)
+		{
+			LOG(LogError, "NetworkWorkerThread::StopThread: Warning: MessageConnection %p was not detached from workerThread %p prior to stopping the thread!.", (*lock)[i], this);
+			(*lock)[i]->SetWorkerThread(0);
+		}
+	}
 }
 
 int NetworkWorkerThread::NumConnections() const

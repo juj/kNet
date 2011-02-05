@@ -26,8 +26,11 @@
 #endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
+#include "kNet/Network.h"
+#include "kNet/UDPMessageConnection.h"
 
 #include "kNet/qt/MessageConnectionDialog.h"
+#include "kNet/qt/ui/ui_MessageConnectionDialog.h"
 
 namespace kNet
 {
@@ -37,11 +40,16 @@ const int dialogUpdateInterval = 200;
 MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageConnection) connection_)
 :connection(connection_), QWidget(parent)
 {
+/*
 	QUiLoader loader;
 	QFile file("MessageConnectionDialog.ui");
 	file.open(QFile::ReadOnly);
 	QWidget *myWidget = loader.load(&file, this);
 	file.close();
+*/
+	dialog = new Ui_MessageConnectionDialog;
+	dialog->setupUi(this);
+
 /*
 	QVBoxLayout *layout = new QVBoxLayout;
 	layout->addWidget(myWidget);
@@ -57,12 +65,62 @@ void MessageConnectionDialog::Update()
 	if (!connection)
 		return;
 
-	QLabel *connectionLine = findChild<QLabel*>("connectionLine");
-	if (!connectionLine)
-		return;
+	Socket *socket = connection->GetSocket();
 
-	connectionLine->setText(connection->ToString().c_str());
+	std::stringstream ss;
+	if (!socket)
+		ss << "(null connection)";
+	else
+		ss << SocketTransportLayerToString(socket->TransportLayer()) << " connection to " << connection->RemoteEndPoint().ToString()
+		   << " (from " << connection->LocalEndPoint().ToString() << ")";
+	dialog->connectionLine->setText(ss.str().c_str());
 
+	dialog->statusLine->setText(ConnectionStateToString(connection->GetConnectionState()).c_str());
+	dialog->outboundMessagesPending->setText(QString::number(connection->NumOutboundMessagesPending()));
+	dialog->messageConnectionStatus->setText(connection->Connected() ? QString("Connected") : QString("") + 
+		(connection->IsReadOpen() ? " Read-open" : "") + (connection->IsWriteOpen() ? "Write-open" : ""));
+	if (!socket)
+		dialog->socketStatus->setText("(null)");
+	else
+		dialog->socketStatus->setText(socket->Connected() ? QString("Connected") : QString("") + 
+			(socket->IsReadOpen() ? " Read-open" : "") + (socket->IsWriteOpen() ? "Write-open" : ""));
+	dialog->roundTripTime->setText(QString::number(connection->RoundTripTime()) + "ms");
+	dialog->lastHeardTime->setText(QString::number(connection->LastHeardTime()) + "ms");
+	dialog->datagramsIn->setText(QString::number(connection->PacketsInPerSec()) + "/sec");
+	dialog->datagramsOut->setText(QString::number(connection->PacketsOutPerSec()) + "/sec");
+	dialog->messagesIn->setText(QString::number(connection->MsgsInPerSec()) + "/sec");
+	dialog->messagesOut->setText(QString::number(connection->MsgsOutPerSec()) + "/sec");
+	dialog->bytesIn->setText(QString(FormatBytes(connection->BytesInPerSec()).c_str()) + "/sec");
+	dialog->bytesOut->setText(QString(FormatBytes(connection->BytesOutPerSec()).c_str()) + "/sec");
+	dialog->totalBytesReceived->setText(QString(FormatBytes(connection->BytesInTotal()).c_str()));
+	dialog->totalBytesSent->setText(QString(FormatBytes(connection->BytesOutTotal()).c_str()));
+
+	UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(connection.ptr());
+	QLabel *labels[] =
+	{ 
+		dialog->retransmissionTimeoutHeader, dialog->retransmissionTimeout,
+		dialog->datagramSendRateHeader, dialog->datagramSendRate,
+		dialog->smoothedRTTHeader, dialog->smoothedRTT,
+		dialog->rttVariationHeader, dialog->rttVariation,
+		dialog->outUnackedDatagramsHeader, dialog->outUnackedDatagrams,
+		dialog->recvUnackedDatagramsHeader, dialog->recvUnackedDatagrams,
+		dialog->packetLossCountHeader, dialog->packetLossCount,
+		dialog->packetLossRateHeader, dialog->packetLossRate
+	};
+	for(int i = 0; i < sizeof(labels)/sizeof(labels[0]); ++i)
+		labels[i]->setVisible(udpConnection != 0);
+
+	if (udpConnection)
+	{
+		dialog->retransmissionTimeout->setText(QString::number(udpConnection->RetransmissionTimeout()) + "ms");
+		dialog->datagramSendRate->setText(QString::number(udpConnection->DatagramSendRate()) + "/sec");
+		dialog->smoothedRTT->setText(QString::number(udpConnection->SmoothedRtt()) + "ms");
+		dialog->rttVariation->setText(QString::number(udpConnection->RttVariation()));
+		dialog->outUnackedDatagrams->setText(QString::number(udpConnection->NumOutboundUnackedDatagrams()));
+		dialog->recvUnackedDatagrams->setText(QString::number(udpConnection->NumReceivedUnackedDatagrams()));
+		dialog->packetLossCount->setText(QString::number(udpConnection->PacketLossCount()));
+		dialog->packetLossRate->setText(QString::number(udpConnection->PacketLossRate()));
+	}
 	updateTimer->start(dialogUpdateInterval);
 }
 

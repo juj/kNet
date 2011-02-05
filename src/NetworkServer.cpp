@@ -149,6 +149,8 @@ void NetworkServer::CleanupDeadConnections()
 
 void NetworkServer::Process()
 {
+	assert(owner);
+
 	CleanupDeadConnections();
 
 	for(size_t i = 0; i < listenSockets.size(); ++i)
@@ -191,6 +193,8 @@ void NetworkServer::Process()
 					LOG(LogWaits, "NetworkServer::Process: Adding new accepted TCP connection to connection list took %f msecs.",
 						timer.MSecsElapsed());
 				}
+
+				owner->NewMessageConnectionCreated(clientConnection);
 			}
 		}
 	}
@@ -325,10 +329,11 @@ bool NetworkServer::ProcessNewUDPConnectionAttempt(Socket *listenSocket, const E
 	if (networkServerListener)
 		networkServerListener->NewConnectionEstablished(connection);
 
-	///\todo Re-enable. Cannot call this here since we are in main thread, and this function can only be called from the worker thread.
-//	connection->SendPingRequestMessage();
+	connection->SendPingRequestMessage(false);
 
 	owner->AssignConnectionToWorkerThread(connection);
+
+	owner->NewMessageConnectionCreated(connection);
 
 	LOG(LogInfo, "Accepted new UDP connection.");
 	return true;

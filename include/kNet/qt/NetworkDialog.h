@@ -20,6 +20,7 @@
 #include <QWidget>
 class QTimer;
 class QTreeWidgetItem;
+class Ui_NetworkDialog;
 
 #include "kNet/Network.h"
 
@@ -32,9 +33,11 @@ class NetworkDialog : public QWidget
 
 	Network *network;
 	QTimer *updateTimer;
+	Ui_NetworkDialog *dialog;
 
 public:
 	NetworkDialog(QWidget *parent, Network *network);
+	~NetworkDialog();
 
 public slots:
 	void Update();
