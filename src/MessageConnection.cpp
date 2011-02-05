@@ -1247,18 +1247,20 @@ MessageConnection::SocketReadResult MessageConnection::ReadSocket()
 	return ReadSocket(ignored); 
 }
 
+// This function returns true if the current thread of execution is in the worker thread, or, if there is no
+// worker thread running at all.
 void MessageConnection::AssertInWorkerThreadContext() const
 {
 #ifdef THREAD_CHECKING_ENABLED
-	bool ret = workerThread != 0 && Thread::CurrentThreadId() == workerThreadId;
+	bool ret = workerThread == 0 || Thread::CurrentThreadId() == workerThreadId;
 	assert(ret);
 #endif
 }
 
+// This function returns true if the current thread of execution is in the main thread.
 void MessageConnection::AssertInMainThreadContext() const
 {
 #ifdef THREAD_CHECKING_ENABLED
-//	bool ret = !InWorkerThreadContext();
 	bool ret = workerThread == 0 || Thread::CurrentThreadId() != workerThreadId;
 	assert(ret);
 #endif
