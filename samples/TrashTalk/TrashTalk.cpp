@@ -65,7 +65,7 @@ public:
 		}
 		socket->Disconnect();
 		socket->Close();
-		network.CloseSocket(socket);
+		network.DeleteSocket(socket);
 
 		cout << "Finished sending data." << endl;
 	}
