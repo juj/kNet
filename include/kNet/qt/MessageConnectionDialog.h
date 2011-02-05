@@ -38,6 +38,7 @@ class MessageConnectionDialog : public QWidget
 
 public:
 	MessageConnectionDialog(QWidget *parent, Ptr(MessageConnection) connection);
+	~MessageConnectionDialog();
 
 public slots:
 	void Update();

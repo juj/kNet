@@ -114,8 +114,11 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	LOG(LogInfo, "Accepted incoming TCP connection from %s:%d.", remoteHostName.c_str(), (int)remoteEndPoint.port);
 
 	EndPoint localEndPoint;
-	localEndPoint.Reset(); ///\todo Compute the socket local endpoint here.
-	std::string localHostName = ""; ///\todo Compute the socket local hostname here.
+	sockaddr_in localSockAddr;
+	socklen_t namelen = sizeof(localSockAddr);
+	int sockRet = getsockname(acceptSocket, (sockaddr*)&localSockAddr, &namelen); // Note: This works only if family==INETv4
+	localEndPoint = EndPoint::FromSockAddrIn(localSockAddr);
+	std::string localHostName = owner->LocalAddress();
 
 	const size_t maxTcpSendSize = 65536;
 	Socket *socket = owner->StoreSocket(Socket(acceptSocket, localEndPoint, localHostName.c_str(), remoteEndPoint, remoteHostName.c_str(), SocketOverTCP, ServerClientSocket, maxTcpSendSize));
@@ -168,28 +171,18 @@ void NetworkServer::Process()
 
 				LOG(LogInfo, "Client connected from %s.", client->ToString().c_str());
 
-				// Build a message connection on top of the raw socket.
-				Ptr(MessageConnection) clientConnection;
+				// Build a MessageConnection on top of the raw socket.
 				assert(listen->TransportLayer() == SocketOverTCP);
-				clientConnection = new TCPMessageConnection(owner, this, client, ConnectionOK);
+				Ptr(MessageConnection) clientConnection = new TCPMessageConnection(owner, this, client, ConnectionOK);
 				owner->AssignConnectionToWorkerThread(clientConnection);
 
 				if (networkServerListener)
 					networkServerListener->NewConnectionEstablished(clientConnection);
 
-				sockaddr_in sockname;
-				socklen_t socknamelen = sizeof(sockname);
-				int ret = getpeername(client->GetSocketHandle(), (sockaddr*)&sockname, &socknamelen);
-				if (ret != 0)
-					LOG(LogError, "getpeername failed for %s!", client->ToString().c_str());
-
-				EndPoint endPoint = EndPoint::FromSockAddrIn(sockname);
-				LOG(LogInfo, "Client connected from %s.", endPoint.ToString().c_str());
-
 				{
 					PolledTimer timer;
 					Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
-					(*clientsLock)[endPoint] = clientConnection;
+					(*clientsLock)[clientConnection->RemoteEndPoint()] = clientConnection;
 					LOG(LogWaits, "NetworkServer::Process: Adding new accepted TCP connection to connection list took %f msecs.",
 						timer.MSecsElapsed());
 				}

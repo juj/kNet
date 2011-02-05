@@ -58,6 +58,8 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 	updateTimer = new QTimer(this);
 	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();
+
+	this->setAttribute(Qt::WA_DeleteOnClose);
 }
 
 NetworkDialog::~NetworkDialog()

@@ -58,6 +58,13 @@ MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageCon
 	updateTimer = new QTimer(this);
 	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();
+
+	this->setAttribute(Qt::WA_DeleteOnClose);
+}
+
+MessageConnectionDialog::~MessageConnectionDialog()
+{
+	delete dialog;
 }
 
 void MessageConnectionDialog::Update()
@@ -74,6 +81,7 @@ void MessageConnectionDialog::Update()
 		ss << SocketTransportLayerToString(socket->TransportLayer()) << " connection to " << connection->RemoteEndPoint().ToString()
 		   << " (from " << connection->LocalEndPoint().ToString() << ")";
 	dialog->connectionLine->setText(ss.str().c_str());
+	setWindowTitle(ss.str().c_str());
 
 	dialog->statusLine->setText(ConnectionStateToString(connection->GetConnectionState()).c_str());
 	dialog->outboundMessagesPending->setText(QString::number(connection->NumOutboundMessagesPending()));
