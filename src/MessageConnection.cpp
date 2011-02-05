@@ -105,8 +105,14 @@ outboundQueue(16 * 1024), workerThread(0)
 MessageConnection::~MessageConnection()
 {
 	LOG(LogObjectAlloc, "Deleting MessageConnection %p.", this);
+	if (owner)
+		owner->CloseConnection(this);
 	FreeMessageData();
 	eventMsgsOutAvailable.Close();
+
+	// We can't have a worker thread referencing to this connection any more, since it would
+	// be accessing a dangling pointer. Calling owner->CloseConnection above should remove the workerThread.
+	assert(workerThread == 0);
 }
 
 ConnectionState MessageConnection::GetConnectionState() const

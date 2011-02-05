@@ -64,11 +64,12 @@ public:
 	/// Connects a raw socket (low-level, no MessageConnection abstraction) to the given destination.
 	Socket *ConnectSocket(const char *address, unsigned short port, SocketTransportLayer transport);
 
-	/// Closes (==frees) the given Socket object. After calling this function, do not dereference that Socket pointer,
-	/// as it is deleted.
-	void CloseSocket(Socket *socket);
+	/// Frees the given Socket object (performs an immediate bidirectional shutdown and frees the socket). After calling 
+	/// this function, do not dereference that Socket pointer, as it is deleted.
+	void DeleteSocket(Socket *socket);
 
-	void CloseConnection(Ptr(MessageConnection) connection);
+	/// Closes the given MessageConnection object. 
+	void CloseConnection(MessageConnection *connection);
 
 	/** Connects to the given address:port using kNet over UDP or TCP. When you are done with the connection,
 		free it by letting the refcount go to 0. */
@@ -132,7 +133,7 @@ private:
 	NetworkWorkerThread *GetOrCreateWorkerThread();
 
 	/// Takes the given MessageConnection and associates a NetworkWorkerThread for it.
-	void AssignConnectionToWorkerThread(Ptr(MessageConnection) connection);
+	void AssignConnectionToWorkerThread(MessageConnection *connection);
 
 	/// Takes the given server and associates a NetworkWorkerThread for it.
 	void AssignServerToWorkerThread(NetworkServer *server);
@@ -143,7 +144,7 @@ private:
 
 	/// Dissociates the given connection from its worker thread, and closes the worker thread if it does not
 	/// have any servers or connections to work on any more.
-	void RemoveConnectionFromItsWorkerThread(Ptr(MessageConnection) connection);
+	void RemoveConnectionFromItsWorkerThread(MessageConnection *connection);
 
 	/// Dissociates the given server from its worker thread, and closes the worker thread if it does not
 	/// have any servers or connections to work on any more.

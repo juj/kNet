@@ -37,48 +37,48 @@ NetworkWorkerThread::NetworkWorkerThread()
 {
 }
 
-void NetworkWorkerThread::AddConnection(Ptr(MessageConnection) connection)
+void NetworkWorkerThread::AddConnection(MessageConnection *connection)
 {
 	workThread.Hold();
-	Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
+	Lockable<std::vector<MessageConnection *> >::LockType lock = connections.Acquire();
 	lock->push_back(connection);
-	LOG(LogVerbose, "Added connection %p to NetworkWorkerThread.", connection.ptr());
+	LOG(LogVerbose, "Added connection %p to NetworkWorkerThread.", connection);
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::RemoveConnection(Ptr(MessageConnection) connection)
+void NetworkWorkerThread::RemoveConnection(MessageConnection * connection)
 {
 	workThread.Hold();
 
-	Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
+	Lockable<std::vector<MessageConnection *> >::LockType lock = connections.Acquire();
 
 	for(size_t i = 0; i < lock->size(); ++i)
 		if ((*lock)[i] == connection)
 		{
 			lock->erase(lock->begin() + i);
-			LOG(LogVerbose, "NetworkWorkerThread::RemoveConnection: Connection %p removed.", connection.ptr());
+			LOG(LogVerbose, "NetworkWorkerThread::RemoveConnection: Connection %p removed.", connection);
 			workThread.Resume();
 			return;
 		}
-	LOG(LogError, "NetworkWorkerThread::RemoveConnection called for a nonexisting connection %p!", connection.ptr());
+	LOG(LogError, "NetworkWorkerThread::RemoveConnection called for a nonexisting connection %p!", connection);
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::AddServer(Ptr(NetworkServer) server)
+void NetworkWorkerThread::AddServer(NetworkServer * server)
 {
 	workThread.Hold();
-	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
+	Lockable<std::vector<NetworkServer *> >::LockType lock = servers.Acquire();
 	lock->push_back(server);
-	LOG(LogVerbose, "Added server %p to NetworkWorkerThread.", server.ptr());
+	LOG(LogVerbose, "Added server %p to NetworkWorkerThread.", server);
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
+void NetworkWorkerThread::RemoveServer(NetworkServer * server)
 {
 	workThread.Hold();
 
 	PolledTimer timer;
-	Lockable<std::vector<Ptr(NetworkServer)> >::LockType lock = servers.Acquire();
+	Lockable<std::vector<NetworkServer *> >::LockType lock = servers.Acquire();
 	float lockWait = timer.MSecsElapsed();
 	LOG(LogWaits, "NetworkWorkerThread::RemoveServer: Waited %f msecs to lock servers list.",
 		lockWait);
@@ -87,11 +87,11 @@ void NetworkWorkerThread::RemoveServer(Ptr(NetworkServer) server)
 		if ((*lock)[i] == server)
 		{
 			lock->erase(lock->begin() + i);
-			LOG(LogVerbose, "NetworkWorkerThread::RemoveServer: Server %p removed.", server.ptr());
+			LOG(LogVerbose, "NetworkWorkerThread::RemoveServer: Server %p removed.", server);
 			workThread.Resume();
 			return;
 		}
-	LOG(LogError, "NetworkWorkerThread::RemoveServer called for a nonexisting server %p!", server.ptr());
+	LOG(LogError, "NetworkWorkerThread::RemoveServer called for a nonexisting server %p!", server);
 	workThread.Resume();
 }
 
@@ -138,16 +138,12 @@ void NetworkWorkerThread::MainLoop()
 			break;
 	
 		{
-			Lockable<std::vector<Ptr(MessageConnection)> >::LockType lock = connections.Acquire();
-			connectionList.clear();
-			for(size_t i = 0; i < lock->size(); ++i)
-				connectionList.push_back((*lock)[i].ptr());
+			Lockable<std::vector<MessageConnection *> >::LockType lock = connections.Acquire();
+			connectionList = *lock;
 		}
 		{
-			Lockable<std::vector<Ptr(NetworkServer)> >::LockType serverLock = servers.Acquire();
-			serverList.clear();
-			for(size_t i = 0; i < serverLock->size(); ++i)
-				serverList.push_back((*serverLock)[i].ptr());
+			Lockable<std::vector<NetworkServer *> >::LockType serverLock = servers.Acquire();
+			serverList = *serverLock;
 		}
 
 		// Inconveniency: Cannot wait for long time periods, since this will call select() or WSAWaitForMultipleObjects,

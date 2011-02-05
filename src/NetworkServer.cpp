@@ -76,7 +76,7 @@ void NetworkServer::CloseListenSockets()
 		if (listenSockets[i]->TransportLayer() == SocketOverUDP)
 			acceptNewConnections = false; ///\todo At this point, if in UDP mode, we should have destroyed all connections that use this socket!
 		else
-			owner->CloseSocket(listenSockets[i]); 
+			owner->DeleteSocket(listenSockets[i]); 
 	}
 
 	// Now forget all sockets - not getting them back in any way.
@@ -454,7 +454,7 @@ void NetworkServer::ConnectionClosed(MessageConnection *connection)
 
 			if (connection->GetSocket() && connection->GetSocket()->TransportLayer() == SocketOverTCP)
 			{
-				owner->CloseSocket(connection->socket);
+				owner->DeleteSocket(connection->socket);
 				connection->socket = 0;
 			}
 

@@ -297,7 +297,7 @@ NetworkWorkerThread *Network::GetOrCreateWorkerThread()
 	return workerThread;
 }
 
-void Network::AssignConnectionToWorkerThread(Ptr(MessageConnection) connection)
+void Network::AssignConnectionToWorkerThread(MessageConnection *connection)
 {
 	NetworkWorkerThread *workerThread = GetOrCreateWorkerThread();
 	connection->SetWorkerThread(workerThread);
@@ -311,7 +311,7 @@ void Network::AssignServerToWorkerThread(NetworkServer *server)
 	workerThread->AddServer(server);
 }
 
-void Network::RemoveConnectionFromItsWorkerThread(Ptr(MessageConnection) connection)
+void Network::RemoveConnectionFromItsWorkerThread(MessageConnection *connection)
 {
 	if (!connection)
 		return;
@@ -360,6 +360,7 @@ void Network::CloseWorkerThread(NetworkWorkerThread *workerThread)
 			workerThreads.pop_back();
 
 			workerThread->StopThread();
+			LOG(LogInfo, "Deleted a NetworkWorkerThread. There are now %d worker threads left.", (int)workerThreads.size());
 			delete workerThread;
 			return;
 		}
@@ -452,11 +453,11 @@ void Network::StopServer()
 	LOG(LogVerbose, "Network::StopServer: Deinitialized NetworkServer.");
 }
 
-void Network::CloseSocket(Socket *socket)
+void Network::DeleteSocket(Socket *socket)
 {
 	if (!socket)
 	{
-		LOG(LogError, "Network::CloseSocket() called with a null socket pointer!");
+		LOG(LogError, "Network::DeleteSocket() called with a null socket pointer!");
 		return;
 	}
 
@@ -467,20 +468,20 @@ void Network::CloseSocket(Socket *socket)
 			// The Socket pointers MessageConnection objects have are pointers to this list,
 			// so after calling this function with a Socket pointer, the Socket is deleted for good.
 			sockets.erase(iter);
-			LOG(LogInfo, "Network::CloseSocket: Closed socket %p.", socket);
+			LOG(LogInfo, "Network::DeleteSocket: Closed socket %p.", socket);
 			return;
 		}
-	LOG(LogError, "Network::CloseSocket: Tried to close a nonexisting socket %p!", socket);
+	LOG(LogError, "Network::DeleteSocket: Tried to free a nonexisting socket %p!", socket);
 }
 
-void Network::CloseConnection(Ptr(MessageConnection) connection)
+void Network::CloseConnection(MessageConnection *connection)
 {
-	LOG(LogVerbose, "Network::CloseConnection: Closing down connection %p.", connection.ptr());
+	LOG(LogVerbose, "Network::CloseConnection: Closing down connection %p.", connection);
 	if (!connection)
 		return;
 
 	RemoveConnectionFromItsWorkerThread(connection);
-	CloseSocket(connection->socket);
+	DeleteSocket(connection->socket);
 	connection->socket = 0;
 }
 
