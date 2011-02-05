@@ -425,6 +425,8 @@ protected:
 	/// Sets the worker thread object that will handle this connection.
 	void SetWorkerThread(NetworkWorkerThread *thread); // [worker thread]
 
+	NetworkWorkerThread *WorkerThread() const { return workerThread; }
+
 	void HandleInboundMessage(packet_id_t packetID, const char *data, size_t numBytes); // [worker thread]
 
 	/// Allocates a new NetworkMessage struct. [both worker and main thread]

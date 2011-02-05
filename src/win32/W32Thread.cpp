@@ -180,8 +180,12 @@ void Thread::Sleep(int msecs)
 
 ThreadId Thread::CurrentThreadId()
 {
-	assert(false && "Not Implemented!"); ///\todo
-	return 0;
+	return GetCurrentThreadId();
+}
+
+ThreadId Thread::NullThreadId()
+{
+	return NULL;
 }
 
 } // ~kNet

@@ -96,4 +96,9 @@ ThreadId Thread::CurrentThreadId()
 	return boost::this_thread::get_id();
 }
 
+ThreadId Thread::NullThreadId()
+{
+	return boost::thread::id();
+}
+
 } // ~kNet

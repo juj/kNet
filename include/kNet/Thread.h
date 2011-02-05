@@ -39,6 +39,8 @@ namespace kNet
 
 #ifdef KNET_USE_BOOST
 typedef boost::thread::id ThreadId;
+#elif WIN32
+typedef DWORD ThreadId;
 #else
 typedef unsigned int ThreadId;
 #endif
@@ -83,6 +85,7 @@ public:
 	ThreadId Id();
 
 	static ThreadId CurrentThreadId();
+	static ThreadId NullThreadId();
 private:
 	Thread(const Thread &);
 	void operator =(const Thread &);

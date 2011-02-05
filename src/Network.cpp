@@ -413,8 +413,12 @@ void Network::CloseConnection(Ptr(MessageConnection) connection)
 	if (!connection)
 		return;
 
-	for(size_t i = 0; i < workerThreads.size(); ++i)
-		workerThreads[i]->RemoveConnection(connection);
+	NetworkWorkerThread *workerThread = connection->WorkerThread();
+	if (workerThread)
+	{
+		workerThread->RemoveConnection(connection);
+		connection->SetWorkerThread(0);
+	}
 
 	CloseSocket(connection->socket);
 	connection->socket = 0;

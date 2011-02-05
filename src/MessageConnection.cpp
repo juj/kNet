@@ -1237,7 +1237,7 @@ void MessageConnection::SetWorkerThread(NetworkWorkerThread *thread)
 {
 	workerThread = thread;
 #ifdef THREAD_CHECKING_ENABLED
-	workerThreadId = thread->ThreadObject().Id();
+	workerThreadId = thread ? thread->ThreadObject().Id() : Thread::NullThreadId();
 #endif
 	
 	AssertInMainThreadContext();
