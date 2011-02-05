@@ -37,7 +37,7 @@ public:
 		// Create a DataSerializer object with a buffer of 256 bytes.
 		DataSerializer ds(msg->data, maxMsgBytes);
 		// Add a message string.
-		ds.AddString(std::string("Hello! You are connecting from ") + connection->GetEndPoint().ToString());
+		ds.AddString(std::string("Hello! You are connecting from ") + connection->RemoteEndPoint().ToString());
 		// Push the message out to the client.
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
 		LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
@@ -61,7 +61,7 @@ int main()
 	LOG(LogUser, "Starting server.");
 	// Start listening on a port.
 	const unsigned short cServerPort = 1234;
-	NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener);
+	NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener, true);
 
 	if (server)
 	{

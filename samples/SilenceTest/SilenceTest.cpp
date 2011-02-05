@@ -35,7 +35,7 @@ using namespace kNet;
 void RunServer(short int port, SocketTransportLayer transport)
 {
 	Network network;
-	NetworkServer *server = network.StartServer(port, transport, 0);
+	NetworkServer *server = network.StartServer(port, transport, 0, true);
 	if (!server)
 	{
 		LOG(LogUser, "Unable to start server!");

@@ -69,7 +69,7 @@ public:
 
 	void RunServer(std::vector< std::pair<unsigned short, SocketTransportLayer> > ports)
 	{
-		server = network.StartServer(ports, this);
+		server = network.StartServer(ports, this, true);
 		if (server)
 			server->RunModalServer();
 	}

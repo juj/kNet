@@ -72,7 +72,7 @@ public:
 	void RunServer(unsigned short port, SocketTransportLayer transport)
 	{
 		// Start the server either in TCP or UDP mode.
-		server = network.StartServer(port, transport, this);
+		server = network.StartServer(port, transport, this, true);
 		if (!server)
 		{
 			cout << "Unable to start server in port " << port << "!" << endl;
@@ -124,7 +124,7 @@ public:
 		// Note: We can't assume the sender sent the null byte in the message, it might be an ill-crafted message!
 		if (inputText.length() > 0)
 			cout << endl;
-		cout << connection->GetEndPoint().ToString() << " says: " << str << endl;
+		cout << connection->RemoteEndPoint().ToString() << " says: " << str << endl;
 		if (inputText.length() > 0)
 			cout << "> " << inputText;
 

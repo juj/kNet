@@ -69,7 +69,7 @@ public:
 		client = 0;
 
 		// Start the server either in TCP or UDP mode.
-		server = network.StartServer(port, transport, this);
+		server = network.StartServer(port, transport, this, true);
 		if (!server)
 		{
 			cout << "Unable to start server in port " << port << "!" << endl;
