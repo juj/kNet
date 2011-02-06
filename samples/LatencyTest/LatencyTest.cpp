@@ -93,7 +93,6 @@ public:
 	{
 		PolledTimer disconnectTimer(30 * 1000.f);
 
-		float previousPing = 0.f;
 		float previousRTT = 0.f;
 
 		while(!disconnectTimer.Test())
@@ -103,10 +102,8 @@ public:
 			Clock::Sleep(10);
 
 			// Print latency statistics whenever it has changed.
-			if (fabs(previousPing - connection->Latency()) > 1e-3f || 
-				fabs(previousRTT - connection->RoundTripTime()) > 1e-3f)
+			if (fabs(previousRTT - connection->RoundTripTime()) > 1e-3f)
 			{
-				previousPing = connection->Latency();
 				previousRTT = connection->RoundTripTime();
 
 				connection->DumpStatus();
