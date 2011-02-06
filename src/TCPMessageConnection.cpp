@@ -26,6 +26,7 @@
 #include "kNet/DataDeserializer.h"
 #include "kNet/VLEPacker.h"
 #include "kNet/NetException.h"
+#include "kNet/Network.h"
 
 namespace kNet
 {
@@ -37,6 +38,12 @@ TCPMessageConnection::TCPMessageConnection(Network *owner, NetworkServer *ownerS
 :MessageConnection(owner, ownerServer, socket, startingState),
 tcpInboundSocketData(2 * 1024 * 1024)
 {
+}
+
+TCPMessageConnection::~TCPMessageConnection()
+{
+	if (owner)
+		owner->CloseConnection(this);
 }
 
 MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &totalBytesRead)

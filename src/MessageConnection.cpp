@@ -108,14 +108,17 @@ bytesInTotal(0), bytesOutTotal(0)
 MessageConnection::~MessageConnection()
 {
 	LOG(LogObjectAlloc, "Deleting MessageConnection %p.", this);
-	if (owner)
-		owner->CloseConnection(this);
+
+	// This MessageConnection must have been detached from its owners before deleting it. 
+	// (owner->CloseConnection must have been called)
+	// We can't have a worker thread referencing to this connection any more, since it would
+	// be accessing a dangling pointer.
+	assert(owner == 0);
+	assert(ownerServer == 0);
+	assert(workerThread == 0);
+
 	FreeMessageData();
 	eventMsgsOutAvailable.Close();
-
-	// We can't have a worker thread referencing to this connection any more, since it would
-	// be accessing a dangling pointer. Calling owner->CloseConnection above should remove the workerThread.
-	assert(workerThread == 0);
 }
 
 ConnectionState MessageConnection::GetConnectionState() const

@@ -40,6 +40,7 @@ class TCPMessageConnection : public MessageConnection
 {
 public:
 	TCPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
+	~TCPMessageConnection();
 
 private:
 	/// Maintains a byte buffer that contains partial messages. (Used only in TCP mode) [worker thread]

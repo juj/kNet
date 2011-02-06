@@ -33,7 +33,7 @@
 #include "kNet/DataDeserializer.h"
 #include "kNet/VLEPacker.h"
 #include "kNet/NetException.h"
-
+#include "kNet/Network.h"
 #include "kNet/Sort.h"
 
 using namespace std;
@@ -67,6 +67,9 @@ receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024)
 
 UDPMessageConnection::~UDPMessageConnection()
 {
+	if (owner)
+		owner->CloseConnection(this);
+
 	while(outboundPacketAckTrack.Size() > 0)
 		FreeOutboundPacketAckTrack(outboundPacketAckTrack.Front()->packetID);
 
