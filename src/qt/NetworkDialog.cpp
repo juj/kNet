@@ -124,7 +124,8 @@ void NetworkDialog::Update()
 
 	std::set<MessageConnection*> connections = network->Connections();
 	for(std::set<MessageConnection*>::iterator iter = connections.begin(); iter != connections.end(); ++iter)
-		new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
+		if ((*iter)->GetSocket() && (*iter)->GetSocket()->Type() == ClientSocket)
+			new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
 
 	updateTimer->start(dialogUpdateInterval);
 }
