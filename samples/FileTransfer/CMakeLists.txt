@@ -15,8 +15,10 @@
 cmake_minimum_required(VERSION 2.6)
 project(FileTransfer)
 
-file(GLOB HeaderFiles ./*.h )
+file(GLOB HeaderFiles ./*.h)
 file(GLOB SourceFiles ./*.cpp)
-add_executable(${PROJECT_NAME} ${SourceFiles} ${HeaderFiles})
+QT4_WRAP_CPP(MocSrcFiles ${HeaderFiles})
+
+add_executable(${PROJECT_NAME} ${SourceFiles} ${HeaderFiles} ${MocSrcFiles})
 
 target_link_libraries(${PROJECT_NAME} kNet)
