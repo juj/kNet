@@ -18,7 +18,7 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>531</width>
+     <width>411</width>
      <height>16</height>
     </rect>
    </property>
@@ -31,7 +31,7 @@
     <rect>
      <x>10</x>
      <y>30</y>
-     <width>91</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -42,7 +42,7 @@
   <widget class="QLabel" name="statusLine">
    <property name="geometry">
     <rect>
-     <x>108</x>
+     <x>230</x>
      <y>28</y>
      <width>381</width>
      <height>20</height>
@@ -57,7 +57,7 @@
     <rect>
      <x>10</x>
      <y>50</y>
-     <width>161</width>
+     <width>221</width>
      <height>16</height>
     </rect>
    </property>
@@ -70,7 +70,7 @@
     <rect>
      <x>10</x>
      <y>70</y>
-     <width>141</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -83,7 +83,7 @@
     <rect>
      <x>10</x>
      <y>90</y>
-     <width>71</width>
+     <width>201</width>
      <height>16</height>
     </rect>
    </property>
@@ -96,7 +96,7 @@
     <rect>
      <x>10</x>
      <y>110</y>
-     <width>91</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -109,7 +109,7 @@
     <rect>
      <x>10</x>
      <y>130</y>
-     <width>91</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -122,7 +122,7 @@
     <rect>
      <x>10</x>
      <y>150</y>
-     <width>71</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -135,7 +135,7 @@
     <rect>
      <x>10</x>
      <y>170</y>
-     <width>81</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -148,7 +148,7 @@
     <rect>
      <x>10</x>
      <y>190</y>
-     <width>71</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -161,7 +161,7 @@
     <rect>
      <x>10</x>
      <y>210</y>
-     <width>81</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -174,7 +174,7 @@
     <rect>
      <x>10</x>
      <y>230</y>
-     <width>51</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -187,7 +187,7 @@
     <rect>
      <x>10</x>
      <y>250</y>
-     <width>61</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -198,7 +198,7 @@
   <widget class="QLabel" name="outboundMessagesPending">
    <property name="geometry">
     <rect>
-     <x>167</x>
+     <x>230</x>
      <y>48</y>
      <width>351</width>
      <height>20</height>
@@ -211,7 +211,7 @@
   <widget class="QLabel" name="messageConnectionStatus">
    <property name="geometry">
     <rect>
-     <x>148</x>
+     <x>230</x>
      <y>68</y>
      <width>381</width>
      <height>20</height>
@@ -224,7 +224,7 @@
   <widget class="QLabel" name="socketStatus">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>88</y>
      <width>381</width>
      <height>20</height>
@@ -237,7 +237,7 @@
   <widget class="QLabel" name="roundTripTime">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>108</y>
      <width>381</width>
      <height>20</height>
@@ -250,7 +250,7 @@
   <widget class="QLabel" name="lastHeardTime">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>128</y>
      <width>381</width>
      <height>20</height>
@@ -263,7 +263,7 @@
   <widget class="QLabel" name="datagramsIn">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>148</y>
      <width>381</width>
      <height>20</height>
@@ -276,7 +276,7 @@
   <widget class="QLabel" name="messagesIn">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>188</y>
      <width>381</width>
      <height>20</height>
@@ -289,7 +289,7 @@
   <widget class="QLabel" name="datagramsOut">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>168</y>
      <width>381</width>
      <height>20</height>
@@ -302,7 +302,7 @@
   <widget class="QLabel" name="messagesOut">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>208</y>
      <width>381</width>
      <height>20</height>
@@ -315,7 +315,7 @@
   <widget class="QLabel" name="bytesIn">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>228</y>
      <width>381</width>
      <height>20</height>
@@ -328,7 +328,7 @@
   <widget class="QLabel" name="bytesOut">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>248</y>
      <width>381</width>
      <height>20</height>
@@ -343,7 +343,7 @@
     <rect>
      <x>10</x>
      <y>310</y>
-     <width>121</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -356,7 +356,7 @@
     <rect>
      <x>10</x>
      <y>330</y>
-     <width>111</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -369,7 +369,7 @@
     <rect>
      <x>10</x>
      <y>350</y>
-     <width>81</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -382,7 +382,7 @@
     <rect>
      <x>10</x>
      <y>370</y>
-     <width>81</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -395,7 +395,7 @@
     <rect>
      <x>10</x>
      <y>390</y>
-     <width>141</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -408,7 +408,7 @@
     <rect>
      <x>10</x>
      <y>410</y>
-     <width>121</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -421,7 +421,7 @@
     <rect>
      <x>10</x>
      <y>430</y>
-     <width>101</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -434,7 +434,7 @@
     <rect>
      <x>10</x>
      <y>450</y>
-     <width>101</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -445,7 +445,7 @@
   <widget class="QLabel" name="retransmissionTimeout">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>308</y>
      <width>381</width>
      <height>20</height>
@@ -458,7 +458,7 @@
   <widget class="QLabel" name="datagramSendRate">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>328</y>
      <width>381</width>
      <height>20</height>
@@ -471,7 +471,7 @@
   <widget class="QLabel" name="smoothedRTT">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>348</y>
      <width>381</width>
      <height>20</height>
@@ -484,7 +484,7 @@
   <widget class="QLabel" name="rttVariation">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>368</y>
      <width>381</width>
      <height>20</height>
@@ -497,7 +497,7 @@
   <widget class="QLabel" name="outUnackedDatagrams">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>388</y>
      <width>381</width>
      <height>20</height>
@@ -510,7 +510,7 @@
   <widget class="QLabel" name="recvUnackedDatagrams">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>408</y>
      <width>381</width>
      <height>20</height>
@@ -523,7 +523,7 @@
   <widget class="QLabel" name="packetLossCount">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>428</y>
      <width>381</width>
      <height>20</height>
@@ -536,7 +536,7 @@
   <widget class="QLabel" name="packetLossRate">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>448</y>
      <width>381</width>
      <height>20</height>
@@ -549,7 +549,7 @@
   <widget class="QLabel" name="totalBytesSent">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>288</y>
      <width>381</width>
      <height>20</height>
@@ -564,7 +564,7 @@
     <rect>
      <x>10</x>
      <y>270</y>
-     <width>101</width>
+     <width>211</width>
      <height>16</height>
     </rect>
    </property>
@@ -577,7 +577,7 @@
     <rect>
      <x>10</x>
      <y>290</y>
-     <width>91</width>
+     <width>201</width>
      <height>16</height>
     </rect>
    </property>
@@ -588,7 +588,7 @@
   <widget class="QLabel" name="totalBytesReceived">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>230</x>
      <y>268</y>
      <width>381</width>
      <height>20</height>
