@@ -18,6 +18,7 @@
 #include <string>
 #include <cassert>
 #include <utility>
+#include <sstream>
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>

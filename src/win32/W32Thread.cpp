@@ -22,6 +22,7 @@
 #include "kNet/NetworkLogging.h"
 #include "kNet/Clock.h"
 #include "kNet/NetException.h"
+#include "kNet/Network.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
@@ -53,7 +54,7 @@ bool Thread::IsRunning() const
 
 	if (result == 0)
 	{
-		LOGNET("Warning: Received error %d from GetExitCodeThread in Thread::IsRunning!", GetLastError());
+		LOG(LogError, "Warning: Received error %d from GetExitCodeThread in Thread::IsRunning!", GetLastError());
 		return false;
 	}
 
@@ -178,6 +179,20 @@ void Thread::Sleep(int msecs)
 	Clock::Sleep(msecs);
 }
 
+ThreadId Thread::Id()
+{
+	if (threadHandle == NULL)
+		return NullThreadId();
+
+	ThreadId id = GetThreadId(threadHandle);
+	if (id == 0)
+	{
+		LOG(LogError, "Thread::Id failed: %s!", Network::GetLastErrorString().c_str());
+		return NullThreadId();
+	}
+	return id;
+}
+
 ThreadId Thread::CurrentThreadId()
 {
 	return GetCurrentThreadId();
@@ -185,7 +200,7 @@ ThreadId Thread::CurrentThreadId()
 
 ThreadId Thread::NullThreadId()
 {
-	return NULL;
+	return 0;
 }
 
 } // ~kNet
