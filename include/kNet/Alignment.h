@@ -20,7 +20,7 @@
 
 #include "Types.h"
 
-#ifdef LINUX
+#ifdef UNIX
 #include <stdint.h>
 #endif
 

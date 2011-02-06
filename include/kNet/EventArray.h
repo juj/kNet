@@ -59,7 +59,7 @@ private:
 #ifdef WIN32
 	WSAEVENT events[maxEvents]; 
 
-#elif LINUX
+#elif UNIX
 	fd_set readfds;
 	fd_set writefds;
 	int nfds;

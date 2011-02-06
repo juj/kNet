@@ -39,7 +39,7 @@ const unsigned long cFileTransferStartMessage = 30;
 const unsigned long cFileTransferFragment = 31;
 const size_t fragmentSize = 450;
 
-#ifdef LINUX
+#ifdef UNIX
 #define _stricmp strcasecmp
 #endif
 

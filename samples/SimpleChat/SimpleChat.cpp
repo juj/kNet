@@ -26,7 +26,7 @@
 using namespace std;
 using namespace kNet;
 
-#ifdef LINUX
+#ifdef UNIX
 #define _stricmp strcasecmp
 #endif
 

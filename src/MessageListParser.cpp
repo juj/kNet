@@ -19,7 +19,7 @@
 #include <tinyxml.h>
 #endif
 
-#ifdef LINUX
+#ifdef UNIX
 #define _stricmp strcasecmp
 #endif
 
@@ -32,7 +32,7 @@
 #include "kNet/MessageListParser.h"
 #include "kNet/NetException.h"
 
-#ifdef LINUX
+#ifdef UNIX
 #define _stricmp strcasecmp
 #endif
 

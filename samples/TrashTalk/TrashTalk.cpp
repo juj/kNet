@@ -22,7 +22,7 @@
 
 #include "kNet.h"
 
-#ifdef LINUX
+#ifdef UNIX
 #define _stricmp strcasecmp
 #endif
 

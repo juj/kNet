@@ -20,7 +20,7 @@
 
 #include <cassert>
 
-#ifdef LINUX
+#ifdef UNIX
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

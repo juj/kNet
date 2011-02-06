@@ -34,7 +34,7 @@
 
 using namespace std;
 
-#ifdef LINUX
+#ifdef UNIX
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -869,7 +869,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	}
 	return true;
 
-#elif LINUX
+#elif UNIX
 	unsigned long bytesSent = 0;
 
 	int ret;
