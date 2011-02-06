@@ -17,7 +17,6 @@
 	@brief The classes \ref kNet::FragmentedSendManager FragmentedSendManager and 
 	\ref kNet::FragmentedSendManager FragmentedReceiveManager. For managing partial transfers. */
 
-#include <map>
 #include <vector>
 #include <list>
 

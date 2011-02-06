@@ -52,7 +52,7 @@ typedef boost::int64_t s64; ///< 8 bytes signed. 9,223,372,036,854,775,807 ~ 9e1
 
 #else // No boost or unknown if we have C99. Have to guess the following are correct.
 
-#warning "Not using boost and C99 not defined. Guessing the built-ins for fixed-width types!"
+//#pragma warning "Not using boost and C99 not defined. Guessing the built-ins for fixed-width types!"
 
 typedef unsigned char u8; ///< a single byte: 0-255.
 typedef unsigned short u16; ///< 2 bytes: 0 - 65535.

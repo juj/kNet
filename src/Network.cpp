@@ -81,7 +81,7 @@ std::string Network::GetLastErrorString()
 	return GetErrorString(GetLastError());
 }
 
-std::string FormatBytes(uint64_t numBytes)
+std::string FormatBytes(u64 numBytes)
 {
 	return FormatBytes((double)numBytes);
 }

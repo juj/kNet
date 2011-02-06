@@ -170,7 +170,7 @@ private:
 };
 
 /// Outputs the given number of bytes formatted to KB or MB suffix for readability.
-std::string FormatBytes(uint64_t numBytes);
+std::string FormatBytes(u64 numBytes);
 
 std::string FormatBytes(double numBytes);
 

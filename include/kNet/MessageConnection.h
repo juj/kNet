@@ -38,6 +38,7 @@
 #include "Clock.h"
 #include "PolledTimer.h"
 #include "Thread.h"
+#include "Types.h"
 
 namespace kNet
 {
@@ -312,10 +313,10 @@ public:
 	float BytesOutPerSec() const { return bytesOutPerSec; } // [main and worker thread]
 
 	/// Returns the total number of bytes (excluding IP and TCP/UDP headers) that have been received from this connection.
-	uint64_t BytesInTotal() const { return bytesInTotal; } // [main and worker thread]
+	u64 BytesInTotal() const { return bytesInTotal; } // [main and worker thread]
 
 	/// Returns the total number of bytes (excluding IP and TCP/UDP headers) that have been sent from this connection.
-	uint64_t BytesOutTotal() const { return bytesOutTotal; } // [main and worker thread]
+	u64 BytesOutTotal() const { return bytesOutTotal; } // [main and worker thread]
 
 	/// Stores all the statistics about the current connection. This data is periodically recomputed
 	/// by the network worker thread and shared to the client through a lock.
@@ -492,8 +493,8 @@ protected:
 	float msgsOutPerSec; ///< The average number of kNet messages we are sending/second. [main and worker thread]
 	float bytesInPerSec; ///< The average number of bytes we are receiving/second. This includes kNet headers. [main and worker thread]
 	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers. [main and worker thread]
-	uint64_t bytesInTotal;
-	uint64_t bytesOutTotal;
+	u64 bytesInTotal;
+	u64 bytesOutTotal;
 
 	/// A running number attached to each outbound message (not present in network stream) to 
 	/// break ties when deducing which message should come before which.
