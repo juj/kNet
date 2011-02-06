@@ -26,12 +26,12 @@ project(kNet)
 #endmacro()
 
 set(USE_BOOST TRUE)
-set(BOOST_ROOT "C:/boost_1_44_0")
+#set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
 #set(USE_TINYXML TRUE)
-set(TINYXML_ROOT "C:/Projects/3rdParty/tinyxml_2_6_1")
+#set(TINYXML_ROOT "TODO_SpecifyYourTinyXMLRootHereIfUsingTinyXML")
 
-set(USE_QT TRUE)
+#set(USE_QT TRUE)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTHREAD_CHECKING_ENABLED")
 
@@ -78,11 +78,8 @@ if (USE_QT)
      FOREACH(it ${ui_files})
        GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
        GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-       SET(outfile ${QT4_UI_OUTPUT_DIR}/ui_${outfile}.h) # Here we set output
+       SET(outfile ${QT4_UI_OUTPUT_DIR}/ui_${outfile}.h)
        GET_FILENAME_COMPONENT(outfile ${outfile} ABSOLUTE)
-#             message(${outfile})
-#       message("in")
-#       message(${infile})
        ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
          COMMAND ${QT_UIC_EXECUTABLE}
          ARGS ${ui_options} -o ${outfile} ${infile}
@@ -91,14 +88,12 @@ if (USE_QT)
      ENDFOREACH()    
    ENDMACRO()   
    
-   include_directories(${QT4_UI_OUTPUT_DIR})
+  include_directories(${QT4_UI_OUTPUT_DIR})
   QT4_WRAP_UI_CUSTOM_OUTPUT(kNetUiHeaderFiles ${kNetQtUiFiles})
-#  message(${kNetUiHeaderFiles})
-   set(kNetSourceFiles ${kNetSourceFiles} ${kNetMocSrcFiles} ${kNetQtSourceFiles})
-#   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles})
-   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles} ${kNetUiHeaderFiles})
-   include(${QT_USE_FILE})
-   set(kNetLinkLibraries ${kNetLinkLibraries} ${QT_LIBRARIES})
+  set(kNetSourceFiles ${kNetSourceFiles} ${kNetMocSrcFiles} ${kNetQtSourceFiles})
+  set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetMocHeaderFiles} ${kNetUiHeaderFiles})
+  include(${QT_USE_FILE})
+  set(kNetLinkLibraries ${kNetLinkLibraries} ${QT_LIBRARIES})
 endif()
 
 if (USE_BOOST)
@@ -164,7 +159,7 @@ endif()
 target_link_libraries(kNet ${kNetLinkLibraries})
 
 #add_subdirectory(samples/ConnectFlood)
-add_subdirectory(samples/FileTransfer)
+#add_subdirectory(samples/FileTransfer)
 #add_subdirectory(samples/FirewallTest)
 #add_subdirectory(samples/HelloClient)
 #add_subdirectory(samples/HelloServer)
@@ -177,10 +172,9 @@ add_subdirectory(samples/FileTransfer)
 
 #add_subdirectory(tests)
 
-#set_target_properties(kNet FileTransfer PROPERTIES 
 #set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
 
-set_target_properties(kNet FileTransfer PROPERTIES 
+set_target_properties(kNet PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
