@@ -53,7 +53,6 @@ fileSize(0)
 
 NetworkApp::~NetworkApp()
 {
-	printf("in dtor!");
 }
 
 /// Called to notify the listener that a new connection has been established.
