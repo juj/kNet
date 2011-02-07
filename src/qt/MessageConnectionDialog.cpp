@@ -20,6 +20,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTreeWidget>
+#include <sstream>
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>
