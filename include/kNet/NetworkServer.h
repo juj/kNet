@@ -49,13 +49,9 @@ public:
 	// Returns whether this server is handling new connection attempts.
 	bool AcceptsNewConnections() const { return acceptNewConnections; }
 
-	/// Enables or disables whether rejected connection attempts are messages back to the client (UDP only).
+	/// Enables or disables whether rejected connection attempts are messaged back to the client (UDP only).
 	/// i.e. whether to message "Connection rejected" back to the peer.
 	void SetStealthMode(bool stealthModeEnabled);
-
-	/// If the server is running in UDP mode, the listenSocket is the socket that receives all application data.
-	/// This function pulls all new data from the socket and sends it to MessageConnection instances for deserialization and processing.
-	void ReadUDPSocketData(Socket *listenSocket);
 
 	/// Handles all new connection attempts and pulls in new messages from all existing connections.
 	/// Periodically call this function to update the NetworkServer object.
@@ -103,6 +99,9 @@ public:
 	/// Returns all the currently tracked connections.
 	ConnectionMap GetConnections();
 
+	/// Returns the number of currently active connections. A connection is active if it is at least read- or write-open.
+	int NumConnections() const;
+
 	/// Returns a one-liner textual summary of this server.
 	std::string ToString() const;
 
@@ -139,6 +138,10 @@ private:
 	void SetWorkerThread(NetworkWorkerThread *thread); // [main thread]
 
 	NetworkWorkerThread *WorkerThread() const { return workerThread; }
+
+	/// If the server is running in UDP mode, the listenSocket is the socket that receives all application data.
+	/// This function pulls all new data from the socket and sends it to MessageConnection instances for deserialization and processing.
+	void ReadUDPSocketData(Socket *listenSocket); // [worker thread]
 
 	void RegisterServerListener(INetworkServerListener *listener);
 

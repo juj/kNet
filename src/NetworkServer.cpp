@@ -152,8 +152,6 @@ void NetworkServer::CleanupDeadConnections()
 
 void NetworkServer::Process()
 {
-	assert(owner);
-
 	CleanupDeadConnections();
 
 	for(size_t i = 0; i < listenSockets.size(); ++i)
@@ -174,6 +172,7 @@ void NetworkServer::Process()
 				// Build a MessageConnection on top of the raw socket.
 				assert(listen->TransportLayer() == SocketOverTCP);
 				Ptr(MessageConnection) clientConnection = new TCPMessageConnection(owner, this, client, ConnectionOK);
+				assert(owner);
 				owner->AssignConnectionToWorkerThread(clientConnection);
 
 				if (networkServerListener)
@@ -482,6 +481,19 @@ NetworkServer::ConnectionMap NetworkServer::GetConnections()
 			timer.MSecsElapsed());
 	}
 	return *lock;
+}
+
+int NetworkServer::NumConnections() const
+{
+	int numConnections = 0;
+	Lockable<ConnectionMap>::ConstLockType lock = clients.Acquire();
+	for(ConnectionMap::const_iterator iter = lock->begin(); iter != lock->end(); ++iter)
+	{
+		const MessageConnection *connection = iter->second.ptr();
+		if (connection && (connection->IsPending() || connection->IsReadOpen() || connection->IsWriteOpen()))
+			++numConnections;
+	}
+	return numConnections;
 }
 
 std::string NetworkServer::ToString() const
