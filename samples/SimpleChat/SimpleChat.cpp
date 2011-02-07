@@ -26,10 +26,6 @@
 using namespace std;
 using namespace kNet;
 
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
-
 const unsigned long cChatMessageID = 42;
 
 class NetworkApp : public INetworkServerListener, public IMessageHandler
@@ -275,12 +271,10 @@ int main(int argc, char **argv)
 
 	EnableMemoryLeakLoggingAtExit();
 
-	SocketTransportLayer transport = SocketOverUDP;
-	if (!_stricmp(argv[1], "tcp"))
-		transport = SocketOverTCP;
-	else if (!!_stricmp(argv[1], "udp"))
+	SocketTransportLayer transport = StringToSocketTransportLayer(argv[1]);
+	if (transport == InvalidTransportLayer)
 	{
-		cout << "The second parameter is either 'tcp' or 'udp'!" << endl;
+		cout << "The first parameter is either 'tcp' or 'udp'!" << endl;
 		return 0;
 	}
 	NetworkApp app;

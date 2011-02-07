@@ -27,10 +27,6 @@
 using namespace std;
 using namespace kNet;
 
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
-
 class NetworkApp : public IMessageHandler, public INetworkServerListener
 {
 	Network network;

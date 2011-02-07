@@ -64,6 +64,18 @@ std::string SocketTransportLayerToString(SocketTransportLayer transport)
 	}
 }
 
+SocketTransportLayer StringToSocketTransportLayer(const char *str)
+{
+	if (!str)
+		return InvalidTransportLayer;
+	if (!_stricmp(str, "tcp") || !_stricmp(str, "SocketOverTCP"))
+		return SocketOverTCP;
+	if (!_stricmp(str, "udp") || !_stricmp(str, "SocketOverUDP"))
+		return SocketOverUDP;
+	return InvalidTransportLayer;
+}
+
+
 std::string SocketTypeToString(SocketType type)
 {
 	switch(type)

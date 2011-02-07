@@ -39,10 +39,6 @@ const unsigned long cFileTransferStartMessage = 30;
 const unsigned long cFileTransferFragment = 31;
 const size_t fragmentSize = 450;
 
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
-
 NetworkApp::NetworkApp(int argc_, char **argv_)
 :argc(argc_),
 argv(argv_),
@@ -411,10 +407,8 @@ int main(int argc, char **argv)
 
 	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
-	SocketTransportLayer transport = SocketOverUDP;
-	if (!_stricmp(argv[2], "tcp"))
-		transport = SocketOverTCP;
-	else if (!!_stricmp(argv[2], "udp"))
+	SocketTransportLayer transport = StringToSocketTransportLayer(argv[2]);
+	if (transport == InvalidTransportLayer)
 	{
 		cout << "The second parameter is either 'tcp' or 'udp'!" << endl;
 		return 0;

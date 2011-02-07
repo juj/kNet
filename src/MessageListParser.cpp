@@ -19,10 +19,6 @@
 #include <tinyxml.h>
 #endif
 
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
-
 #include <cassert>
 #include <cstring>
 
@@ -31,10 +27,7 @@
 #include "kNet/NetworkLogging.h"
 #include "kNet/MessageListParser.h"
 #include "kNet/NetException.h"
-
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
+#include "kNet/Socket.h"
 
 #define NUMELEMS(x) (sizeof(x)/sizeof(x[0]))
 

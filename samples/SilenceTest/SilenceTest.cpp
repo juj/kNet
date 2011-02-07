@@ -25,10 +25,6 @@
 #include "kNet.h"
 #include "kNet/DebugMemoryLeakCheck.h"
 
-#ifdef UNIX
-#define _stricmp strcasecmp
-#endif
-
 using namespace std;
 using namespace kNet;
 
@@ -109,10 +105,8 @@ int main(int argc, char **argv)
 	kNet::SetLogChannels((LogChannel)(-1) & ~LogObjectAlloc); // Enable all log channels.
 //	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
-	SocketTransportLayer transport = SocketOverUDP;
-	if (!_stricmp(argv[2], "tcp"))
-		transport = SocketOverTCP;
-	else if (!!_stricmp(argv[2], "udp"))
+	SocketTransportLayer transport = StringToSocketTransportLayer(argv[2]);
+	if (transport == InvalidTransportLayer)
 	{
 		cout << "The second parameter is either 'tcp' or 'udp'!" << endl;
 		return 0;

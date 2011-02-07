@@ -28,13 +28,14 @@ namespace kNet
 typedef int socklen_t;
 }
 
-#else
+#elif UNIX
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+
 #define INVALID_SOCKET (0)
 #define KNET_SOCKET_ERROR (-1)
 #define KNET_ACCEPT_FAILURE (-1)
@@ -43,6 +44,7 @@ typedef int socklen_t;
 #define TIMEVAL timeval
 #define SD_SEND SHUT_WR
 #define SD_BOTH SHUT_RDWR
+#define _stricmp strcasecmp
 
 namespace kNet
 {
@@ -70,6 +72,12 @@ enum SocketTransportLayer
 };
 
 std::string SocketTransportLayerToString(SocketTransportLayer transport);
+
+/// Converts the given string (case-insensitive parsing) to the corresponding SocketTransportLayer enum.
+/// "tcp" & "socketovertcp" -> SocketOverTCP.
+/// "udp" & "socketoverudp" -> SocketOverUDP.
+/// Other strings -> InvalidTransportLayer.
+SocketTransportLayer StringToSocketTransportLayer(const char *str);
 
 enum SocketType
 {
