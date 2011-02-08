@@ -507,7 +507,7 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 
 	if (queuedReceiveBuffers.Size() == 0)
 		return 0;
-	
+
 	OverlappedTransferBuffer *receivedData = *queuedReceiveBuffers.Front();
 	DWORD flags = 0;
 	BOOL ret = WSAGetOverlappedResult(connectSocket, &receivedData->overlapped, (LPDWORD)&receivedData->bytesContains, FALSE, &flags);
@@ -709,7 +709,6 @@ bool Socket::Send(const char *data, size_t numBytes)
 	}
 
 	int bytesSent = 0;
-
 	if (transport == SocketOverUDP)
 		bytesSent = sendto(connectSocket, data, numBytes, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
 	else
@@ -722,39 +721,45 @@ bool Socket::Send(const char *data, size_t numBytes)
 	}
 	else if (bytesSent > 0) // Managed to send some data, but not all bytes.
 	{
+		assert(transport == SocketOverTCP); // Only TCP sockets should ever succeed 'partially'.
 		// Our Socket::Send tries to guarantee that either all or nothing of the data is sent. We don't want
-		// to report back to the upper layer that only part of the data was successfully sent. So, try to 
+		// to report back to the upper layer that only part of the data was successfully sent. So, try to
 		// re-issue the remainining bytes, but now in blocking mode, so we can wait for the rest of the data to
 		// be sent.
-		SetBlocking(true);
-		int bytesSent2 = send(connectSocket, data+bytesSent, numBytes-bytesSent, 0);
-		SetBlocking(false);
-
-		if (bytesSent2 == numBytes-bytesSent)
+		Event waitEvent(connectSocket, EventWaitWrite);
+		const unsigned long socketWriteTimeout = 5000; // msecs.
+		waitEvent.Reset(); // Wait is edge-triggered, so clear the Event object before starting the wait.
+		bool waitSuccess = waitEvent.Wait(socketWriteTimeout);
+		if (!waitSuccess)
 		{
-			LOG(LogData, "Socket::EndSend: Sent out %d bytes to socket %s (was a blocking send).", numBytes, ToString().c_str());
-			return true;
-		}
-		else if (bytesSent2 > 0) // Managed to send some data, but not all (again..)
-		{
-			// Our assumption is that using blocking sockets will either succeed in sending all data, or none of it, and if 
-			// we only partially manage to send data, the connection must have broken in the meanwhile.
-			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer!", bytesSent+bytesSent2, (int)numBytes);
+			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer, and socket did not transition to write-ready in the timeout period. Closing connection.", 
+				bytesSent, (int)numBytes);
+			Close();
 			return false;
 		}
-		else
-		{
-			LOG(LogError, "Socket::EndSend() in blocking mode failed! Error: %s. Warning: Previously sent partial %d bytes to the stream. The stream is probably now out of sync!", 
-				Network::GetLastErrorString().c_str(), bytesSent);
-			return false;
-		}
+		// Recursively call back to this function to process the remainder of the data.
+		// Since bytesSent > 0, we should be making progress at each step of recursion, so there is no
+		// danger of crashing the stack.
+		return Send(data+bytesSent, numBytes-bytesSent);
 	}
 	else // Some kind of error occurred.
 	{
 		int error = Network::GetLastError();
 
 		if (error != KNET_EWOULDBLOCK)
+		{
 			LOG(LogError, "Socket::EndSend() failed! Error: %s.", Network::GetErrorString(error).c_str());
+			if (type == ServerClientSocket && transport == SocketOverUDP)
+			{
+				// UDP client sockets are shared between each client (and by the server socket),
+				// so we can't actually call close() on the socket handle. Instead, resort
+				// to a soft close as follows.
+				readOpen = false;
+				writeOpen = false;
+			}
+			else // For all other sockets, it's ok to close (socket is not shared).
+				Close();
+		}
 
 		return false;
 	}
@@ -795,7 +800,7 @@ OverlappedTransferBuffer *Socket::BeginSend()
 			(queuedSendBuffers.CapacityLeft() == 0) ? TRUE : FALSE, &flags);
 		int error = (ret == TRUE) ? 0 : Network::GetLastError();
 		if (ret == TRUE)
-		{		
+		{
 			queuedSendBuffers.PopFront();
 			sentData->buffer.len = maxSendSize; // This is the number of bytes that the client is allowed to fill.
 			return sentData;
