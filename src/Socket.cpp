@@ -774,7 +774,6 @@ bool Socket::WaitForSendReady(int msecs)
 	return ret != KNET_SOCKET_ERROR && ret != 0;
 #else
 	Event waitEvent(connectSocket, EventWaitWrite);
-	waitEvent.Reset(); // Wait is edge-triggered, so clear the Event object before starting the wait.
 	return waitEvent.Wait(msecs);
 #endif
 }

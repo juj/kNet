@@ -35,7 +35,7 @@ Event::Event()
 {
 	fd[0] = -1;
 	fd[1] = -1;
-	type = EventWaitDummy;
+	type = EventWaitInvalid;
 }
 
 Event::Event(int /*SOCKET*/ fd_, EventWaitType eventType)
@@ -43,6 +43,7 @@ Event::Event(int /*SOCKET*/ fd_, EventWaitType eventType)
 {
 	fd[0] = fd_;
 	fd[1] = -1; // When creating an Event off a SOCKET, this Event is never Set manually, so leave the write descriptor null.
+	assert(type == EventWaitRead || type == EventWaitWrite);
 }
 
 Event CreateNewEvent(EventWaitType type)
@@ -56,24 +57,28 @@ Event CreateNewEvent(EventWaitType type)
 void Event::Create(EventWaitType type_)
 {
 	type = type_;
+	assert(type != EventWaitInvalid);
 
-	if (pipe(fd) == -1)
+	if (type == EventWaitSignal) // For signal events, we need to create a pipe.
 	{
-		LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), errno);
-		return;
-	}
+		if (pipe(fd) == -1)
+		{
+			LOG(LogError, "Error in Event::Create: %s(%d)!", strerror(errno), errno);
+			return;
+		}
 
-	int ret = fcntl(fd[0], F_SETFL, O_NONBLOCK);
-	if (ret == -1)
-	{
-		LOG(LogError, "Event::Create: fcntl failed to set fd[0] in nonblocking mode: %s(%d)", strerror(errno), errno);
-		return;
-	}
-	ret = fcntl(fd[1], F_SETFL, O_NONBLOCK);
-	if (ret == -1)
-	{
-		LOG(LogError, "Event::Create: fcntl failed to set fd[1] in nonblocking mode: %s(%d)", strerror(errno), errno);
-		return;
+		int ret = fcntl(fd[0], F_SETFL, O_NONBLOCK);
+		if (ret == -1)
+		{
+			LOG(LogError, "Event::Create: fcntl failed to set fd[0] in nonblocking mode: %s(%d)", strerror(errno), errno);
+			return;
+		}
+		ret = fcntl(fd[1], F_SETFL, O_NONBLOCK);
+		if (ret == -1)
+		{
+			LOG(LogError, "Event::Create: fcntl failed to set fd[1] in nonblocking mode: %s(%d)", strerror(errno), errno);
+			return;
+		}
 	}
 
 	///\todo Return success or failure.
@@ -81,22 +86,23 @@ void Event::Create(EventWaitType type_)
 
 void Event::Close()
 {
-	if (fd[0] != -1)
+	if (type == EventWaitSignal && fd[0] != -1)
 	{
 		close(fd[0]);
 		fd[0] = -1;
 	}
-	if (fd[1] != -1)
+	if (type == EventWaitSignal && fd[1] != -1)
 	{
 		close(fd[1]);
 		fd[1] = -1;
 	}
+	type = EventWaitInvalid;
 }
 
 bool Event::IsNull() const
 {
 	// An Event is null iff it is not readable. (There can be read-only Events which are not writable)
-	return fd[0] == -1;
+	return type == EventWaitInvalid;
 }
 
 void Event::Reset()
@@ -106,18 +112,25 @@ void Event::Reset()
 		LOG(LogError, "Event::Reset() failed! Tried to reset an uninitialized Event!");
 		return;
 	}
+	if (type == EventWaitDummy)
+		return;
 
-	// Exhaust the pipe: read bytes off of it until there is nothing to read. This will cause select()ing on the
-	// pipe to not trigger on read-availability. (The code in this class should maintain that the pipe never contains
-	// more than one unread byte, but still better to loop here to be sure)
-	u8 val = 0;
-	int ret = 0;
-	while(ret != -1)
+	if (type == EventWaitSignal)
 	{
-		ret = read(fd[0], &val, sizeof(val));
-		if (ret == -1 && errno != EAGAIN)
-			LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+		// Exhaust the pipe: read bytes off of it until there is nothing to read. This will cause select()ing on the
+		// pipe to not trigger on read-availability. (The code in this class should maintain that the pipe never contains
+		// more than one unread byte, but still better to loop here to be sure)
+		u8 val = 0;
+		int ret = 0;
+		while(ret != -1)
+		{
+			ret = read(fd[0], &val, sizeof(val));
+			if (ret == -1 && errno != EAGAIN)
+				LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+		}
 	}
+	else
+		LOG(LogError, "Event::Reset() called on an Event of type %d! (should have been of type EventWaitSignal)", (int)type); ///\todo int to string.
 }
 
 void Event::Set()
@@ -125,6 +138,11 @@ void Event::Set()
 	if (IsNull())
 	{
 		LOG(LogError, "Event::Set() failed! Tried to set an uninitialized Event!");
+		return;
+	}
+	if (type != EventWaitSignal)
+	{
+		LOG(LogError, "Event::Set() failed! Tried to set an event that is of type %d (should have been of type EventWaitSignal)", (int)type);
 		return;
 	}
 	if (fd[1] == -1)
@@ -150,7 +168,7 @@ void Event::Set()
 
 bool Event::Test() const
 {
-	if (IsNull())
+	if (IsNull() || type == EventWaitDummy)
 		return false;
 
 	return Wait(0);
@@ -159,7 +177,7 @@ bool Event::Test() const
 /// Returns true if the event was set during this time, or false if timout occurred.
 bool Event::Wait(unsigned long msecs) const
 {
-	if (IsNull())
+	if (IsNull() || type == EventWaitDummy)
 		return false;
 
 	fd_set fds;
@@ -169,16 +187,33 @@ bool Event::Wait(unsigned long msecs) const
 
 	FD_ZERO(&fds);
 	FD_SET(fd[0], &fds);
-	// Wait on a read state.
-	// "The file descriptor is readable if the counter has a value greater than 0."
-	int ret = select(fd[0]+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
-	if (ret == -1)
+	if (type == EventWaitSignal || type == EventWaitRead) // These both use fd[0] and descriptor read-ready as signal, so are processed using the same codepath.
 	{
-		LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), (int)errno);
+		// Wait on a read state.
+		// "The file descriptor is readable if the counter has a value greater than 0."
+		int ret = select(fd[0]+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
+		if (ret == -1)
+		{
+			LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), (int)errno);
+			return false;
+		}
+		return ret != 0;
+	}
+	else if (type == EventWaitWrite)
+	{
+		int ret = select(fd[0]+1, NULL, &fds, NULL, &tv);
+		if (ret == -1)
+		{
+			LOG(LogError, "Event::Wait: select() failed for Event of type EventWaitWrite: %s(%d)!", strerror(errno), (int)errno);
+			return false;
+		}
+		return ret != 0;
+	}
+	else
+	{
+		LOG(LogError, "Event::Wait called for even of invalid type %d!", (int)type);
 		return false;
 	}
-
-	return ret != 0;
 }
 
 bool Event::IsValid() const

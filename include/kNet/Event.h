@@ -25,6 +25,7 @@ namespace kNet
 
 enum EventWaitType
 {
+	EventWaitInvalid, ///< This event is uninitialized.
 	EventWaitDummy, ///< The event to be waited on is a dummy event. Used to keep the index numbers straight, to avoid a O(n) pass through the whole event wait list.
 	EventWaitSignal, ///< The event to be waited on is not a socket-based event, but an application-triggered signal event.
 	EventWaitRead, ///< The event to be waited on is a socket read event.
