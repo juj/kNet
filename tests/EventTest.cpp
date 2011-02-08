@@ -12,23 +12,42 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-/** @file main.cpp
+/** @file EventTest.cpp
 	@brief */
 
+#include "kNet/Event.h"
+#include "tassert.h"
 #include "kNet/DebugMemoryLeakCheck.h"
-#include "kNet/NetworkLogging.h"
 
-void VLETest();
-void DataSerializerTest();
-void MaxHeapTest();
-void EventTest();
-
-int main()
+void EventTest()
 {
-	kNet::EnableMemoryLeakLoggingAtExit();
+	using namespace kNet;
 
-	DataSerializerTest();
-	MaxHeapTest();
-	VLETest();
-	EventTest();
+	TEST("Event")
+
+	Event e;
+	e.Create(EventWaitSignal);
+	for(int i = 0; i < 70000; ++i)
+	{
+		e.Set();
+		assert(e.Test());
+	}
+	e.Reset();
+	assert(!e.Test());
+	for(int i = 0; i < 70000; ++i)
+	{
+		e.Reset();
+		assert(!e.Test());
+		assert(!e.Test());
+		e.Set();
+		e.Set();
+		e.Set();
+		assert(e.Test());
+		assert(e.Test());
+		e.Reset();
+		e.Reset();
+		assert(!e.Test());
+		assert(!e.Test());
+	}
+	ENDTEST()
 }

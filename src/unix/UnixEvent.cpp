@@ -76,22 +76,6 @@ void Event::Create(EventWaitType type_)
 		return;
 	}
 
-	///\todo Remove these, just a bit of immediate-mode testing here.
-	assert(Test() == false);
-	assert(Test() == false);
-	Set();
-	assert(Test() == true);
-	assert(Test() == true);
-	Reset();
-	assert(Test() == false);
-	assert(Test() == false);
-	Set();
-	assert(Test() == true);
-	assert(Test() == true);
-	Reset();
-	assert(Test() == false);
-	assert(Test() == false);
-
 	///\todo Return success or failure.
 }
 
@@ -123,10 +107,17 @@ void Event::Reset()
 		return;
 	}
 
-	uint64_t val = 0;
-	int ret = read(fd[0], &val, sizeof(val));
-	if (ret == -1 && errno != EAGAIN)
-		LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+	// Exhaust the pipe: read bytes off of it until there is nothing to read. This will cause select()ing on the
+	// pipe to not trigger on read-availability. (The code in this class should maintain that the pipe never contains
+	// more than one unread byte, but still better to loop here to be sure)
+	u8 val = 0;
+	int ret = 0;
+	while(ret != -1)
+	{
+		ret = read(fd[0], &val, sizeof(val));
+		if (ret == -1 && errno != EAGAIN)
+			LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+	}
 }
 
 void Event::Set()
@@ -142,7 +133,13 @@ void Event::Set()
 		return;
 	}
 
-	uint64_t val = 1;
+	// Read one byte off from the pipe. This will fail or succeed and we don't really care, the important thing 
+	// is that Event::Set() will not increase the number of bytes in the pipe.
+	u8 val = 1;
+	read(fd[0], &val, sizeof(val));
+
+	// Now that we removed one byte off the pipe (if there was one), we are allowed to add one in.
+	val = 1; // It doesn't really matter what value we write here, but by convention we always write (and expect to read back) a single '1'.
 	int ret = write(fd[1], &val, sizeof(val));
 	if (ret == -1)
 	{
@@ -154,43 +151,16 @@ void Event::Set()
 bool Event::Test() const
 {
 	if (IsNull())
-	{
-//		LOG(LogError, "Event::Test() failed! Tried to test an uninitialized Event!");
 		return false;
-	}
 
-	if (type == EventWaitSignal)
-	{
-		uint64_t val = 0;
-		int ret = read(fd[0], &val, sizeof(val));
-		if (ret == -1 && errno != EAGAIN)
-		{
-			LOG(LogError, "Event::Test() read() failed: %s(%d)!", strerror(errno), (int)errno);
-			return false;
-		}
-		if (val != 0 && fd[1] != -1) // We must re-set this event since reading it resets the event, and Test() isn't supposed to clear the event after reading.
-		{
-			uint64_t val = 1;
-			int ret = write(fd[1], &val, sizeof(val));
-			if (ret == -1)
-				LOG(LogError, "Event::Test() write() failed: %s(%d)!", strerror(errno), (int)errno);
-		}
-		return val != 0;
-	}
-	else
-	{
-		return Wait(0);
-	}
+	return Wait(0);
 }
 
 /// Returns true if the event was set during this time, or false if timout occurred.
 bool Event::Wait(unsigned long msecs) const
 {
 	if (IsNull())
-	{
-//		LOG(LogError, "Event::Wait() failed! Tried to wait on an uninitialized Event!");
 		return false;
-	}
 
 	fd_set fds;
 	timeval tv;

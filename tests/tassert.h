@@ -19,6 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <cassert> ///\todo Remove this and make assert throw failure and not abort.
 
 #include "kNet/NetException.h"
 
