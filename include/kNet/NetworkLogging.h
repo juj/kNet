@@ -65,5 +65,15 @@ void EnableMemoryLeakLoggingAtExit();
 /// Prints out a variadic message to the log channel User.
 #define LOGUSER(msg, ...) kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 
+#ifdef KNET_LOGGING_SUPPORT_ENABLED
+
 /// Prints out a variadic message to the given log channel.
 #define LOG(channel, msg, ...) kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+
+#else
+
+/// If kNet logging is disabled, LOG() macro is a no-op. This avoids having to evaluate the arguments of the
+/// LOG() call, which improves performance.
+#define LOG(...) ((void)0)
+
+#endif

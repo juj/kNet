@@ -33,7 +33,12 @@ set(USE_BOOST TRUE)
 
 #set(USE_QT TRUE)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTHREAD_CHECKING_ENABLED")
+# Enable thread context checking in debug mode.
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTHREAD_CHECKING_ENABLED -DKNET_LOGGING_SUPPORT_ENABLED")
+
+# Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
+# extra performance by avoiding all logging-related string operations.
+add_definitions(-DKNET_LOGGING_SUPPORT_ENABLED)
 
 if (USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
