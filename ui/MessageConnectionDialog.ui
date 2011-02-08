@@ -117,7 +117,7 @@
     <string>Last heard time:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_7">
+  <widget class="QLabel" name="labelDatagramsIn">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -130,7 +130,7 @@
     <string>Datagrams in:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_8">
+  <widget class="QLabel" name="labelDatagramsOut">
    <property name="geometry">
     <rect>
      <x>10</x>

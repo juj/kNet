@@ -98,6 +98,10 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 			buffer->bytesContains, socket->ToString().c_str());
 
 		assert((size_t)buffer->bytesContains <= (size_t)tcpInboundSocketData.ContiguousFreeBytesLeft());
+		///\todo For performance, this memcpy can be optimized away. We can parse the message directly
+		/// from this buffer without copying it to a temporary working buffer. Detect if message straddles
+		/// two OverlappedTransferBuffers and only in that case memcpy that message to form a
+		/// single contiguous memory area.
 		memcpy(tcpInboundSocketData.End(), buffer->buffer.buf, buffer->bytesContains);
 		tcpInboundSocketData.Inserted(buffer->bytesContains);
 
@@ -218,7 +222,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		}
 
 		LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", (int)writer.BytesFilled(), (int)serializedMessages.size(), socket->ToString().c_str());
-		AddOutboundStats(writer.BytesFilled(), 0, numMessagesPacked);
+		AddOutboundStats(writer.BytesFilled(), 1, numMessagesPacked);
 
 		// The messages in serializedMessages array are now in the TCP driver to handle. It will guarantee
 		// delivery if possible, so we can free the messages already.

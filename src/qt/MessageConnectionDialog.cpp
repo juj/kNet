@@ -51,6 +51,11 @@ MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageCon
 	dialog = new Ui_MessageConnectionDialog;
 	dialog->setupUi(this);
 
+	if (connection_ && connection_->GetSocket() && connection_->GetSocket()->TransportLayer() == SocketOverTCP)
+	{
+		dialog->labelDatagramsIn->setText("# recv() calls:");
+		dialog->labelDatagramsOut->setText("# send() calls:");
+	}
 /*
 	QVBoxLayout *layout = new QVBoxLayout;
 	layout->addWidget(myWidget);
