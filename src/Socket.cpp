@@ -689,12 +689,6 @@ void Socket::SetBlocking(bool isBlocking)
 /// @return True on success, false otherwise.
 bool Socket::Send(const char *data, size_t numBytes)
 {
-	if (!writeOpen)
-	{
-		LOG(LogError, "Trying to send data to a socket that is not open for writing!");
-		return false;
-	}
-
 	if (connectSocket == INVALID_SOCKET)
 	{
 		LOG(LogError, "Trying to send a datagram to INVALID_SOCKET!");
@@ -708,75 +702,62 @@ bool Socket::Send(const char *data, size_t numBytes)
 		return false;
 	}
 
-	int sendTriesLeft = 100;
-	size_t numBytesSent = 0;
-	while(numBytesSent < numBytes && sendTriesLeft-- > 0)
+	if (!writeOpen)
 	{
-		size_t numBytesLeftToSend = (size_t)(numBytes - numBytesSent);
-		SetBlocking(true);
-		int ret;
-		if (transport == SocketOverUDP)
-			ret = sendto(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
-		else
-			ret = send(connectSocket, data + numBytesSent, (int)numBytesLeftToSend, 0);
-
-		LOG(LogData, "Sent data to socket 0x%X.", (unsigned int)connectSocket);
-//		DumpBuffer("Socket::Send", data + numBytesSent, numBytesLeftToSend);
-
-		if (ret == KNET_SOCKET_ERROR)
-		{
-			int error = Network::GetLastError();
-			if (error != KNET_EWOULDBLOCK)
-			{
-				if (error != 0)
-					Close();
-				LOG(LogError, "Failed to send %d bytes over socket %s. Error %s!", (int)numBytes, ToString().c_str(), Network::GetErrorString(error).c_str());
-			}
-			SetBlocking(false);
-			return false;
-		}
-		SetBlocking(false);
-		LOG(LogData, "Sent %d bytes of data to socket %s.", ret, ToString().c_str());
-		numBytesSent += ret;
-
-#ifdef WIN32 ///\todo
-		if (numBytesSent < numBytes)
-		{
-			FD_SET writeSocketSet;
-			FD_SET errorSocketSet;
-			FD_ZERO(&writeSocketSet);
-			FD_ZERO(&errorSocketSet);
-			FD_SET(connectSocket, &writeSocketSet);
-			FD_SET(connectSocket, &errorSocketSet);
-			timeval timeout = { 5, 0 }; 
-			int ret = select(0, 0, &writeSocketSet, &errorSocketSet, &timeout);
-			if (ret == 0 || ret == KNET_SOCKET_ERROR)
-			{
-				LOG(LogError, "Waiting for socket %s to become write-ready failed!", ToString().c_str());
-				// If we did manage to send any bytes through, the stream is now out of sync,
-				// tear it down.
-				if (numBytesSent > 0)
-					Close();
-				return false;
-			}
-		}
-#endif
-	}
-
-	if (sendTriesLeft <= 0)
-	{
-		if (numBytesSent > 0)
-		{
-			LOG(LogError, "Could not send %d bytes to socket %s. Achieved %d bytes, stream has now lost bytes, closing connection!", (int)numBytes, 
-				ToString().c_str(), (int)numBytesSent);
-			Close();
-		}
-		else
-			LOG(LogError, "Could not send %d bytes to socket %s.", (int)numBytes, ToString().c_str());
+		LOG(LogError, "Trying to send data to a socket that is not open for writing!");
 		return false;
 	}
 
-	return true;
+	int bytesSent = 0;
+
+	if (transport == SocketOverUDP)
+		bytesSent = sendto(connectSocket, data, numBytes, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
+	else
+		bytesSent = send(connectSocket, data, numBytes, 0);
+
+	if (bytesSent == numBytes)
+	{
+		LOG(LogData, "Socket::EndSend: Sent out %d bytes to socket %s.", bytesSent, ToString().c_str());
+		return true;
+	}
+	else if (bytesSent > 0) // Managed to send some data, but not all bytes.
+	{
+		// Our Socket::Send tries to guarantee that either all or nothing of the data is sent. We don't want
+		// to report back to the upper layer that only part of the data was successfully sent. So, try to 
+		// re-issue the remainining bytes, but now in blocking mode, so we can wait for the rest of the data to
+		// be sent.
+		SetBlocking(true);
+		int bytesSent2 = send(connectSocket, data+bytesSent, numBytes-bytesSent, 0);
+		SetBlocking(false);
+
+		if (bytesSent2 == numBytes-bytesSent)
+		{
+			LOG(LogData, "Socket::EndSend: Sent out %d bytes to socket %s (was a blocking send).", numBytes, ToString().c_str());
+			return true;
+		}
+		else if (bytesSent2 > 0) // Managed to send some data, but not all (again..)
+		{
+			// Our assumption is that using blocking sockets will either succeed in sending all data, or none of it, and if 
+			// we only partially manage to send data, the connection must have broken in the meanwhile.
+			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer!", bytesSent+bytesSent2, (int)numBytes);
+			return false;
+		}
+		else
+		{
+			LOG(LogError, "Socket::EndSend() in blocking mode failed! Error: %s. Warning: Previously sent partial %d bytes to the stream. The stream is probably now out of sync!", 
+				Network::GetLastErrorString().c_str(), bytesSent);
+			return false;
+		}
+	}
+	else // Some kind of error occurred.
+	{
+		int error = Network::GetLastError();
+
+		if (error != KNET_EWOULDBLOCK)
+			LOG(LogError, "Socket::EndSend() failed! Error: %s.", Network::GetErrorString(error).c_str());
+
+		return false;
+	}
 }
 
 bool Socket::IsOverlappedSendReady()
@@ -882,41 +863,9 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	return true;
 
 #elif UNIX
-	unsigned long bytesSent = 0;
-
-	int ret;
-
-//	DumpBuffer("Socket::EndSend", sendBuffer->buffer.buf, sendBuffer->buffer.len);
-
-	if (transport == SocketOverUDP)
-		ret = sendto(connectSocket, sendBuffer->buffer.buf, sendBuffer->buffer.len, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
-	else
-		ret = send(connectSocket, sendBuffer->buffer.buf, sendBuffer->buffer.len, 0);
-
-	int error = (ret == sendBuffer->buffer.len) ? 0 : Network::GetLastError();
-
-	if (ret > 0)
-	{
-		if (ret < sendBuffer->buffer.len)
-		{
-			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer!",
-				ret, (int)sendBuffer->buffer.len);
-			return false;
-		}
-		else
-		{
-			LOG(LogData, "Socket::EndSend: Sent out %d bytes to socket %s.",
-				ret, ToString().c_str());
-			return true;
-		}
-	}
-
-	if (error && error != KNET_EWOULDBLOCK)
-		LOG(LogError, "Socket::EndSend() failed! Error: %s.", Network::GetErrorString(error).c_str());
-
+	bool success = Send(sendBuffer->buffer.buf, sendBuffer->buffer.len);
 	DeleteOverlappedTransferBuffer(sendBuffer);
-
-	return false;
+	return success;
 #endif
 }
 
