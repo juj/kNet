@@ -726,10 +726,8 @@ bool Socket::Send(const char *data, size_t numBytes)
 		// to report back to the upper layer that only part of the data was successfully sent. So, try to
 		// re-issue the remainining bytes, but now in blocking mode, so we can wait for the rest of the data to
 		// be sent.
-		Event waitEvent(connectSocket, EventWaitWrite);
-		const unsigned long socketWriteTimeout = 5000; // msecs.
-		waitEvent.Reset(); // Wait is edge-triggered, so clear the Event object before starting the wait.
-		bool waitSuccess = waitEvent.Wait(socketWriteTimeout);
+		const int socketWriteTimeout = 5000; // msecs.
+		bool waitSuccess = WaitForSendReady(socketWriteTimeout);
 		if (!waitSuccess)
 		{
 			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer, and socket did not transition to write-ready in the timeout period. Closing connection.", 
@@ -763,6 +761,22 @@ bool Socket::Send(const char *data, size_t numBytes)
 
 		return false;
 	}
+}
+
+bool Socket::WaitForSendReady(int msecs)
+{
+#ifdef WIN32
+	fd_set writeSet;
+	FD_ZERO(&writeSet);
+	FD_SET(connectSocket, &writeSet);
+	TIMEVAL tv = { msecs / 1000, (msecs % 1000) * 1000 };
+	int ret = select(0, NULL, &writeSet, NULL, &tv);
+	return ret != KNET_SOCKET_ERROR && ret != 0;
+#else
+	Event waitEvent(connectSocket, EventWaitWrite);
+	waitEvent.Reset(); // Wait is edge-triggered, so clear the Event object before starting the wait.
+	return waitEvent.Wait(msecs);
+#endif
 }
 
 bool Socket::IsOverlappedSendReady()

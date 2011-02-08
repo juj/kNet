@@ -176,6 +176,12 @@ public:
 	/// networking, but instead choose one preferred method and consistently use it.
 	bool Send(const char *data, size_t numBytes);
 
+	/// Waits until the Socket is ready for sending. Returns true if the socket transitioned to write-ready state in the given
+	/// time period, or false if the wait timed out or if some other error occurred.
+	/// This function is an orthogonal API to the overlapped IO Send routines. Do not mix these API calls when doing
+	/// networking, but instead choose one preferred method and consistently use it.
+	bool WaitForSendReady(int msecs);
+
 	/// Starts the sending of new data. After having filled the data to send to the OverlappedTransferBuffer that is
 	/// returned here, commit the send by calling EndSend. If you have called BeginSend, but decide not to send any data,
 	/// call AbortSend instead (otherwise memory will leak).
