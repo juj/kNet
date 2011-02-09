@@ -26,15 +26,37 @@ namespace kNet
 {
 
 /// Objects that require reference count tracking derive publicly from this.
+/// \note The dtor of RefCountable is not virtual. NEVER manage pointers to RefCountables
+///       and never delete a pointer to a RefCountable.
 class RefCountable
 {
 public:
-	RefCountable():refCount(0) {}
-//	~RefCountable() {} // Can't put any functionality here since not virtual.
+	RefCountable()
+	:refCount(0)
+	{
+	}
 
-	void AddRef() { ++refCount; }
-	void DecRef() { assert(refCount > 0); --refCount; }
-	unsigned int RefCount() { return refCount; }
+	~RefCountable()
+	{
+		refCount = -100000; // Mark the refCount to an arbitrary negative value so that any increments or decrements will catch an assertion failure.
+	}
+
+	void AddRef()
+	{ 
+		assert(refCount >= 0); 
+		++refCount;
+	}
+
+	void DecRef()
+	{ 
+		assert(refCount > 0); 
+		--refCount; 
+	}
+
+	unsigned int RefCount() const
+	{ 
+		return refCount;
+	}
 
 private:
 	unsigned int refCount;

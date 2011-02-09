@@ -71,7 +71,11 @@ UDPMessageConnection::~UDPMessageConnection()
 		owner->CloseConnection(this);
 
 	while(outboundPacketAckTrack.Size() > 0)
+	{
+		size_t size = outboundPacketAckTrack.Size();
 		FreeOutboundPacketAckTrack(outboundPacketAckTrack.Front()->packetID);
+		assert(outboundPacketAckTrack.Size() < size);
+	}
 
 	outboundPacketAckTrack.Clear();
 }
