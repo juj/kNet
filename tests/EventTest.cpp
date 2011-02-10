@@ -34,16 +34,29 @@ void EventTest()
 	}
 	e.Reset();
 	assert(!e.Test());
+
+	for(int i = 0; i < 70000; ++i)
+	{
+		e.Reset();
+		assert(!e.Test());
+	}
+	e.Set();
+	assert(e.Test());
+
 	for(int i = 0; i < 70000; ++i)
 	{
 		e.Reset();
 		assert(!e.Test());
 		assert(!e.Test());
+		assert(!e.Wait(0));
+		assert(!e.Wait(10));
 		e.Set();
 		e.Set();
 		e.Set();
 		assert(e.Test());
 		assert(e.Test());
+		assert(e.Wait(0));
+		assert(e.Wait(10));
 		e.Reset();
 		e.Reset();
 		assert(!e.Test());
