@@ -178,10 +178,10 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 {
 	AssertInWorkerThreadContext();
 
-	if (!socket)
+	if (!socket || !socket->IsWriteOpen())
 		return;
 
-	assert(!socket || socket->TransportLayer() == SocketOverUDP);
+	assert(socket->TransportLayer() == SocketOverUDP);
 
 	const tick_t now = Clock::Tick();
 
