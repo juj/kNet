@@ -126,7 +126,7 @@ void Event::Reset()
 		{
 			ret = read(fd[0], &val, sizeof(val));
 			if (ret == -1 && errno != EAGAIN)
-				LOG(LogError, "Event::Reset() eventfd_read() failed: %s(%d)!", strerror(errno), (int)errno);
+				LOG(LogError, "Event::Reset() read() failed: %s(%d)!", strerror(errno), (int)errno);
 		}
 	}
 	else
@@ -194,7 +194,7 @@ bool Event::Wait(unsigned long msecs) const
 		int ret = select(fd[0]+1, &fds, NULL, NULL, &tv); // http://linux.die.net/man/2/select
 		if (ret == -1)
 		{
-			LOG(LogError, "Event::Wait: select() failed on an eventfd: %s(%d)!", strerror(errno), (int)errno);
+			LOG(LogError, "Event::Wait: select() failed on a pipe: %s(%d)!", strerror(errno), (int)errno);
 			return false;
 		}
 		return ret != 0;

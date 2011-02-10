@@ -91,8 +91,6 @@ int EventArray::Wait(int msecs)
 	tv.tv_sec = msecs / 1000;
 	tv.tv_usec = (msecs - tv.tv_sec * 1000) * 1000;
 
-	// Wait on a read state, since http://linux.die.net/man/2/eventfd :
-	// "The file descriptor is readable if the counter has a value greater than 0."
 	int ret = select(nfds, &readfds, &writefds, NULL, &tv); // http://linux.die.net/man/2/select
 	if (ret == -1)
 	{

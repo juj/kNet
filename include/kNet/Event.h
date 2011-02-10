@@ -51,7 +51,7 @@ enum EventWaitType
 	- The default destructor of an Event does NOT delete the event. Before letting the last copy of an Event go out of scope,
 	  manually call \ref kNet::Event::Close "Close()" on that Event.
 
-	This class represents a WSAEVENT on Windows, and socket or an eventfd on unix. */
+	This class represents a WSAEVENT on Windows, and socket or a pipe on unix. */
 class Event
 {
 public:
