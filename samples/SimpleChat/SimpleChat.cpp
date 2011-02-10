@@ -210,15 +210,15 @@ public:
 			throw std::exception("SetConsoleMode failed!");
 #endif
 
-		///\todo
-//		connection->SetDatagramInFlowRatePerSecond(100); ///\todo Remove this.
-
 		cout << "Chat running. Type messages and send them by pressing Enter. Type 'q'/'exit'/'quit' to disconnect." << endl;
 
 		while((server && server->GetConnections().size() > 0) || (connection && connection->IsReadOpen()))
 		{
 			if (server)
 				server->Process();
+
+			if (!connection->IsReadOpen())
+				connection->Disconnect();
 
 			for(int i = 0; i < 100; ++i) // Process a maximum of 100 messages at one go.
 			{
