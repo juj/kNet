@@ -274,7 +274,7 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 
 	if (!buffer)
 	{
-		const int receiveBufferSize = 4096;
+		const int receiveBufferSize = 16384; // This is best to be at least 9K (the largest size of jumbo datagrams commonly supported)
 		buffer = AllocateOverlappedTransferBuffer(receiveBufferSize);
 		if (!buffer)
 		{

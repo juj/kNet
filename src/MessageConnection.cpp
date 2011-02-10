@@ -142,15 +142,13 @@ ConnectionState MessageConnection::GetConnectionState() const
 
 bool MessageConnection::IsReadOpen() const
 {
-	if (NumInboundMessagesPending() > 0)
+	if (NumInboundMessagesPending() > 0) // We are always read-open if there are any messages pending to be read.
 		return true;
-	if (socket && socket->IsOverlappedReceiveReady())
+	if (socket && socket->IsOverlappedReceiveReady()) // If the socket is physically open, we are read-open.
 		return true;
-	if (GetConnectionState() == ConnectionPeerClosed || GetConnectionState() == ConnectionClosed)
+	if (connectionState == ConnectionPeerClosed || connectionState == ConnectionClosed) // Check against the main connectionState variable.
 		return false;
-	if (socket)
-		return socket->IsReadOpen();
-	return false;
+	return true;
 }
 
 bool MessageConnection::IsWriteOpen() const
@@ -1188,6 +1186,7 @@ void MessageConnection::DumpStatus() const
 	char str[4096];
 
 	sprintf(str, "Connection Status: %s.\n"
+		"\tInboundMessagesPending: %d.\n"
 		"\tOutboundMessagesPending: %d.\n"
 		"\tMessageConnection: %s %s %s.\n"
 		"\tSocket: %s %s %s %s.\n"
@@ -1202,8 +1201,10 @@ void MessageConnection::DumpStatus() const
 		"\tEventMsgsOutAvailable: %d.\n"
 		"\tOverlapped in: %d (event: %s)\n"
 		"\tOverlapped out: %d (event: %s)\n"
-		"\tTime until next send: %d\n",
+		"\tTime until next send: %d\n"
+		"\toutboundQueue.Size(): %d\n",
 		ConnectionStateToString(GetConnectionState()).c_str(),
+		(int)NumInboundMessagesPending(),
 		(int)NumOutboundMessagesPending(),
 		Connected() ? "connected" : "",
 		IsReadOpen() ? "readOpen" : "",
@@ -1228,7 +1229,8 @@ void MessageConnection::DumpStatus() const
 		-1,
 #endif
 		(socket && socket->GetOverlappedSendEvent().Test()) ? "true" : "false",
-		(int)TimeUntilCanSendPacket());
+		(int)TimeUntilCanSendPacket(),
+		(int)outboundQueue.Size());
 
 	LOGUSER(str);
 

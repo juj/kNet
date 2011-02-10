@@ -25,16 +25,15 @@ namespace kNet
 class RingBuffer
 {
 public:
-	std::vector<char> data;
-	int start; ///< Points to the first used byte.
-	int end; ///< Points to the first unused byte.
-
 	explicit RingBuffer(int capacity)
 	{
 		data.resize(capacity);
 		start = 0;
 		end = 0;
 	}
+
+	/// Returns the total number of bytes that this RingBuffer can contain.
+	int Capacity() const { return data.size(); }
 
 	/// Returns the number of bytes filled in the ring buffer.
 	int Size() const { return end - start; }
@@ -52,6 +51,18 @@ public:
 
 		start = 0;
 		end = numBytes;
+	}
+
+	/// Enlarges the RingBuffer capacity so that it can fit at least the given number of bytes total.
+	/// If the capacity of the RingBuffer was greater than this, does nothing.
+	void Resize(int newSize)
+	{
+		assert(newSize > 0);
+
+		if ((size_t)newSize <= data.size())
+			return; // No need to resize.
+		Compact();
+		data.resize(newSize);
 	}
 
 	void Clear()
@@ -88,6 +99,12 @@ public:
 
 	/// Returns the number of bytes that can be added to this structure contiguously, without having to compact.
 	int ContiguousFreeBytesLeft() const { return data.size() - end; }
+
+private:
+	std::vector<char> data;
+	int start; ///< Points to the first used byte.
+	int end; ///< Points to the first unused byte.
+
 };
 
 } // ~kNet

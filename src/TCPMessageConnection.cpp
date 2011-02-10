@@ -31,12 +31,13 @@
 namespace kNet
 {
 
-/// The maximum size for a TCP message.
-static const u32 cMaxTCPMessageSize = 1024 * 1024;
+/// The maximum size for a TCP message we will allow to be received. If we receive a message larger than this, we consider
+/// it as a protocol violation and kill the connection.
+static const u32 cMaxReceivableTCPMessageSize = 1024 * 1024;
 
 TCPMessageConnection::TCPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState)
 :MessageConnection(owner, ownerServer, socket, startingState),
-tcpInboundSocketData(2 * 1024 * 1024)
+tcpInboundSocketData(64 * 1024)
 {
 }
 
@@ -50,49 +51,51 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 {
 	AssertInWorkerThreadContext();
 
+	totalBytesRead = 0;
+
 	if (!socket || !socket->IsReadOpen())
 		return SocketReadError;
 
 	using namespace std;
 
-	totalBytesRead = 0;
+	// This is a limit on how many messages we keep in the inbound application buffer at maximum.
+	// If we receive data from the TCP socket faster than this limit, we stop reading until
+	// the application handles the previous messages first.
+	const int arbitraryInboundMessageCapacityLimit = 2048;
 
-	const int arbitraryInboundMessageCapacityLimit = 1024; ///\todo Estimate a proper limit some way better.
 	if (inboundMessageQueue.CapacityLeft() < arbitraryInboundMessageCapacityLimit) 
 	{
 		LOG(LogVerbose, "TCPMessageConnection::ReadSocket: Read throttled! Application cannot consume data fast enough.");
 		return SocketReadThrottled; // Can't read in new data, since the client app can't process it so fast.
 	}
 
-	const size_t maxBytesToRead = 256 * 1024; // Only pull in this much at one iteration.
+	// This is an arbitrary throttle limit on how much data we read in this function at once. Without this limit, 
+	// a slow computer with a fast network connection and a fast sender at the other end could flood this end 
+	// with so many messages that we wouldn't ever return from the loop below until the sender stops. This would
+	// starve the processing of all other connections this worker thread has to manage.
+	const size_t maxBytesToRead = 1024 * 1024;
 
 	// Pump the socket's receiving end until it's empty or can't process any more for now.
 	while(totalBytesRead < maxBytesToRead)
 	{
-		// The ring buffer does not handle discontinuous wrap-arounds at the end of the array. When we get to the end,
-		// we must compact the space. If no free space at the end, we must compact. Also, compact if we have an opportunity to do it with low cost.
-		if (tcpInboundSocketData.ContiguousFreeBytesLeft() < 4096 ||
-			(tcpInboundSocketData.Size() <= 32 && tcpInboundSocketData.StartIndex() != 0))
-		{		
-			tcpInboundSocketData.Compact();
-			if (tcpInboundSocketData.ContiguousFreeBytesLeft() == 0)
-			{
-				LOG(LogError, "Inbound TCP ring buffer full! Cannot receive more data!");
-				break;
-			}
-		}
-
-		// We might potentially fetch too much data we can't handle at this point. If so, don't try to read.
-		if (tcpInboundSocketData.ContiguousFreeBytesLeft() < 4096) ///\todo Parameterize.
-		{
-			LOG(LogError, "tcpInboundSocketData.ContiguousFreeBytesLeft() < 4096!");
-			break;
-		}
-
 		assert(socket);
 		OverlappedTransferBuffer *buffer = socket->BeginReceive();
 		if (!buffer)
 			break; // Nothing to receive.
+
+		// If we can't fit the data we got, compact the ring buffer.
+		if (buffer->bytesContains > tcpInboundSocketData.ContiguousFreeBytesLeft())
+		{
+			tcpInboundSocketData.Compact();
+			if (buffer->bytesContains > tcpInboundSocketData.ContiguousFreeBytesLeft())
+			{
+				// Even compacting didn't get enough space to fit the message, so resize the ring buffer to be able to contain the message.
+				// At least always double the capacity of the buffer, so that we don't waste effort incrementing the capacity by too small amounts at a time.
+				tcpInboundSocketData.Resize(max(tcpInboundSocketData.Capacity()*2, tcpInboundSocketData.Capacity() + buffer->bytesContains - tcpInboundSocketData.ContiguousFreeBytesLeft()));
+				LOG(LogWaits, "TCPMessageConnection::ReadSocket: Performance warning! Resized the capacity of the receive ring buffer to %d bytes to accommodate a message of size %d (now have %d bytes of free space)",
+					tcpInboundSocketData.Capacity(), buffer->bytesContains, tcpInboundSocketData.ContiguousFreeBytesLeft());
+			}
+		}
 
 		LOG(LogData, "TCPMessageConnection::ReadSocket: Received %d bytes from the network from peer %s.", 
 			buffer->bytesContains, socket->ToString().c_str());
@@ -103,7 +106,7 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 		/// two OverlappedTransferBuffers and only in that case memcpy that message to form a
 		/// single contiguous memory area.
 		memcpy(tcpInboundSocketData.End(), buffer->buffer.buf, buffer->bytesContains);
-		tcpInboundSocketData.Inserted(buffer->bytesContains);
+		tcpInboundSocketData.Inserted(buffer->bytesContains); // Mark the memory area in the ring buffer as used.
 
 		totalBytesRead += buffer->bytesContains;
 		socket->EndReceive(buffer);
@@ -155,10 +158,12 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		return PacketSendSocketClosed;
 	}
 
-	///\todo For TCP sends, minSendSize==1 sounds like a valid amount to use in all cases. Consider removing this
-	/// completely so we do not need to handle unnecessary cases?
-	const size_t minSendSize = 1; 
+	// In the following, we start coalescing multiple messages into a single socket send() calls.
+	// Get the maximum number of bytes we can coalesce for the send() call. This is only a soft limit
+	// in the sense that if we encounter a single message that is larger than this limit, then we try
+	// to send that through in one send() call.
 	const size_t maxSendSize = socket->MaxSendSize();
+
 	// Push out all the pending data to the socket.
 	assert(ContainerUniqueAndNoNullElements(serializedMessages));
 	assert(ContainerUniqueAndNoNullElements(outboundQueue));
@@ -186,8 +191,8 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		const size_t messageContentSize = msg->dataSize + encodedMsgIdLength; // 1 byte: Message ID. X bytes: Content.
 		const int encodedMsgSizeLength = VLE8_16_32::GetEncodedBitLength(messageContentSize) / 8;
 		const size_t totalMessageSize = messageContentSize + encodedMsgSizeLength; // 2 bytes: Content length. X bytes: Content.
-		// If this message won't fit into the buffer, send out all previously gathered messages.
-		if (writer.BytesFilled() + totalMessageSize >= maxSendSize)
+		// If this message won't fit into the buffer, send out all previously gathered messages (except if there were none, then try to get the big message through).
+		if (writer.BytesFilled() + totalMessageSize >= maxSendSize && numMessagesPacked > 0)
 			break;
 
 		writer.AddVLE<VLE8_16_32>(messageContentSize);
@@ -205,49 +210,35 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	if (writer.BytesFilled() == 0 && outboundQueue.Size() > 0)
 		LOG(LogError, "Failed to send any messages to socket %s! (Probably next message was too big to fit in the buffer).", socket->ToString().c_str());
 
-	if (writer.BytesFilled() >= minSendSize)
+	overlappedTransfer->buffer.len = writer.BytesFilled();
+	bool success = socket->EndSend(overlappedTransfer);
+
+	if (!success) // If we failed to send, put all the messages back into the outbound queue to wait for the next send round.
 	{
-		overlappedTransfer->buffer.len = writer.BytesFilled();
-		bool success = socket->EndSend(overlappedTransfer);
-
-		if (!success) // If we failed to send, put all the messages back into the outbound queue to wait for the next send round.
-		{
-			for(size_t i = 0; i < serializedMessages.size(); ++i)
-				outboundQueue.InsertWithResize(serializedMessages[i]);
-			assert(ContainerUniqueAndNoNullElements(outboundQueue));
-
-			LOG(LogError, "TCPMessageConnection::SendOutPacket() failed: Could not initiate overlapped transfer!");
-
-			return PacketSendSocketFull;
-		}
-
-		LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", (int)writer.BytesFilled(), (int)serializedMessages.size(), socket->ToString().c_str());
-		AddOutboundStats(writer.BytesFilled(), 1, numMessagesPacked);
-
-		// The messages in serializedMessages array are now in the TCP driver to handle. It will guarantee
-		// delivery if possible, so we can free the messages already.
-		for(size_t i = 0; i < serializedMessages.size(); ++i)
-			FreeMessage(serializedMessages[i]);
-
-		// Thread-safely clear the eventMsgsOutAvailable event if we don't have any messages to process.
-		if (NumOutboundMessagesPending() == 0)
-			eventMsgsOutAvailable.Reset();
-		if (NumOutboundMessagesPending() > 0)
-			eventMsgsOutAvailable.Set();
-			
-		return PacketSendOK;
-	}
-	else // Not enough bytes to send out. Put all the messages back in the queue.
-	{
-		LOG(LogVerbose, "TCPMessageConnection::SendOutPacket(). Not enough bytes to send out (%d).", (int)writer.BytesFilled());
-
 		for(size_t i = 0; i < serializedMessages.size(); ++i)
 			outboundQueue.InsertWithResize(serializedMessages[i]);
 		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 
-		socket->AbortSend(overlappedTransfer);
-		return PacketSendNoMessages;
+		LOG(LogError, "TCPMessageConnection::SendOutPacket() failed: Could not initiate overlapped transfer!");
+
+		return PacketSendSocketFull;
 	}
+
+	LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", (int)writer.BytesFilled(), (int)serializedMessages.size(), socket->ToString().c_str());
+	AddOutboundStats(writer.BytesFilled(), 1, numMessagesPacked);
+
+	// The messages in serializedMessages array are now in the TCP driver to handle. It will guarantee
+	// delivery if possible, so we can free the messages already.
+	for(size_t i = 0; i < serializedMessages.size(); ++i)
+		FreeMessage(serializedMessages[i]);
+
+	// Thread-safely clear the eventMsgsOutAvailable event if we don't have any messages to process.
+	if (NumOutboundMessagesPending() == 0)
+		eventMsgsOutAvailable.Reset();
+	if (NumOutboundMessagesPending() > 0)
+		eventMsgsOutAvailable.Set();
+			
+	return PacketSendOK;
 }
 
 void TCPMessageConnection::SendOutPackets()
@@ -258,8 +249,8 @@ void TCPMessageConnection::SendOutPackets()
 		return;
 
 	PacketSendResult result = PacketSendOK;
-	int maxSends = 50; // Place an arbitrary limit to how many packets we will send at a time.
-	while(result == PacketSendOK && TimeUntilCanSendPacket() == 0 && maxSends-- > 0)
+	int maxSends = 500; // Place an arbitrary limit to how many packets we will send at a time.
+	while(result == PacketSendOK && maxSends-- > 0)
 		result = SendOutPacket();
 }
 
@@ -280,12 +271,9 @@ void TCPMessageConnection::ExtractMessages()
 			if (messageSize == DataDeserializer::VLEReadError)
 				break; // The packet hasn't yet been streamed in.
 
-			if (messageSize == 0 || messageSize > cMaxTCPMessageSize)
+			if (messageSize == 0 || messageSize > cMaxReceivableTCPMessageSize)
 			{
-				LOG(LogError, "Received an invalid message size %d! Closing connection!", (int)messageSize);
-				if (socket)
-					socket->Close();
-				connectionState = ConnectionClosed;
+				LOG(LogError, "Received an invalid message size %d!", (int)messageSize);
 				throw NetException("Malformed TCP data! Received an invalid message size!");
 			}
 
@@ -306,13 +294,10 @@ void TCPMessageConnection::ExtractMessages()
 		AddInboundStats(0, 0, numMessagesReceived);
 	} catch(const NetException &e)
 	{
-		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught a networking exception: \"%s\"!", e.what());
-	} catch(const std::exception &e)
-	{
-		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught a std::exception: \"%s\"!", e.what());
-	} catch(...)
-	{
-		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught an unknown exception!");
+		LOG(LogError, "TCPMessageConnection::ExtractMessages() caught a network exception: \"%s\"!", e.what());
+		if (socket)
+			socket->Close();
+		connectionState = ConnectionClosed;
 	}
 }
 
@@ -322,6 +307,24 @@ void TCPMessageConnection::PerformDisconnection()
 
 	if (socket)
 		socket->Disconnect();
+}
+
+void TCPMessageConnection::DumpConnectionStatus() const
+{
+	AssertInMainThreadContext();
+
+	char str[2048];
+	sprintf(str,
+		"\ttcpInboundSocketData.Capacity(): %d\n"
+		"\ttcpInboundSocketData.Size(): %d\n"
+		"\ttcpInboundSocketData.ContiguousFreeBytesLeft(): %d\n",
+		tcpInboundSocketData.Capacity(), // Note: This accesses a shared variable from the worker thread in a thread-unsafe way, and can crash. Therefore only use this function for debugging.
+		tcpInboundSocketData.Size(), 
+		tcpInboundSocketData.ContiguousFreeBytesLeft());
+
+	LOGUSER(str);
+
+
 }
 
 unsigned long TCPMessageConnection::TimeUntilCanSendPacket() const
