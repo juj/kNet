@@ -51,6 +51,9 @@ void SetLogChannels(LogChannel logChannel);
 /// Returns the currently active log channels.
 LogChannel GetLogChannels();
 
+/// Returns true if the specified log channel is not suppressed.
+bool IsLogChannelActive(LogChannel channel);
+
 /// Sets the output for log messages. By default all logging is output to std::cout. Setting a log file
 /// redirects all logging to that file. Calling this function with a null filename pointer restores
 /// logging to target std::cout.
@@ -63,12 +66,12 @@ void EnableMemoryLeakLoggingAtExit();
 } // ~kNet
 
 /// Prints out a variadic message to the log channel User.
-#define LOGUSER(msg, ...) kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define LOGUSER(msg, ...) ( kNet::IsLogChannelActive(LogUser) && (kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__), true) )
 
 #ifdef KNET_LOGGING_SUPPORT_ENABLED
 
 /// Prints out a variadic message to the given log channel.
-#define LOG(channel, msg, ...) kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define LOG(channel, msg, ...)  ( kNet::IsLogChannelActive(channel) && (kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__), true) )
 
 #else
 

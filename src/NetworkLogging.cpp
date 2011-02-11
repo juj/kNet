@@ -74,7 +74,7 @@ string Time()
 
 void TimeOutputDebugStringVariadic(LogChannel logChannel, const char * /*filename*/, int /*lineNumber*/, const char *msg, ...)
 {
-	if ((logChannel & kNetActiveLogChannels) == 0)
+	if (!IsLogChannelActive(logChannel))
 		return;
 
 	Lockable<int>::LockType lock = logWriteMutex.Acquire();
@@ -116,6 +116,11 @@ void SetLogChannels(LogChannel logChannels)
 LogChannel GetLogChannels()
 {
 	return kNetActiveLogChannels;
+}
+
+bool IsLogChannelActive(LogChannel channel)
+{
+	return (channel & kNetActiveLogChannels) != 0;
 }
 
 void SetLogFile(const char *filename)
