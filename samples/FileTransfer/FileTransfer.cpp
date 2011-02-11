@@ -106,7 +106,6 @@ void NetworkApp::HandleMessage(MessageConnection *source, message_id_t id, const
 					nextFragment-1, (float)timespan, bytesReceived, FormatBytes((bytesReceived/timespan)).c_str());
 				statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 			}
-				
 		}
 		else // Queue up this fragment.
 		{
@@ -156,7 +155,6 @@ void NetworkApp::ReceiverMainLoopIteration()
 
 	if (clientConnection->IsReadOpen())
 	{
-//	Clock::Sleep(1);
 		if (statsPrintTimer.Test())
 		{
 			const tick_t sendFinishTick = Clock::Tick();
@@ -165,9 +163,9 @@ void NetworkApp::ReceiverMainLoopIteration()
 				nextFragment, fragments.size(), (nextFragment + fragments.size()) * 100.f / totalFragments,
 				(float)timespan, bytesReceived, FormatBytes((bytesReceived/timespan)).c_str());
 			clientConnection->DumpStatus();
-			statsPrintTimer.StartMSecs((float)printIntervalMSecs);	
+			statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 		}
-		frameUpdateTimer->start(1);
+		QTimer::singleShot(10, this, SLOT(ReceiverMainLoopIteration()));
 	}
 	else
 	{
@@ -225,9 +223,7 @@ void NetworkApp::RunReceiver(unsigned short port, SocketTransportLayer transport
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 
-	frameUpdateTimer = new QTimer(dialog);
-	connect(frameUpdateTimer, SIGNAL(timeout()), this, SLOT(ReceiverMainLoopIteration()));
-	frameUpdateTimer->start(1);
+	QTimer::singleShot(10, this, SLOT(ReceiverMainLoopIteration()));
 
 	QApplication::exec();
 }
@@ -237,12 +233,11 @@ void NetworkApp::SenderMainLoopIteration()
 	if (connection->IsWriteOpen())
 	{
 		connection->Process();
-//		Clock::Sleep(1); // A simple throttle on the send loop to avoid using 100% CPU.
 
 		// Add new data fragments into the queue.
 		const int outboundMsgQueueSize = 1000;
-		int i = 100;
-		while(i-- > 0 && connection->IsWriteOpen() && connection->NumOutboundMessagesPending() < outboundMsgQueueSize && bytesSent < (size_t)fileSize)
+		int i = outboundMsgQueueSize - connection->NumOutboundMessagesPending();
+		while(i-- > 0 && connection->IsWriteOpen() && bytesSent < (size_t)fileSize)
 		{
 			// File payload data bytes in this message.
 			const size_t bytesInThisFragment = min((int)fragmentSize, (int)(fileSize - bytesSent));
@@ -265,7 +260,6 @@ void NetworkApp::SenderMainLoopIteration()
 				LOG(LogUser, "Failed to read file!");
 				connection->Close(0);
 			}
-				
 			connection->EndAndQueueMessage(msg);
 			bytesSent += bytesInThisFragment;
 		}
@@ -276,7 +270,7 @@ void NetworkApp::SenderMainLoopIteration()
 			LOG(LogUser, "All data sent. Disconnecting.");
 			connection->Disconnect(15000);
 		}
-			
+
 		if (statsPrintTimer.Test())
 		{
 			const tick_t sendFinishTick = Clock::Tick();
@@ -286,6 +280,7 @@ void NetworkApp::SenderMainLoopIteration()
 			connection->DumpStatus();
 			statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 		}
+		QTimer::singleShot(10, this, SLOT(SenderMainLoopIteration()));
 	}
 
 	if (!connection->IsReadOpen() && (connection->NumOutboundMessagesPending() == 0 || !connection->IsWriteOpen()))
@@ -353,13 +348,11 @@ void NetworkApp::RunSender(const char *address, unsigned short port, SocketTrans
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 
-	frameUpdateTimer = new QTimer(dialog);
-	connect(frameUpdateTimer, SIGNAL(timeout()), this, SLOT(SenderMainLoopIteration()));
-	frameUpdateTimer->start(1);
+	QTimer::singleShot(100, this, SLOT(SenderMainLoopIteration()));
 
 	QApplication::exec();
 
-/*		
+/*
 	LOG(LogUser, "Waiting for peer to acknowledge all received data.");
 	while((connection->NumOutboundMessagesPending() > 0 && connection->IsWriteOpen()) || connection->IsReadOpen())
 	{

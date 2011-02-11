@@ -32,7 +32,6 @@ private:
 	static const int printIntervalMSecs = 4000;
 
 	FILE *handle;
-	QTimer *frameUpdateTimer;
 
 	Ptr(MessageConnection) connection;
 	int bytesSent;
