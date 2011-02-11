@@ -51,8 +51,6 @@ MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageCon
 		dialog->labelDatagramsOut->setText("# send() calls:");
 	}
 
-	updateTimer = new QTimer(this);
-	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();
 
 	this->setAttribute(Qt::WA_DeleteOnClose);
@@ -101,7 +99,7 @@ void MessageConnectionDialog::Update()
 
 	UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(connection.ptr());
 	QLabel *labels[] =
-	{ 
+	{
 		dialog->retransmissionTimeoutHeader, dialog->retransmissionTimeout,
 		dialog->datagramSendRateHeader, dialog->datagramSendRate,
 		dialog->smoothedRTTHeader, dialog->smoothedRTT,
@@ -125,7 +123,7 @@ void MessageConnectionDialog::Update()
 		dialog->packetLossCount->setText(QString::number(udpConnection->PacketLossCount()));
 		dialog->packetLossRate->setText(QString::number(udpConnection->PacketLossRate()));
 	}
-	updateTimer->start(dialogUpdateInterval);
+	QTimer::singleShot(dialogUpdateInterval, this, SLOT(Update()));
 }
 
 } // ~kNet

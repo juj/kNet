@@ -33,7 +33,6 @@ class MessageConnectionDialog : public QWidget
 	Q_OBJECT;
 
 	Ptr(MessageConnection) connection;
-	QTimer *updateTimer;
 	Ui_MessageConnectionDialog *dialog;
 
 public:

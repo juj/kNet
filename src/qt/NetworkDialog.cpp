@@ -45,8 +45,6 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 	if (connectionsTree)
 		connect(connectionsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(ItemDoubleClicked(QTreeWidgetItem *)));
 
-	updateTimer = new QTimer(this);
-	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();
 
 	this->setAttribute(Qt::WA_DeleteOnClose);
@@ -117,7 +115,7 @@ void NetworkDialog::Update()
 		if ((*iter)->GetSocket() && (*iter)->GetSocket()->Type() == ClientSocket)
 			new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
 
-	updateTimer->start(dialogUpdateInterval);
+	QTimer::singleShot(dialogUpdateInterval, this, SLOT(Update()));
 }
 
 void NetworkDialog::ItemDoubleClicked(QTreeWidgetItem *item)

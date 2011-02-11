@@ -32,7 +32,6 @@ class NetworkDialog : public QWidget
 	Q_OBJECT;
 
 	Network *network;
-	QTimer *updateTimer;
 	Ui_NetworkDialog *dialog;
 
 public:
