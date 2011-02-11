@@ -541,9 +541,7 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 			LOG(LogError, "Socket::BeginReceive: WSAEDISCON. Bidirectionally closing connection in socket %s.", ToString().c_str());
 		if (IsUDPServerSocket())
 			LOG(LogError, "Socket::BeginReceive: Closed UDP server socket!");
-		readOpen = false;
-		writeOpen = false;
-		// Close(); ///\todo Should call this?
+		Close();
 		return 0;
 	}
 	else if (error != WSA_IO_INCOMPLETE)
@@ -557,10 +555,8 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 		// the read error on this buffer (an error on a single client connection cannot shut down the whole server!)
 		if (!IsUDPServerSocket() && (readOpen || writeOpen))
 		{
-			readOpen = false;
-			writeOpen = false;
-			LOG(LogError, "Socket::BeginReceive: Closed socket due to read error!");
-			// Close(); ///\todo Should call this?
+			LOG(LogError, "Socket::BeginReceive: Closing socket due to read error!");
+			Close();
 		}
 	}
 	return 0;
@@ -622,7 +618,10 @@ void Socket::Disconnect()
 void Socket::Close()
 {
 	if (connectSocket == INVALID_SOCKET)
+	{
+		assert(!readOpen && !writeOpen);
 		return;
+	}
 
 	LOG(LogInfo, "Socket::Close(): Closing socket %s.", ToString().c_str());
 

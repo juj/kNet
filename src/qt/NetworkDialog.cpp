@@ -32,6 +32,7 @@
 namespace kNet
 {
 
+/// Specifies in msecs how often we update NetworkDialog.
 const int dialogUpdateInterval = 1000;
 
 NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
@@ -39,18 +40,7 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 {
 	dialog = new Ui_NetworkDialog;
 	dialog->setupUi(this);
-/*
-	QUiLoader loader;
-	QFile file("NetworkDialog.ui");
-	file.open(QFile::ReadOnly);
-	QWidget *myWidget = loader.load(&file, this);
-	file.close();
-	*/
-/*
-	QVBoxLayout *layout = new QVBoxLayout;
-	layout->addWidget(myWidget);
-	setLayout(layout);
-*/
+
 	QTreeWidget *connectionsTree = findChild<QTreeWidget*>("connectionsTree");
 	if (connectionsTree)
 		connect(connectionsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(ItemDoubleClicked(QTreeWidgetItem *)));

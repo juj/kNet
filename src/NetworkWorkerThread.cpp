@@ -286,7 +286,8 @@ void NetworkWorkerThread::MainLoop()
 				} catch(const NetException &e)
 				{
 					LOG(LogError, (std::string("kNet::NetException thrown when processing client connection: ") + e.what()).c_str());
-					///\todo Could Close(0) the connection here.
+					if (connection->GetSocket())
+						connection->GetSocket()->Close();
 				}
 			}
 			else // A UDP server received a message.

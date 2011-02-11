@@ -24,7 +24,7 @@
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
-#include "kNet/Event.h" ///\todo Omit this.
+#include "kNet/Event.h"
 #include "kNet/Thread.h"
 
 #include "kNet/NetworkLogging.h"

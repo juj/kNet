@@ -223,7 +223,7 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 		LOG(LogError, "Received 0 bytes of data in NetworkServer::ReadUDPSocketData!");
 		return;
 	}
-	EndPoint endPoint = EndPoint::FromSockAddrIn(recvData->from); ///\todo Omit this conversion for performance.
+	EndPoint endPoint = EndPoint::FromSockAddrIn(recvData->from); // This conversion is quite silly, perhaps it could be removed to gain performance?
 	LOG(LogData, "Received a datagram of size %d to socket %s from endPoint %s.", recvData->bytesContains, listenSocket->ToString().c_str(),
 		endPoint.ToString().c_str());
 

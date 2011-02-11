@@ -84,17 +84,18 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 	else
 	{
 		// Cannot have both static count and dynamic count!
-		assert(!node->Attribute("count") || !node->Attribute("varyingCount")); ///\todo Convert assert() to error checking.
+		if (node->Attribute("count") && node->Attribute("varyingCount"))
+			LOG(LogError, "Warning: An XML node contains both 'count' and 'varyingCount' attributes! 'varyingCount' takes precedence.");
 
-		if (node->Attribute("count"))
-		{
-			node->QueryIntAttribute("count", &elem->count);
-			elem->varyingCount = false;
-		}
-		else if (node->Attribute("dynamicCount"))
+		if (node->Attribute("dynamicCount"))
 		{
 			node->QueryIntAttribute("dynamicCount", &elem->count);
 			elem->varyingCount = true;
+		}
+		else if (node->Attribute("count"))
+		{
+			node->QueryIntAttribute("count", &elem->count);
+			elem->varyingCount = false;
 		}
 		else
 		{

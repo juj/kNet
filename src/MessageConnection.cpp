@@ -308,8 +308,8 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread]
 	if (socket && socket->IsReadOpen())
 	{
 		socket->Close();
-		socket = 0;
 		assert(!IsWorkerThreadRunning());
+		socket = 0; // Worker thread assumes access to the socket pointer, so can't have the thread running any more when we are doing this.
 	}
 
 	connectionState = ConnectionClosed;
@@ -1043,8 +1043,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	if (messageID == DataDeserializer::VLEReadError)
 	{
 		LOG(LogError, "Error parsing messageID of a message in socket %s. Data size: %d bytes.", socket->ToString().c_str(), (int)numBytes);
-		///\todo Should kill/Close the connection right here and now?
-		return;
+		throw NetException("MessageConnection::HandleInboundMessage: Network error occurred when deserializing message ID VLE field!");
 	}
 	LOG(LogData, "Received message with ID %d and size %d from peer %s.", (int)packetID, (int)numBytes, socket->ToString().c_str());
 

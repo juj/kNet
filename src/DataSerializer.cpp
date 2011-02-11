@@ -71,7 +71,8 @@ DataSerializer::DataSerializer(std::vector<char> &data_, size_t maxBytes_)
 {
 	if (data_.size() < maxBytes_)
 		data_.resize(maxBytes_);
-	assert(data_.size() > 0);
+	if (data_.size() == 0 || maxBytes_ == 0)
+		throw NetException("Cannot instantiate a DataSerializer object to a zero-sized std::vector-based buffer!");
 	data = &data_[0];
 	maxBytes = maxBytes_;
 
@@ -82,11 +83,13 @@ DataSerializer::DataSerializer(std::vector<char> &data_, size_t maxBytes_, const
 {
 	if (data_.size() < maxBytes_)
 		data_.resize(maxBytes_);
-	assert(data_.size() > 0);
+	if (data_.size() == 0 || maxBytes_ == 0)
+		throw NetException("Cannot instantiate a DataSerializer object to a zero-sized std::vector-based buffer!");
 	data = &data_[0];
 	maxBytes = maxBytes_;
 
-	assert(msgTemplate != 0);
+	if (!msgTemplate)
+		throw NetException("Null message template cannot be passed in to DataSerializer ctor!");
 	iter = new SerializedDataIterator(*msgTemplate);
 
 	ResetFill();
@@ -147,7 +150,8 @@ void DataSerializer::AddAlignedByteArray(const void *srcData, u32 numBytes)
 {
 	assert(bitOfs == 0);
 	assert(!iter);
-	assert(elemOfs + numBytes <= maxBytes);
+	if (elemOfs + numBytes > maxBytes)
+		throw NetException("DataSerializer::AddAlignedByteArray: Attempted to write past the array end buffer!");
 
 	memcpy(&data[elemOfs], srcData, numBytes);
 	elemOfs += numBytes;
@@ -203,7 +207,8 @@ void DataSerializer::AddString(const char *str)
 void DataSerializer::SkipNumBytes(size_t numBytes)
 {
 	elemOfs += numBytes;
-	///\todo Check out-of-bounds.
+	if (elemOfs + (bitOfs ? 1 : 0) > maxBytes)
+		throw NetException("DataSerializer::SkipNumBytes: Attempted to travel past the end of the array!");
 }
 
 } // ~kNet

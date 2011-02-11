@@ -175,13 +175,12 @@ void DataSerializer::AddVLE(u32 value)
 	u32 encoded = VLEType::Encode(value);
 	int numBits = VLEType::GetEncodedBitLength(value);
 
-	///\todo To support other than 1/2/4-byte VLE's, convert to using AddBits().
 	if (numBits == 8) Add<u8>((u8)encoded);
 	else if (numBits == 16) Add<u16>((u16)encoded);
 	else if (numBits == 32) Add<u32>(encoded);
 	else
 	{
-		assert(false && "N/I numBits count! todo.. Write AddBits()");
+		assert(false && "N/I numBits count! todo.. Write AddBits()"); ///\todo
 	}
 }
 

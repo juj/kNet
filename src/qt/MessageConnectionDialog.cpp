@@ -36,18 +36,12 @@
 namespace kNet
 {
 
+/// Specifies in msecs how often we update MessageConnectionDialog.
 const int dialogUpdateInterval = 200;
 
 MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageConnection) connection_)
 :connection(connection_), QWidget(parent)
 {
-/*
-	QUiLoader loader;
-	QFile file("MessageConnectionDialog.ui");
-	file.open(QFile::ReadOnly);
-	QWidget *myWidget = loader.load(&file, this);
-	file.close();
-*/
 	dialog = new Ui_MessageConnectionDialog;
 	dialog->setupUi(this);
 
@@ -56,11 +50,7 @@ MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageCon
 		dialog->labelDatagramsIn->setText("# recv() calls:");
 		dialog->labelDatagramsOut->setText("# send() calls:");
 	}
-/*
-	QVBoxLayout *layout = new QVBoxLayout;
-	layout->addWidget(myWidget);
-	setLayout(layout);
-*/
+
 	updateTimer = new QTimer(this);
 	connect(updateTimer, SIGNAL(timeout()), this, SLOT(Update()));
 	Update();

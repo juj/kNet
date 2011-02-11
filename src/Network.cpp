@@ -683,16 +683,24 @@ Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketT
 		return 0;
 	}
 
+	EndPoint localEndPoint;
 	sockaddr_in sockname;
 	socklen_t socknamelen = sizeof(sockname);
-	getsockname(connectSocket, (sockaddr*)&sockname, &socknamelen); ///\todo Check return value.
+	ret = getsockname(connectSocket, (sockaddr*)&sockname, &socknamelen);
+	if (ret == 0)
+		 localEndPoint = EndPoint::FromSockAddrIn(sockname);
+	else
+		LOG(LogError, "Network::ConnectSocket: getsockname failed: %s!", Network::GetLastErrorString().c_str());
 
+	EndPoint remoteEndPoint;
 	sockaddr_in peername;
 	socklen_t peernamelen = sizeof(peername);
-	getpeername(connectSocket, (sockaddr*)&peername, &peernamelen); ///\todo Check return value.
+	ret = getpeername(connectSocket, (sockaddr*)&peername, &peernamelen);
+	if (ret == 0)
+		remoteEndPoint = EndPoint::FromSockAddrIn(peername);
+	else
+		LOG(LogError, "Network::ConnectSocket: getpeername failed: %s!", Network::GetLastErrorString().c_str());
 
-	EndPoint localEndPoint = EndPoint::FromSockAddrIn(sockname);
-	EndPoint remoteEndPoint = EndPoint::FromSockAddrIn(peername);
 	std::string remoteHostName = remoteEndPoint.IPToString();
 
 	const size_t maxSendSize = (transport == SocketOverTCP) ? cMaxTCPSendSize : cMaxUDPSendSize;
