@@ -233,6 +233,9 @@ private:
 	}
 };
 
+/// Checks that the specified conditions for the container apply.
+/// Warning: This is a non-threadsafe check for the container, only to be used for debugging.
+/// Warning #2: This function is very slow, as it performs a N^2 search through the container.
 template<typename T>
 bool ContainerUniqueAndNoNullElements(const WaitFreeQueue<T> &cont)
 {

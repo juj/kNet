@@ -451,7 +451,7 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 		outboundQueue.InsertWithResize(msg);
 		CheckAndSaveOutboundMessageWithContentID(msg);
 	}
-	assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//	assert(ContainerUniqueAndNoNullElements(outboundQueue));
 //	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 }
 
@@ -602,9 +602,9 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 		if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 		{
-			assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//			assert(ContainerUniqueAndNoNullElements(outboundQueue));
 			outboundQueue.InsertWithResize(fragment);
-			assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//			assert(ContainerUniqueAndNoNullElements(outboundQueue));
 		}
 		else
 		{
@@ -683,9 +683,9 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 	if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 	{
 		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID 0x%X.", (int)msg->Size(), (int)msg->id);
-		assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 		outboundQueue.InsertWithResize(msg);
-		assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 	}
 	else
 	{

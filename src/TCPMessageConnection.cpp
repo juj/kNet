@@ -129,6 +129,9 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 		return SocketReadOK;
 }
 
+/// Checks that the specified conditions for the container apply.
+/// Warning: This is a non-threadsafe check for the container, only to be used for debugging.
+/// Warning #2: This function is very slow, as it performs a N^2 search through the container.
 template<typename T>
 bool ContainerUniqueAndNoNullElements(const std::vector<T> &cont)
 {
@@ -165,8 +168,8 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	const size_t maxSendSize = socket->MaxSendSize();
 
 	// Push out all the pending data to the socket.
-	assert(ContainerUniqueAndNoNullElements(serializedMessages));
-	assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//	assert(ContainerUniqueAndNoNullElements(serializedMessages));
+//	assert(ContainerUniqueAndNoNullElements(outboundQueue));
 	serializedMessages.clear(); // 'serializedMessages' is a temporary data structure used only by this member function.
 	OverlappedTransferBuffer *overlappedTransfer = socket->BeginSend();
 	if (!overlappedTransfer)
@@ -205,7 +208,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		assert(*outboundQueue.Front() == msg);
 		outboundQueue.PopFront();
 	}
-	assert(ContainerUniqueAndNoNullElements(serializedMessages));
+//	assert(ContainerUniqueAndNoNullElements(serializedMessages));
 
 	if (writer.BytesFilled() == 0 && outboundQueue.Size() > 0)
 		LOG(LogError, "Failed to send any messages to socket %s! (Probably next message was too big to fit in the buffer).", socket->ToString().c_str());
@@ -217,7 +220,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	{
 		for(size_t i = 0; i < serializedMessages.size(); ++i)
 			outboundQueue.InsertWithResize(serializedMessages[i]);
-		assert(ContainerUniqueAndNoNullElements(outboundQueue));
+//		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 
 		LOG(LogError, "TCPMessageConnection::SendOutPacket() failed: Could not initiate overlapped transfer!");
 
