@@ -357,8 +357,11 @@ protected:
 
 	/// A priority queue that maintains in order all the messages that are going out the pipe.
 	///\todo Make the choice of which of the following structures to use a runtime option.
-//	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue;
+#ifndef KNET_NO_MAXHEAP // If defined, disables message priorization feature to improve client-side CPU performance. By default disabled.
+	MaxHeap<NetworkMessage*, NetworkMessagePriorityCmp> outboundQueue; // [worker thread]
+#else
 	WaitFreeQueue<NetworkMessage*> outboundQueue; // [worker thread]
+#endif
 
 	/// Tracks all the message sends that are fragmented.
 	Lockable<FragmentedSendManager> fragmentedSends; // [worker thread]

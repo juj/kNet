@@ -18,6 +18,7 @@
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>
 #endif
+#include "kNet/Allocator.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/TCPMessageConnection.h"
@@ -191,7 +192,11 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	DataSerializer writer(overlappedTransfer->buffer.buf, overlappedTransfer->buffer.len);
 	while(outboundQueue.Size() > 0)
 	{
+#ifdef KNET_NO_MAXHEAP
 		NetworkMessage *msg = *outboundQueue.Front();
+#else
+		NetworkMessage *msg = outboundQueue.Front();
+#endif
 
 		if (msg->obsolete)
 		{
@@ -214,7 +219,11 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		++numMessagesPacked;
 
 		serializedMessages.push_back(msg);
+#ifdef KNET_NO_MAXHEAP
 		assert(*outboundQueue.Front() == msg);
+#else
+		assert(outboundQueue.Front() == msg);
+#endif
 		outboundQueue.PopFront();
 	}
 //	assert(ContainerUniqueAndNoNullElements(serializedMessages));
@@ -228,7 +237,11 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	if (!success) // If we failed to send, put all the messages back into the outbound queue to wait for the next send round.
 	{
 		for(size_t i = 0; i < serializedMessages.size(); ++i)
+#ifdef KNET_NO_MAXHEAP
 			outboundQueue.InsertWithResize(serializedMessages[i]);
+#else
+			outboundQueue.Insert(serializedMessages[i]);
+#endif
 //		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 
 		LOG(LogError, "TCPMessageConnection::SendOutPacket() failed: Could not initiate overlapped transfer!");

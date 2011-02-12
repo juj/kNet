@@ -207,7 +207,11 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 
 		// Put all messages back into the outbound queue for send repriorisation.
 		for(size_t i = 0; i < track->messages.size(); ++i)
+#ifdef KNET_NO_MAXHEAP
 			outboundQueue.InsertWithResize(track->messages[i]);
+#else
+			outboundQueue.Insert(track->messages[i]);
+#endif
 
 		// We are not going to resend the old timed out packet as-is with the old packet ID. Instead, just forget about it.
 		// The messages will go to a brand new packet with new packet ID.
@@ -255,7 +259,7 @@ void UDPMessageConnection::HandleFlowControl()
 	}
 
 	// Do a fixed flow control for testing.
-	datagramSendRate = 50; ///\todo Remove.
+	datagramSendRate = 100; ///\todo Remove.
 }
 
 void UDPMessageConnection::SendOutPackets()
@@ -316,7 +320,11 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	// Fill up the rest of the packet from messages from the outbound queue.
 	while(outboundQueue.Size() > 0)
 	{
+#ifdef KNET_NO_MAXHEAP
 		NetworkMessage *msg = *outboundQueue.Front();
+#else
+		NetworkMessage *msg = outboundQueue.Front();
+#endif
 		if (msg->obsolete)
 		{
 			outboundQueue.PopFront();
@@ -371,7 +379,11 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	// If we had skipped any messages from the outbound queue while looking for good messages to send, put all the messages
 	// we skipped back to the outbound queue to wait to be processed during subsequent frames.
 	for(size_t i = 0; i < skippedMessages.size(); ++i)
+#ifdef KNET_NO_MAXHEAP
 		outboundQueue.InsertWithResize(skippedMessages[i]);
+#else
+		outboundQueue.Insert(skippedMessages[i]);
+#endif
 
 	// Finally proceed to crafting the actual UDP packet.
 	DataSerializer writer(data->buffer.buf, data->buffer.len);

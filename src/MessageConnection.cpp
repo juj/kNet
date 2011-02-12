@@ -22,6 +22,7 @@
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>
 #endif
+#include "kNet/Allocator.h"
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
@@ -91,7 +92,10 @@ outboundAcceptQueue(16*1024), inboundMessageQueue(16*1024),
 rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0), 
 msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
 lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
-outboundQueue(16 * 1024), workerThread(0),
+#ifdef KNET_NO_MAXHEAP
+outboundQueue(16 * 1024), 
+#endif
+workerThread(0),
 bytesInTotal(0), bytesOutTotal(0)
 #ifdef THREAD_CHECKING_ENABLED
 ,workerThreadId(Thread::NullThreadId())
@@ -380,10 +384,13 @@ void MessageConnection::FreeMessageData() // [main thread]
 		delete msg;
 	}
 
-//	for(int i = 0; i < outboundQueue.Size(); ++i) // For MaxHeap
-//		delete outboundQueue.data[i];
+#ifdef KNET_NO_MAXHEAP
 	for(unsigned long i = 0; i < outboundQueue.Size(); ++i)
 		delete *outboundQueue.ItemAt(i);
+#else
+	for(int i = 0; i < outboundQueue.Size(); ++i)
+		delete outboundQueue.data[i];
+#endif
 
 	outboundQueue.Clear();
 
@@ -438,7 +445,11 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 		NetworkMessage *msg = *outboundAcceptQueue.Front();
 		outboundAcceptQueue.PopFront();
 
+#ifdef KNET_NO_MAXHEAP
 		outboundQueue.InsertWithResize(msg);
+#else
+		outboundQueue.Insert(msg);
+#endif
 		CheckAndSaveOutboundMessageWithContentID(msg);
 	}
 //	assert(ContainerUniqueAndNoNullElements(outboundQueue));
@@ -593,7 +604,11 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 		if (internalQueue) // if true, we are accessing from the worker thread, and can directly access the outboundQueue member.
 		{
 //			assert(ContainerUniqueAndNoNullElements(outboundQueue));
+#ifdef KNET_NO_MAXHEAP
 			outboundQueue.InsertWithResize(fragment);
+#else
+			outboundQueue.Insert(fragment);
+#endif
 //			assert(ContainerUniqueAndNoNullElements(outboundQueue));
 		}
 		else
@@ -674,7 +689,11 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 	{
 		LOG(LogVerbose, "MessageConnection::EndAndQueueMessage: Internal-queued message of size %d bytes and ID 0x%X.", (int)msg->Size(), (int)msg->id);
 //		assert(ContainerUniqueAndNoNullElements(outboundQueue));
+#ifdef KNET_NO_MAXHEAP
 		outboundQueue.InsertWithResize(msg);
+#else
+		outboundQueue.Insert(msg);
+#endif
 //		assert(ContainerUniqueAndNoNullElements(outboundQueue));
 	}
 	else
