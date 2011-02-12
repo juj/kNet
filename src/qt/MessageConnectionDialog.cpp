@@ -52,8 +52,6 @@ MessageConnectionDialog::MessageConnectionDialog(QWidget *parent, Ptr(MessageCon
 	}
 
 	Update();
-
-	this->setAttribute(Qt::WA_DeleteOnClose);
 }
 
 MessageConnectionDialog::~MessageConnectionDialog()
@@ -78,6 +76,7 @@ void MessageConnectionDialog::Update()
 	setWindowTitle(ss.str().c_str());
 
 	dialog->statusLine->setText(ConnectionStateToString(connection->GetConnectionState()).c_str());
+	dialog->inboundMessagesPending->setText(QString::number(connection->NumInboundMessagesPending()));
 	dialog->outboundMessagesPending->setText(QString::number(connection->NumOutboundMessagesPending()));
 	dialog->messageConnectionStatus->setText(connection->Connected() ? QString("Connected") : QString("") + 
 		(connection->IsReadOpen() ? " Read-open" : "") + (connection->IsWriteOpen() ? "Write-open" : ""));

@@ -46,8 +46,6 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 		connect(connectionsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(ItemDoubleClicked(QTreeWidgetItem *)));
 
 	Update();
-
-	this->setAttribute(Qt::WA_DeleteOnClose);
 }
 
 NetworkDialog::~NetworkDialog()
