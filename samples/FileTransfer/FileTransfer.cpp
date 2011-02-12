@@ -176,6 +176,7 @@ void NetworkApp::ReceiverMainLoopIteration()
 		}
 		else
 		{
+			clientConnection->DumpStatus();
 			LOG(LogUser, "Error: Sender specified the file '%s' to contain %d fragments, but the connection was closed after "
 				"receiving %d fragments. Received a partial file of %d bytes.", filename.c_str(), totalFragments, nextFragment, bytesReceived);
 		}
@@ -219,13 +220,13 @@ void NetworkApp::RunReceiver(unsigned short port, SocketTransportLayer transport
 
 	LOG(LogUser, "Waiting for file receive.");
 
-	NetworkDialog *dialog = new NetworkDialog(0, &network);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	networkDialog = new NetworkDialog(0, &network);
+	networkDialog->show();
 
 	QTimer::singleShot(10, this, SLOT(ReceiverMainLoopIteration()));
 
 	QApplication::exec();
+	delete networkDialog;
 }
 
 void NetworkApp::SenderMainLoopIteration()
@@ -280,7 +281,6 @@ void NetworkApp::SenderMainLoopIteration()
 			connection->DumpStatus();
 			statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 		}
-		QTimer::singleShot(10, this, SLOT(SenderMainLoopIteration()));
 	}
 
 	if (!connection->IsReadOpen() && (connection->NumOutboundMessagesPending() == 0 || !connection->IsWriteOpen()))
@@ -289,6 +289,8 @@ void NetworkApp::SenderMainLoopIteration()
 		fclose(handle);
 		QApplication::quit();
 	}
+	else
+		QTimer::singleShot(10, this, SLOT(SenderMainLoopIteration()));
 }
 
 void NetworkApp::RunSender(const char *address, unsigned short port, SocketTransportLayer transport, const char *filename)
@@ -344,37 +346,13 @@ void NetworkApp::RunSender(const char *address, unsigned short port, SocketTrans
 		fileSize, numFragments);
 	statsPrintTimer.StartMSecs((float)printIntervalMSecs);
 
-	NetworkDialog *dialog = new NetworkDialog(0, &network);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	networkDialog = new NetworkDialog(0, &network);
+	networkDialog->show();
 
 	QTimer::singleShot(100, this, SLOT(SenderMainLoopIteration()));
 
 	QApplication::exec();
-
-/*
-	LOG(LogUser, "Waiting for peer to acknowledge all received data.");
-	while((connection->NumOutboundMessagesPending() > 0 && connection->IsWriteOpen()) || connection->IsReadOpen())
-	{
-		connection->Process();
-		Clock::Sleep(1);
-
-		if (statsPrintTimer.TriggeredOrNotRunning())
-		{
-			connection->DumpStatus();
-			statsPrintTimer.StartMSecs((float)printIntervalMSecs);
-		}
-	}
-
-	const tick_t sendFinishTick = Clock::Tick();
-	double timespan = (float)Clock::TimespanToSecondsD(transferStartTick, sendFinishTick);
-	connection->DumpStatus();
-	LOG(LogUser, "File transfer finished in %.2f seconds. Bytes sent: %d. Transfer rate: %s/sec. Closing connection.", 
-		(float)timespan, bytesSent, FormatBytes((bytesSent/timespan)).c_str());
-
-	connection->Close(15000);
-	fclose(handle);
-	*/
+	delete networkDialog;
 }
 
 void PrintUsage()

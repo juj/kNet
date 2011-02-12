@@ -36,6 +36,9 @@ private:
 	Ptr(MessageConnection) connection;
 	int bytesSent;
 	int fileSize;
+
+	NetworkDialog *networkDialog;
+
 private slots:
 	void ReceiverMainLoopIteration();
 	void SenderMainLoopIteration();
