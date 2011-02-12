@@ -87,7 +87,7 @@ std::string ConnectionStateToString(ConnectionState state)
 MessageConnection::MessageConnection(Network *owner_, NetworkServer *ownerServer_, Socket *socket_, ConnectionState startingState)
 :owner(owner_), ownerServer(ownerServer_), inboundMessageHandler(0), socket(socket_), 
 bOutboundSendsPaused(false),
-outboundAcceptQueue(256*1024), inboundMessageQueue(512*1024), 
+outboundAcceptQueue(16*1024), inboundMessageQueue(16*1024), 
 rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0), 
 msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
 lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
@@ -277,18 +277,6 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread]
 {
 	AssertInMainThreadContext();
 
-//	if (!socket || (!socket->IsReadOpen() && !socket->IsWriteOpen()) || connectionState == ConnectionClosed)
-//		return;
-/*
-	// First, check the actual status of the Socket, and update the connectionState of this MessageConnection accordingly.
-	///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
-	if (!socket->IsReadOpen() && !socket->IsWriteOpen())
-		connectionState = ConnectionClosed;
-	if (!socket->IsReadOpen() && connectionState != ConnectionClosed)
-		connectionState = ConnectionPeerClosed;
-	if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
-		connectionState = ConnectionDisconnecting;
-*/
 	if (maxMSecsToWait > 0 && socket && socket->IsWriteOpen())
 	{
 		Disconnect(maxMSecsToWait);
@@ -300,12 +288,13 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread]
 	if (owner)
 	{
 		LOG(LogInfo, "MessageConnection::Close: Closed connection to %s.", ToString().c_str());
-		owner->CloseConnection(this);
+		owner->CloseConnection(this); // This will cause this connection to be disconnected of its worker thread, so that we can safely proceed to tear down the socket.
+		assert(!IsWorkerThreadRunning());
 		owner = 0;
 		ownerServer = 0;
 	}
 
-	if (socket && socket->IsReadOpen())
+	if (socket)
 	{
 		socket->Close();
 		assert(!IsWorkerThreadRunning());
@@ -369,7 +358,8 @@ void MessageConnection::SetPeerClosed()
 	case ConnectionClosed:
 		break; // We've already in the state where peer has closed the connection, no need to do anything.
 	default:
-		LOG(LogError, "SetPeerClosed() called at an unexpected time. The internal connectionState has an invalid value %d!", (int)connectionState); 
+		LOG(LogError, "SetPeerClosed() called at an unexpected time. The internal connectionState has an invalid value %d!", (int)connectionState);
+		assert(false);
 		break;
 	}
 }
@@ -480,7 +470,7 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 
 		// Check if the socket is dead and mark it read-closed.
-		if ((connectionState == ConnectionOK || connectionState == ConnectionDisconnecting) && IsReadOpen())
+		if (connectionState == ConnectionOK || connectionState == ConnectionDisconnecting)
 			if (!socket || !socket->IsReadOpen())
 			{
 				LOG(LogInfo, "Peer closed connection.");

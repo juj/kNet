@@ -79,6 +79,15 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 	while(totalBytesRead < maxBytesToRead)
 	{
 		assert(socket);
+
+		// If we don't have enough free space in the ring buffer (even after compacting), throttle the reading of data.
+		if (tcpInboundSocketData.ContiguousFreeBytesLeft() < 16384 && tcpInboundSocketData.Capacity() > 1048576)
+		{
+			tcpInboundSocketData.Compact();
+			if (tcpInboundSocketData.ContiguousFreeBytesLeft() < 16384)
+				return SocketReadThrottled;
+		}
+
 		OverlappedTransferBuffer *buffer = socket->BeginReceive();
 		if (!buffer)
 			break; // Nothing to receive.
@@ -267,6 +276,9 @@ void TCPMessageConnection::ExtractMessages()
 		for(;;)
 		{
 			if (tcpInboundSocketData.Size() == 0) // No new packets in yet.
+				break;
+
+			if (inboundMessageQueue.CapacityLeft() == 0) // If the application can't take in any new messages, abort.
 				break;
 
 			DataDeserializer reader(tcpInboundSocketData.Begin(), tcpInboundSocketData.Size());
