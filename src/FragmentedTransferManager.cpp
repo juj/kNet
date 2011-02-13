@@ -39,6 +39,19 @@ void FragmentedSendManager::FragmentedTransfer::AddMessage(NetworkMessage *messa
 	message->transfer = this;
 }
 
+bool FragmentedSendManager::FragmentedTransfer::RemoveMessage(NetworkMessage *message)
+{
+	for(std::list<NetworkMessage*>::iterator iter = fragments.begin(); iter != fragments.end(); ++iter)
+		if (*iter == message)
+		{
+			message->transfer = 0;
+			fragments.erase(iter);
+			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (%p).", (int)message->messageNumber, (int)message->fragmentIndex, id, this);
+			return true;
+		}
+	return false;
+}
+
 FragmentedSendManager::FragmentedTransfer *FragmentedSendManager::AllocateNewFragmentedTransfer()
 {
 	transfers.push_back(FragmentedTransfer());
@@ -53,6 +66,10 @@ FragmentedSendManager::FragmentedTransfer *FragmentedSendManager::AllocateNewFra
 
 void FragmentedSendManager::FreeFragmentedTransfer(FragmentedTransfer *transfer)
 {
+	// Remove all references from any NetworkMessages to this structure.
+	for(std::list<NetworkMessage*>::iterator iter = transfer->fragments.begin(); iter != transfer->fragments.end(); ++iter)
+		(*iter)->transfer = 0;
+
 	for(TransferList::iterator iter = transfers.begin(); iter != transfers.end(); ++iter)
 		if (&*iter == transfer)
 		{
@@ -65,24 +82,15 @@ void FragmentedSendManager::FreeFragmentedTransfer(FragmentedTransfer *transfer)
 
 void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkMessage *message)
 {
-	for(std::list<NetworkMessage*>::iterator iter = transfer->fragments.begin(); iter != transfer->fragments.end();)
+	bool success = transfer->RemoveMessage(message);
+	if (!success)
 	{
-		std::list<NetworkMessage*>::iterator next = iter;
-		++next;
-		if ((*iter) == message)
-		{
-			transfer->fragments.erase(iter);
-			if (transfer->fragments.size() == 0)
-				FreeFragmentedTransfer(transfer);
-
-			LOG(LogVerbose, "Removing message with seqnum %d (fragnum %d) from transfer ID %d (%p).", (int)message->messageNumber, (int)message->fragmentIndex, transfer->id, transfer);
-
-			return;
-		}
-		iter = next;
+		LOG(LogError, "Tried to remove a nonexisting message from a fragmented send struct!");
+		return;
 	}
 
-	LOG(LogError, "Tried to remove a nonexisting message from a fragmented send struct!");
+	if (transfer->fragments.size() == 0)
+		FreeFragmentedTransfer(transfer);
 }
 
 bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &transfer)
@@ -115,7 +123,8 @@ bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &tra
 
 void FragmentedSendManager::FreeAllTransfers()
 {
-	transfers.clear();
+	while(transfers.size() > 0)
+		FreeFragmentedTransfer(&transfers.front());
 }
 
 void FragmentedReceiveManager::NewFragmentStartReceived(int transferID, int numTotalFragments, const char *data, size_t numBytes)

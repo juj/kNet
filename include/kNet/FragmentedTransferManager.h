@@ -40,6 +40,9 @@ public:
 		std::list<NetworkMessage*> fragments;
 
 		void AddMessage(NetworkMessage *message);
+
+		/// Returns true if the given message was part of this transfer (which now got removed).
+		bool RemoveMessage(NetworkMessage *message);
 	};
 
 	typedef std::list<FragmentedTransfer> TransferList;

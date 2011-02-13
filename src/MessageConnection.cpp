@@ -505,6 +505,12 @@ void MessageConnection::FreeMessage(NetworkMessage *msg)
 	if (!msg)
 		return;
 
+	if (msg->transfer)
+	{
+		msg->transfer->RemoveMessage(msg);
+		msg->transfer = 0;
+	}
+
 	LOG(LogObjectAlloc, "MessageConnection::FreeMessage %p!", msg);
 	messagePool.Free(msg);
 }
@@ -592,12 +598,15 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 		fragment->inOrder = message->inOrder;
 		fragment->reliable = true; // We don't send fragmented messages as unreliable messages - the risk of a fragment getting lost wastes bandwidth.
 		fragment->messageNumber = outboundMessageNumberCounter++; ///\todo Convert to atomic increment, or this is a race condition.
-		fragment->reliableMessageNumber = message->reliableMessageNumber;
 		fragment->priority = message->priority;
 		fragment->sendCount = 0;
 
 		fragment->transfer = transfer;
 		fragment->fragmentIndex = currentFragmentIndex++;
+		fragment->reliableMessageNumber = outboundReliableMessageNumberCounter++; ///\todo Convert to atomic increment, or this is a race condition.
+#ifdef KNET_NETWORK_PROFILING
+		fragment->profilerName = message->profilerName;
+#endif
 
 		// Copy the data from the old message that's supposed to go into this fragment.
 		memcpy(fragment->data, message->data + byteOffset, thisFragmentSize);

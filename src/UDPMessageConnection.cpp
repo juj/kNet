@@ -69,9 +69,6 @@ previousReceivedPacketID(0)
 
 UDPMessageConnection::~UDPMessageConnection()
 {
-	if (owner)
-		owner->CloseConnection(this);
-
 	while(outboundPacketAckTrack.Size() > 0)
 	{
 		size_t size = outboundPacketAckTrack.Size();
@@ -80,6 +77,9 @@ UDPMessageConnection::~UDPMessageConnection()
 	}
 
 	outboundPacketAckTrack.Clear();
+
+	if (owner)
+		owner->CloseConnection(this);
 }
 
 UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &bytesRead)
@@ -372,7 +372,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		if (msg->reliable)
 		{
 			reliable = true;
-			smallestReliableMessageNumber = min(smallestReliableMessageNumber, msg->reliableMessageNumber);
+			smallestReliableMessageNumber = min(smallestReliableMessageNumber, msg->reliableMessageNumber); ///\bug When this counter wraps around, computing the min like this is not correct!
 		}
 
 		if (msg->inOrder)
@@ -706,6 +706,9 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 		unsigned long reliableMessageNumber = 0;
 		if (messageReliable)
 		{
+			if (!packetReliable)
+				LOG(LogError, "Received reliable message on a packet that is not reliable!");
+
 			reliableMessageNumber = reliableMessageIndexBase + reader.ReadVLE<VLE8_16>();
 
 			if (receivedReliableMessages.find(reliableMessageNumber) != receivedReliableMessages.end())
