@@ -18,6 +18,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <sstream>
 
 #include "kNet/Allocator.h"
 #ifdef KNET_USE_BOOST
@@ -57,11 +58,12 @@ UDPMessageConnection::UDPMessageConnection(Network *owner, NetworkServer *ownerS
 :MessageConnection(owner, ownerServer, socket, startingState),
 retransmissionTimeout(3.f), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
 lastReceivedInOrderPacketID(0), 
-lastSentInOrderPacketID(0), datagramPacketIDCounter(0),
+lastSentInOrderPacketID(0), datagramPacketIDCounter(1),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
 datagramInRatePerSecond(initialDatagramRatePerSecond),
 datagramSendRate(10),
-receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024)
+receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
+previousReceivedPacketID(0)
 {
 }
 
@@ -198,6 +200,7 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 			
 		LOG(LogVerbose, "A packet with ID %d timed out. Age: %.2fms. Contains %d messages.", 
 			(int)track->packetID, (float)Clock::TimespanToMillisecondsD(track->sentTick, now), (int)track->messages.size());
+		ADDEVENT("datagramsLost", 1);
 
 		// Store a new suggestion for a lowered datagram send rate.
 		lowestDatagramSendRateOnPacketLoss = min(lowestDatagramSendRateOnPacketLoss, track->datagramSendRate);
@@ -457,7 +460,18 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 
 	// Sending the datagram succeeded - increment the send count of each message by one, to remember the retry timeout count.
 	for(size_t i = 0; i < datagramSerializedMessages.size(); ++i)
+	{
 		++datagramSerializedMessages[i]->sendCount;
+
+#ifdef KNET_NETWORK_PROFILING
+		std::stringstream ss;
+		if (!datagramSerializedMessages[i]->profilerName.empty())
+			ss << "messageOut." << datagramSerializedMessages[i]->profilerName;
+		else
+			ss << "messageOut." << datagramSerializedMessages[i]->id;
+		ADDEVENT(ss.str().c_str(), (float)datagramSerializedMessages[i]->Size());
+#endif
+	}
 
 	assert(socket->TransportLayer() == SocketOverUDP);
 
@@ -469,6 +483,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	datagramPacketIDCounter = AddPacketID(datagramPacketIDCounter, 1);
 
 	AddOutboundStats(writer.BytesFilled(), 1, datagramSerializedMessages.size());
+	ADDEVENT("datagramOut", (float)writer.BytesFilled());
 
 	if (reliable)
 	{
@@ -592,6 +607,8 @@ void UDPMessageConnection::AddReceivedPacketIDStats(packet_id_t packetID)
 */
 	// Remember this packet ID for duplicacy detection and pruning purposes.
 	receivedPacketIDs.Add(packetID);
+
+	previousReceivedPacketID = packetID;
 }
 
 void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
@@ -601,11 +618,16 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	assert(data);
 	assert(numBytes > 0);
 
+	ADDEVENT("datagramIn", (float)numBytes);
+
 	// Immediately discard this datagram if it might contain more messages than we can handle. Otherwise
 	// we might end up in a situation where we have already applied some of the messages in the datagram
 	// and realize we don't have space to take in the rest, which would require a "partial ack" of sorts.
 	if (inboundMessageQueue.CapacityLeft() < 64)
+	{
+		ADDEVENT("inputDiscarded", (float)numBytes);
 		return;
+	}
 
 	lastHeardTime = Clock::Tick();
 
@@ -639,7 +661,12 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	// Note that this check must be after the ack check (above), since we still need to ack the new packet as well (our
 	// previous ack might not have reached the sender or was delayed, which is why he's resending it).
 	if (HaveReceivedPacketID(packetID))
+	{
+		ADDEVENT("duplicateReceived", (float)numBytes);
 		return;
+	}
+	if (packetID != previousReceivedPacketID + 1)
+		ADDEVENT("outOfOrderReceived", fabs((float)(packetID - (previousReceivedPacketID + 1))));
 
 	// If the 'inOrder'-flag is set, there's an extra 'Order delta counter' field present,
 	// that specifies the processing ordering of this packet.
@@ -790,6 +817,9 @@ void UDPMessageConnection::SendDisconnectMessage(bool isInternal)
 	NetworkMessage *msg = StartNewMessage(MsgIdDisconnect, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = true;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "Disconnect (0x3FFFFFFF)";
+#endif
 	EndAndQueueMessage(msg, 0, isInternal);
 
 	LOG(LogInfo, "UDPMessageConnection::SendDisconnectMessage: Sent Disconnect.");
@@ -802,6 +832,9 @@ void UDPMessageConnection::SendDisconnectAckMessage()
 	NetworkMessage *msg = StartNewMessage(MsgIdDisconnectAck, 0);
 	msg->priority = NetworkMessage::cMaxPriority; ///\todo Highest or lowest priority depending on whether to finish all pending messages?
 	msg->reliable = false;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "DisconnectAck (0x3FFFFFFE)";
+#endif
 	EndAndQueueMessage(msg, 0, true); ///\todo Check this flag!
 
 	LOG(LogInfo, "UDPMessageConnection::SendDisconnectAckMessage: Sent DisconnectAck.");
@@ -990,6 +1023,9 @@ void UDPMessageConnection::SendPacketAckMessage()
 		mb.Add<u16>((u16)(packetID >> 8));
 		mb.Add<u32>(sequence);
 		msg->priority = NetworkMessage::cMaxPriority - 1;
+#ifdef KNET_NETWORK_PROFILING
+		msg->profilerName = "PacketAck (4)";
+#endif
 		EndAndQueueMessage(msg, mb.BytesFilled(), true);
 	}
 }
@@ -1155,6 +1191,9 @@ void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceive
 	NetworkMessage *msg = StartNewMessage(MsgIdFlowControlRequest);
 	AppendU16ToVector(msg->data, newDatagramReceiveRate);
 	msg->priority = NetworkMessage::cMaxPriority - 1;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "FlowControlRequest (3)";
+#endif
 	EndAndQueueMessage(msg, 2, internalCall);*/
 }
 

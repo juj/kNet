@@ -26,6 +26,7 @@
 #include "Socket.h"
 #include "NetworkServer.h"
 #include "MessageConnection.h"
+#include "StatsEventHierarchy.h"
 
 namespace kNet
 {
@@ -96,6 +97,9 @@ public:
 	/// Returns all current connections in the system.
 	std::set<MessageConnection *> Connections() const { return connections; }
 
+	/// Returns the data structure that collects statistics about the whole Network.
+	Lock<StatsEventHierarchyNode> Statistics() { return statistics.Acquire(); }
+
 private:
 	/// Specifies the local network address of the system. This name is cached here on initialization
 	/// to avoid multiple queries to namespace providers whenever the name is needed.
@@ -110,6 +114,8 @@ private:
 
 	/// Tracks all existing connections in the system.
 	std::set<MessageConnection *> connections;
+
+	Lockable<StatsEventHierarchyNode> statistics;
 
 	/// Takes the ownership of the given socket, and returns a pointer to the owned one.
 	Socket *StoreSocket(const Socket &cp);

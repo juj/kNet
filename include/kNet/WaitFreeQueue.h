@@ -46,6 +46,35 @@ public:
 		maxElementsMask = maxElements - 1;
 	}
 
+	/// Warning: This is not thread-safe.
+	WaitFreeQueue(const WaitFreeQueue &rhs)
+	:head(rhs.head), tail(rhs.tail), maxElementsMask(rhs.maxElementsMask)
+	{
+		size_t maxElements = rhs.maxElementsMask+1;
+		data = new T[maxElements];
+		for(size_t i = 0; i < maxElements; ++i)
+			data[i] = rhs.data[i];
+	}
+
+	/// Warning: This is not thread-safe.
+	WaitFreeQueue &operator =(const WaitFreeQueue &rhs)
+	{
+		if (this == &rhs)
+			return *this;
+
+		head = rhs.head;
+		tail = rhs.tail;
+		size_t maxElements = rhs.maxElementsMask+1;
+		maxElementsMask = rhs.maxElementsMask;
+
+		delete[] data;
+		data = new T[maxElements];
+		for(size_t i = 0; i < maxElements; ++i)
+			data[i] = rhs.data[i];
+
+		return *this;
+	}
+
 	~WaitFreeQueue()
 	{
 		delete[] data;
@@ -73,7 +102,8 @@ public:
 		return true;
 	}
 
-	/// Inserts the new value into the queue.
+	/// Inserts the new value into the queue. If there is not enough free space in the queue, the capacity
+	/// of the queue is doubled.
 	/// \note This function is not thread-safe. Do not call this if you cannot guarantee that the other
 	///       thread will not be accessing the queue at the same time.
 	void InsertWithResize(const T &value)
@@ -97,7 +127,7 @@ public:
 
 		T *newData = new T[newSize];
 		unsigned long newTail = 0;
-		for(unsigned long i = 0; i < Size(); ++i)
+		for(int i = 0; i < Size(); ++i)
 			newData[newTail++] = *ItemAt(i);
 		delete[] data;
 		data = newData;
@@ -111,7 +141,8 @@ public:
 	///       thread will not be accessing the queue at the same time.
 	void DoubleCapacity() { Resize(2*(maxElementsMask+1)); }
 
-	/// Returns a pointer to the first item in the queue. Can be called only from a single consumer thread.
+	/// Returns a pointer to the first item in the queue (the item that is coming off next, i.e. the one that has
+	/// been in the queue the longest). Can be called only from a single consumer thread.
 	T *Front()
 	{
 		if (head == tail)
@@ -119,7 +150,43 @@ public:
 		return &data[head];
 	}
 
-	/// Returns a pointer to the item at the given index. Can be called only from a single consumer thread.
+	/// Returns a pointer to the first item in the queue (the item that is coming off next, i.e. the one that has
+	/// been in the queue the longest). Can be called only from a single consumer thread.
+	const T *Front() const
+	{
+		if (head == tail)
+			return 0;
+		return &data[head];
+	}
+
+	/// Returns a copy of the first item in the queue and pops that item off the queue. Can be called only from a single consumer thread.
+	T TakeFront()
+	{
+		T frontVal = *Front();
+		PopFront();
+		return frontVal;
+	}
+
+	/// Returns a pointer to the last item (the item that was just added) in the queue.
+	/// Can be called only from a single consumer thread.
+	T *Back()
+	{
+		if (head == tail)
+			return 0;
+		return &data[(tail + maxElementsMask) & maxElementsMask];
+	}
+
+	/// Returns a pointer to the last item (the item that was just added) in the queue.
+	/// Can be called only from a single consumer thread.
+	const T *Back() const
+	{
+		if (head == tail)
+			return 0;
+		return &data[(tail + maxElementsMask) & maxElementsMask];
+	}
+
+	/// Returns a pointer to the item at the given index. ItemAt(0) will return the first item (the front item)
+	/// in the queue. Can be called only from a single consumer thread.
 	T *ItemAt(int index)
 	{
 		assert(index < (int)Size());
@@ -152,22 +219,6 @@ public:
 			EraseItemAtMoveBack(index);
 	}
 
-	/// Returns a pointer to the first item in the queue. Can be called only from a single consumer thread.
-	const T *Front() const
-	{
-		if (head == tail)
-			return 0;
-		return &data[head];
-	}
-
-	/// Returns a copy of the first item in the queue and pops that item off the queue. Can be called only from a single consumer thread.
-	T TakeFront()
-	{
-		T frontVal = *Front();
-		PopFront();
-		return frontVal;
-	}
-
 	/// Removes all elements in the queue. Does not call dtors for removed objects, as this queue is only for POD types.
 	/// Can be called only from a single consumer thread.
 	void Clear()
@@ -176,7 +227,7 @@ public:
 	}
 
 	/// Returns the number of elements currently filled in the queue. Can be called from either the consumer or producer thread.
-	unsigned long Size() const
+	int Size() const
 	{
 		unsigned long head_ = head;
 		unsigned long tail_ = tail;
@@ -205,9 +256,6 @@ private:
 	volatile unsigned long head;
 	/// Stores the index of one past the last element in the queue. \todo Convert to C++0x atomic<unsigned long> head;
 	volatile unsigned long tail; 
-
-	WaitFreeQueue(const WaitFreeQueue<T> &rhs);
-	void operator=(const WaitFreeQueue<T> &rhs);
 
 	/// Removes the element at the given index, but instead of filling the contiguous gap that forms by moving elements to the
 	/// right, this function will instead move items at the front of the queue.

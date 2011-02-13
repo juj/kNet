@@ -530,6 +530,10 @@ NetworkMessage *MessageConnection::StartNewMessage(unsigned long id, size_t numB
 	// fragmentation is examined and this field will be updated if needed.
 	msg->transfer = 0; 
 
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "";
+#endif
+
 	msg->Resize(numBytes);
 
 	return msg;
@@ -1056,6 +1060,10 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	}
 	LOG(LogData, "Received message with ID %d and size %d from peer %s.", (int)packetID, (int)numBytes, socket->ToString().c_str());
 
+	char str[256];
+	sprintf(str, "messageIn.%u", messageID);
+	ADDEVENT(str, (float)reader.BytesLeft());
+
 	// Pass the message to TCP/UDP -specific message handler.
 	bool childHandledMessage = HandleMessage(packetID, messageID, data + reader.BytePos(), reader.BytesLeft());
 	if (childHandledMessage)
@@ -1124,6 +1132,9 @@ void MessageConnection::SendPingRequestMessage(bool internalQueue)
 	NetworkMessage *msg = StartNewMessage(MsgIdPingRequest, 1);
 	msg->data[0] = pingID;
 	msg->priority = NetworkMessage::cMaxPriority - 2;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "PingRequest (1)";
+#endif
 	EndAndQueueMessage(msg, 1, internalQueue);
 	LOG(LogVerbose, "Enqueued ping message %d.", (int)pingID);
 }
@@ -1142,6 +1153,9 @@ void MessageConnection::HandlePingRequestMessage(const char *data, size_t numByt
 	NetworkMessage *msg = StartNewMessage(MsgIdPingReply, 1);
 	msg->data[0] = pingID;
 	msg->priority = NetworkMessage::cMaxPriority - 1;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "PingReply (2)";
+#endif
 	EndAndQueueMessage(msg, 1, true);
 	LOG(LogVerbose, "HandlePingRequestMessage: %d.", (int)pingID);
 }

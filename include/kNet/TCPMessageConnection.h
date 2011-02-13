@@ -52,6 +52,8 @@ private:
 	PacketSendResult SendOutPacket(); // [worker thread]
 	void SendOutPackets(); // [worker thread]
 
+	void DoUpdateConnection(); // [worker thread]
+
 	unsigned long TimeUntilCanSendPacket() const;
 
 	/// Parses the raw inbound byte stream into messages. [used internally by worker thread]

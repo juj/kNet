@@ -110,6 +110,10 @@ public:
 	/// to leave the outbound send queue.
 	bool obsolete;
 
+#ifdef KNET_NETWORK_PROFILING
+	std::string profilerName;
+#endif
+
 	/// Checks if this message is newer than the other message.
 	bool IsNewerThan(const NetworkMessage &rhs) const { return (unsigned long)(messageNumber - rhs.messageNumber) < 0x80000000; }
 

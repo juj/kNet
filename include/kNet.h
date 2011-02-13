@@ -13,15 +13,19 @@
    limitations under the License. */
 #pragma once
 
+/** @file kNet.h
+	@brief The main file of KristalliNet that #includes all the commonly used headers for the the 
+	       client application. This file is ideal to be added to a PCH. If you are not using a PCH,
+			 #including the individual files when necessary is most likely faster. */
+
 ///\todo Remove this in favor of pimpl.
 #ifndef KNET_USE_BOOST
 #define KNET_USE_BOOST
 #endif
 
-/** @file kNet.h
-	@brief The main file of KristalliNet that #includes all the commonly used headers for the the 
-	       client application. This file is ideal to be added to a PCH. If you are not using a PCH,
-			 #including the individual files when necessary is most likely faster. */
+#ifndef KNET_NETWORK_PROFILING
+#define KNET_NETWORK_PROFILING
+#endif
 
 #include "kNetFwd.h"
 

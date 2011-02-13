@@ -247,6 +247,9 @@ void NetworkApp::SenderMainLoopIteration()
 			msg->priority = 100;
 			msg->reliable = true;
 			msg->inOrder = true;
+#ifdef KNET_NETWORK_PROFILING
+			msg->profilerName = "File (31)";
+#endif
 
 			DataSerializer ds(msg->data, msg->Size());
 			ds.Add<u32>(nextFragment++);
@@ -340,6 +343,9 @@ void NetworkApp::RunSender(const char *address, unsigned short port, SocketTrans
 	msg->priority = 100;
 	msg->reliable = true;
 	msg->inOrder = true;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = "TransferStart (30)";
+#endif
 	connection->EndAndQueueMessage(msg, ds.BytesFilled());
 
 	LOG(LogUser, "Starting file transfer. File size: %dB, number of fragments: %d.",

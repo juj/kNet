@@ -41,6 +41,9 @@ public:
 public slots:
 	void Update();
 	void ItemDoubleClicked(QTreeWidgetItem *item);
+
+private:
+	void PopulateStatsTree();
 };
 
 } // ~kNet

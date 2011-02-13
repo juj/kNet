@@ -37,6 +37,7 @@ namespace kNet
 	class SerializationStructCompiler;
 	class SerializedDataIterator;
 	class Socket;
+	class StatsEventHierarchyNode;
 	class TCPMessageConnection;
 	class Thread;
 	class UDPMessageConnection;

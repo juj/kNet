@@ -244,6 +244,9 @@ private:
 	std::set<unsigned long> receivedReliableMessages;
 
 	SequentialIntegerSet receivedPacketIDs;
+	/// Specifies the packet ID of the most recent datagram we sent. Used currently only
+	/// for statistics purposes.
+	packet_id_t previousReceivedPacketID;
 
 	// The following are temporary data structures used by various internal routines for processing.
 	// They are created here as members to avoid having to create objects on the stack at each call to 

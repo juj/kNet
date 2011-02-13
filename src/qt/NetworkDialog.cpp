@@ -25,6 +25,7 @@
 #endif
 
 #include "kNet/DebugMemoryLeakCheck.h"
+#include "kNet/StatsEventHierarchy.h"
 #include "kNet/qt/NetworkDialog.h"
 #include "kNet/qt/MessageConnectionDialog.h"
 #include "kNet/qt/ui/ui_NetworkDialog.h"
@@ -113,7 +114,99 @@ void NetworkDialog::Update()
 		if ((*iter)->GetSocket() && (*iter)->GetSocket()->Type() == ClientSocket)
 			new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
 
+	PopulateStatsTree();
+
 	QTimer::singleShot(dialogUpdateInterval, this, SLOT(Update()));
+}
+
+QTreeWidgetItem *FindChild(QTreeWidgetItem *parent, int column, QString text)
+{
+	for(int i = 0; i < parent->childCount(); ++i)
+	{
+		QTreeWidgetItem *child = parent->child(i);
+		if (child->text(column) == text)
+			return child;
+	}
+	return 0;
+}
+
+void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &statsNode, int timeMSecs)
+{
+	for(StatsEventHierarchyNode::NodeMap::iterator iter = statsNode.children.begin(); iter != statsNode.children.end();
+		++iter)
+	{
+		QTreeWidgetItem *child = FindChild(parent, 0, iter->first.c_str());
+		if (!child)
+		{
+			child = new QTreeWidgetItem(parent);
+			child->setText(0, iter->first.c_str());
+		}
+		StatsEventHierarchyNode &node = iter->second;
+		bool hasChildren = node.children.size() > 0;
+
+		int totalCountThisLevel = hasChildren ? node.AccumulateTotalCountThisLevel() : 0;
+		int totalCountHierarchy = node.AccumulateTotalCountHierarchy();
+		float totalValueThisLevel = hasChildren ? node.AccumulateTotalValueThisLevel() : 0.f;
+		float totalValueHierarchy = node.AccumulateTotalValueHierarchy();
+		float timeSpan = timeMSecs / 1000.f;
+
+		QString totalCountHierarchyStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalCountHierarchy);
+		QString totalValueHierarchyStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalValueHierarchy);
+
+		QString totalCountHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalCountHierarchy / timeSpan, 'g', 2);
+		QString totalValueHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalValueHierarchy / timeSpan, 'g', 2);
+
+		QString totalValueHierarchyPerCountStr = (totalCountHierarchy == 0) ? "-" : QString::number((float)totalValueHierarchy / totalCountHierarchy, 'g', 2);
+
+		if (hasChildren && totalCountThisLevel > 0)
+		{
+			QString totalCountThisLevelStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalCountThisLevel);
+			QString totalValueThisLevelStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalValueThisLevel);
+
+			QString totalCountThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalCountThisLevel / timeSpan, 'g', 2);
+			QString totalValueThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalValueThisLevel / timeSpan, 'g', 2);
+
+			QString totalValueThisLevelPerCountStr = (totalCountThisLevel == 0) ? "-" : QString::number((float)totalValueThisLevel / totalCountThisLevel, 'g', 2);
+
+			child->setText(1, QString("%1 (%2)").arg(totalCountHierarchyStr).arg(totalCountThisLevelStr));
+			child->setText(2, QString("%1 (%2)").arg(totalValueHierarchyStr).arg(totalValueThisLevelStr));
+			child->setText(3, QString("%1 (%2)").arg(totalCountHierarchyPerTimeStr).arg(totalCountThisLevelPerTimeStr));
+			child->setText(4, QString("%1 (%2)").arg(totalValueHierarchyPerTimeStr).arg(totalValueThisLevelPerTimeStr));
+			child->setText(5, QString("%1 (%2)").arg(totalValueHierarchyPerCountStr).arg(totalValueThisLevelPerCountStr));
+		}
+		else
+		{
+			child->setText(1, QString("%1").arg(totalCountHierarchyStr));
+			child->setText(2, QString("%1").arg(totalValueHierarchyStr));
+			child->setText(3, QString("%1").arg(totalCountHierarchyPerTimeStr));
+			child->setText(4, QString("%1").arg(totalValueHierarchyPerTimeStr));
+			child->setText(5, QString("%1").arg(totalValueHierarchyPerCountStr));
+		}
+		child->setText(6, QString("%1").arg(node.LatestValue()));
+
+		PopulateStatsTreeNode(child, node, timeMSecs);
+	}
+}
+
+void NetworkDialog::PopulateStatsTree()
+{
+	// Make a deep copy of all profiling data so that we don't stall the network worker threads with a lock.
+	StatsEventHierarchyNode statistics;
+
+	int timeMSecs = 60 * 1000;
+	if (dialog->comboTimePeriod->currentIndex() == 0) timeMSecs = 5 * 1000;
+	else if (dialog->comboTimePeriod->currentIndex() == 1) timeMSecs = 15 * 1000;
+	else if (dialog->comboTimePeriod->currentIndex() == 2) timeMSecs = 30 * 1000;
+
+	{
+		Lock<StatsEventHierarchyNode> stats = network->Statistics();
+		stats->PruneOldEventsHierarchy(timeMSecs);
+		statistics = *stats;
+	}
+
+	PopulateStatsTreeNode(dialog->treeStats->invisibleRootItem(), statistics, timeMSecs);
+	for(int i = 0; i < 7; ++i)
+		dialog->treeStats->resizeColumnToContents(i);
 }
 
 void NetworkDialog::ItemDoubleClicked(QTreeWidgetItem *item)
