@@ -81,17 +81,17 @@
      </column>
      <column>
       <property name="text">
-       <string>Count/s</string>
+       <string>Count/sec</string>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>Value/s</string>
+       <string>Value/sec</string>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>Value/count</string>
+       <string>Avg. value</string>
       </property>
      </column>
      <column>

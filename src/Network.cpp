@@ -93,7 +93,7 @@ std::string FormatBytes(double numBytes)
 		sprintf(str, "%.3f GB", (float)(numBytes / (1024.0 * 1024.0 * 1024.0)));
 	else if (numBytes >= 1000.0 * 1000.0)
 		sprintf(str, "%.3f MB", (float)(numBytes / (1024.0 * 1024.0)));
-	else if (numBytes >= 1000.0)
+	else if (numBytes >= 200.0)
 		sprintf(str, "%.3f KB", (float)(numBytes / 1024.0));
 	else
 		sprintf(str, "%.2f B", (float)numBytes);

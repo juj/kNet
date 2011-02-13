@@ -200,7 +200,7 @@ void UDPMessageConnection::ProcessPacketTimeouts() // [worker thread]
 			
 		LOG(LogVerbose, "A packet with ID %d timed out. Age: %.2fms. Contains %d messages.", 
 			(int)track->packetID, (float)Clock::TimespanToMillisecondsD(track->sentTick, now), (int)track->messages.size());
-		ADDEVENT("datagramsLost", 1);
+		ADDEVENT("datagramsLost", 1, "");
 
 		// Store a new suggestion for a lowered datagram send rate.
 		lowestDatagramSendRateOnPacketLoss = min(lowestDatagramSendRateOnPacketLoss, track->datagramSendRate);
@@ -469,7 +469,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			ss << "messageOut." << datagramSerializedMessages[i]->profilerName;
 		else
 			ss << "messageOut." << datagramSerializedMessages[i]->id;
-		ADDEVENT(ss.str().c_str(), (float)datagramSerializedMessages[i]->Size());
+		ADDEVENT(ss.str().c_str(), (float)datagramSerializedMessages[i]->Size(), "bytes");
 #endif
 	}
 
@@ -483,7 +483,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	datagramPacketIDCounter = AddPacketID(datagramPacketIDCounter, 1);
 
 	AddOutboundStats(writer.BytesFilled(), 1, datagramSerializedMessages.size());
-	ADDEVENT("datagramOut", (float)writer.BytesFilled());
+	ADDEVENT("datagramOut", (float)writer.BytesFilled(), "bytes");
 
 	if (reliable)
 	{
@@ -618,14 +618,14 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	assert(data);
 	assert(numBytes > 0);
 
-	ADDEVENT("datagramIn", (float)numBytes);
+	ADDEVENT("datagramIn", (float)numBytes, "bytes");
 
 	// Immediately discard this datagram if it might contain more messages than we can handle. Otherwise
 	// we might end up in a situation where we have already applied some of the messages in the datagram
 	// and realize we don't have space to take in the rest, which would require a "partial ack" of sorts.
 	if (inboundMessageQueue.CapacityLeft() < 64)
 	{
-		ADDEVENT("inputDiscarded", (float)numBytes);
+		ADDEVENT("inputDiscarded", (float)numBytes, "bytes");
 		return;
 	}
 
@@ -662,11 +662,11 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	// previous ack might not have reached the sender or was delayed, which is why he's resending it).
 	if (HaveReceivedPacketID(packetID))
 	{
-		ADDEVENT("duplicateReceived", (float)numBytes);
+		ADDEVENT("duplicateReceived", (float)numBytes, "bytes");
 		return;
 	}
 	if (packetID != previousReceivedPacketID + 1)
-		ADDEVENT("outOfOrderReceived", fabs((float)(packetID - (previousReceivedPacketID + 1))));
+		ADDEVENT("outOfOrderReceived", fabs((float)(packetID - (previousReceivedPacketID + 1))), "");
 
 	// If the 'inOrder'-flag is set, there's an extra 'Order delta counter' field present,
 	// that specifies the processing ordering of this packet.

@@ -26,9 +26,9 @@
 static const int cEventOldAgeMSecs = 30 * 1000;
 
 #ifdef KNET_NETWORK_PROFILING
-#define ADDEVENT(name, value) (owner ? owner->Statistics()->AddEventToHierarchy(name, value, cEventOldAgeMSecs) : ((void)0))
+#define ADDEVENT(name, value, valueType) (owner ? owner->Statistics()->AddEventToHierarchy((name), (value), (valueType), cEventOldAgeMSecs) : ((void)0))
 #else
-#define ADDEVENT(name, value) ((void)0)
+#define ADDEVENT(name, value, valueType) ((void)0)
 #endif
 
 namespace kNet
@@ -60,6 +60,9 @@ public:
 	NodeMap children;
 
 	WaitFreeQueue<StatsEvent> events;
+
+	/// Specifies the unit of the numeric data in this node.
+	std::string valueType;
 
 	StatsEventHierarchyNode()
 	:events(4) // The default size for the queue must be at least four elements (pow2, >2).
@@ -99,7 +102,7 @@ public:
 
 	///\ @param name The event track in the profiler hierachy to add the event to, e.g. "connection.messageIn.myMessageName". This
 	///              string may not contain two consecutive periods, e.g. "a..b".
-	void AddEventToHierarchy(const char *name, float value, int oldAgeMSecs)
+	void AddEventToHierarchy(const char *name, float value, const char *valueType, int oldAgeMSecs)
 	{
 		int nextTokenStart = 0;
 		std::string childName = FirstToken(name, '.', nextTokenStart);
@@ -107,10 +110,13 @@ public:
 			AddEventToThisLevel(value, oldAgeMSecs);
 		else
 		{
+			NodeMap::iterator iter = children.find(childName);
+			if (iter == children.end()) 
+				children[childName].valueType = valueType; // To optimize, only copy this field in the first time the node is created.
 			if (nextTokenStart == -1)
 				children[childName].AddEventToThisLevel(value, oldAgeMSecs);
 			else
-				children[childName].AddEventToHierarchy(name + nextTokenStart, value, oldAgeMSecs);
+				children[childName].AddEventToHierarchy(name + nextTokenStart, value, valueType, oldAgeMSecs);
 		}
 	}
 

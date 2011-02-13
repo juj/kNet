@@ -1071,7 +1071,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 
 	char str[256];
 	sprintf(str, "messageIn.%u", messageID);
-	ADDEVENT(str, (float)reader.BytesLeft());
+	ADDEVENT(str, (float)reader.BytesLeft(), "bytes");
 
 	// Pass the message to TCP/UDP -specific message handler.
 	bool childHandledMessage = HandleMessage(packetID, messageID, data + reader.BytePos(), reader.BytesLeft());

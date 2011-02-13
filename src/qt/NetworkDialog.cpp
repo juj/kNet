@@ -154,22 +154,30 @@ void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &sta
 		float timeSpan = timeMSecs / 1000.f;
 
 		QString totalCountHierarchyStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalCountHierarchy);
-		QString totalValueHierarchyStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalValueHierarchy);
+		QString totalValueHierarchyStr = (totalCountHierarchy == 0) ? "-" : 
+			(node.valueType == "bytes" ? FormatBytes(totalValueHierarchy).c_str() : QString::number(totalValueHierarchy));
 
-		QString totalCountHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalCountHierarchy / timeSpan, 'g', 2);
-		QString totalValueHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : QString::number(totalValueHierarchy / timeSpan, 'g', 2);
+		QString totalCountHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : 
+			(QString::number(totalCountHierarchy / timeSpan, 'f', 2) + "/sec");
+		QString totalValueHierarchyPerTimeStr = (totalCountHierarchy == 0) ? "-" : 
+			(node.valueType == "bytes" ? (FormatBytes((double)totalValueHierarchy / timeSpan).c_str() + QString("/sec")) : (QString::number(totalValueHierarchy / timeSpan, 'f', 2) + "/sec"));
 
-		QString totalValueHierarchyPerCountStr = (totalCountHierarchy == 0) ? "-" : QString::number((float)totalValueHierarchy / totalCountHierarchy, 'g', 2);
+		QString totalValueHierarchyPerCountStr = (totalCountHierarchy == 0) ? "-" : 
+			(node.valueType == "bytes" ? FormatBytes((double)totalValueHierarchy / totalCountHierarchy).c_str() : QString::number((float)totalValueHierarchy / totalCountHierarchy, 'f', 2));
 
 		if (hasChildren && totalCountThisLevel > 0)
 		{
 			QString totalCountThisLevelStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalCountThisLevel);
-			QString totalValueThisLevelStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalValueThisLevel);
+			QString totalValueThisLevelStr = (totalCountThisLevel == 0) ? "-" : 
+				(node.valueType == "bytes" ? FormatBytes(totalValueThisLevel).c_str() : QString::number(totalValueThisLevel));
 
-			QString totalCountThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalCountThisLevel / timeSpan, 'g', 2);
-			QString totalValueThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : QString::number(totalValueThisLevel / timeSpan, 'g', 2);
+			QString totalCountThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : 
+				(QString::number(totalCountThisLevel / timeSpan, 'f', 2) + "/sec");
+			QString totalValueThisLevelPerTimeStr = (totalCountThisLevel == 0) ? "-" : 
+				(node.valueType == "bytes" ? (FormatBytes((double)totalValueThisLevel / timeSpan).c_str() + QString("/sec")) : (QString::number(totalValueThisLevel / timeSpan, 'f', 2) + "/sec"));
 
-			QString totalValueThisLevelPerCountStr = (totalCountThisLevel == 0) ? "-" : QString::number((float)totalValueThisLevel / totalCountThisLevel, 'g', 2);
+			QString totalValueThisLevelPerCountStr = (totalCountThisLevel == 0) ? "-" : 
+				(node.valueType == "bytes" ? FormatBytes((double)totalValueThisLevel / totalCountThisLevel).c_str() : QString::number((float)totalValueThisLevel / totalCountThisLevel, 'f', 2));
 
 			child->setText(1, QString("%1 (%2)").arg(totalCountHierarchyStr).arg(totalCountThisLevelStr));
 			child->setText(2, QString("%1 (%2)").arg(totalValueHierarchyStr).arg(totalValueThisLevelStr));
@@ -185,7 +193,12 @@ void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &sta
 			child->setText(4, QString("%1").arg(totalValueHierarchyPerTimeStr));
 			child->setText(5, QString("%1").arg(totalValueHierarchyPerCountStr));
 		}
-		child->setText(6, QString("%1").arg(node.LatestValue()));
+		if (totalCountThisLevel == 0 && hasChildren)
+			child->setText(6, "-");
+		else if (node.valueType == "bytes")
+			child->setText(6, FormatBytes(node.LatestValue()).c_str());
+		else
+			child->setText(6, QString("%1").arg(node.LatestValue()));
 
 		PopulateStatsTreeNode(child, node, timeMSecs);
 	}
