@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file kNetFwd.h
-	@brief Forward-declares all common symbols defined by KristalliNet. */
+	@brief Forward-declares all common symbols defined by kNet. */
 
 namespace kNet
 {

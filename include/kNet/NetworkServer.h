@@ -14,7 +14,7 @@
 #pragma once
 
 /** @file NetworkServer.h
-	@brief The NetworkServer class. The main class for hosting a KristalliNet server. */
+	@brief The NetworkServer class. The main class for hosting a kNet server. */
 
 #include <list>
 
