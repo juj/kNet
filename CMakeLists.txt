@@ -40,6 +40,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTHREAD_CHECKING_ENABLED -D
 # extra performance by avoiding all logging-related string operations.
 add_definitions(-DKNET_LOGGING_SUPPORT_ENABLED)
 
+# Enable storing profiling data from different network level events.
+add_definitions(-DKNET_NETWORK_PROFILING)
+
 if (USE_BOOST)
    add_definitions(-DKNET_USE_BOOST)
 
