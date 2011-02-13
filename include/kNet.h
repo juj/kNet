@@ -63,6 +63,5 @@
 
 #ifdef KNET_USE_QT
 #include "kNet/qt/NetworkDialog.h"
-#include "kNet/qt/NetworkServerDialog.h"
 #include "kNet/qt/MessageConnectionDialog.h"
 #endif

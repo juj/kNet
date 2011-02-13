@@ -372,6 +372,11 @@ void MessageConnection::FreeMessageData() // [main thread]
 {
 	assert(!IsWorkerThreadRunning());
 
+	Lockable<FragmentedSendManager>::LockType sends = fragmentedSends.Acquire();
+	sends->FreeAllTransfers();
+
+	fragmentedReceives.transfers.clear();
+
 	while(outboundAcceptQueue.Size() > 0)
 	{
 		NetworkMessage *msg = outboundAcceptQueue.TakeFront();
@@ -397,11 +402,6 @@ void MessageConnection::FreeMessageData() // [main thread]
 	inboundContentIDStamps.clear();
 
 	outboundContentIDMessages.clear();
-
-	Lockable<FragmentedSendManager>::LockType sends = fragmentedSends.Acquire();
-	sends->FreeAllTransfers();
-
-	fragmentedReceives.transfers.clear();
 
 	Lockable<ConnectionStatistics>::LockType stats_ = statistics.Acquire();
 	stats_->ping.clear();

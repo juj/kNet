@@ -120,6 +120,24 @@ public:
 		}
 	}
 
+	StatsEventHierarchyNode *FindChild(const char *name)
+	{
+		int nextTokenStart = 0;
+		std::string childName = FirstToken(name, '.', nextTokenStart);
+		if (childName.empty())
+			return this;
+		else
+		{
+			NodeMap::iterator iter = children.find(childName);
+			if (iter == children.end()) 
+				return 0;
+			if (nextTokenStart == -1)
+				return &children[childName];
+			else
+				return children[childName].FindChild(name + nextTokenStart);
+		}
+	}
+
 	int AccumulateTotalCountThisLevel() const
 	{
 		return events.Size();

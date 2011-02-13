@@ -13,45 +13,34 @@
    limitations under the License. */
 #pragma once
 
-/** @file NetworkDialog.h
-	@brief Shows a debugging console dialog of the main kNet Network object. */
+/** @file GraphDialog.h
+	@brief Shows a graph display of a network event counter. */
 
 #include <QObject>
-#include <QPointer>
 #include <QWidget>
+#include <QTimer>
 
-class QTimer;
-class QTreeWidgetItem;
-class Ui_NetworkDialog;
+#include "kNet/MessageConnection.h"
+#include "kNet/SharedPtr.h"
+#include "kNet/StatsEventHierarchy.h"
 
-#include "kNet/Network.h"
+class Ui_GraphDialog;
 
 namespace kNet
 {
 
-class GraphDialog;
-
-class NetworkDialog : public QWidget
+class GraphDialog : public QWidget
 {
 	Q_OBJECT;
 
-	Network *network;
-	Ui_NetworkDialog *dialog;
+	Ui_GraphDialog *dialog;
+	std::string hierarchyNodeName;
 
 public:
-	NetworkDialog(QWidget *parent, Network *network);
-	~NetworkDialog();
+	GraphDialog(QWidget *parent, const char *hierarchyNodeName);
+	~GraphDialog();
 
-public slots:
-	void Update();
-	void ItemDoubleClicked(QTreeWidgetItem *item);
-	void EventItemDoubleClicked(QTreeWidgetItem *item);
-
-private:
-	void PopulateStatsTree();
-
-	typedef std::map<std::string, QPointer<GraphDialog> > GraphMap;
-	GraphMap graphs;
+	void Update(StatsEventHierarchyNode &node, int timeMSecs);
 };
 
 } // ~kNet

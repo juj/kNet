@@ -28,6 +28,7 @@
 #include "kNet/StatsEventHierarchy.h"
 #include "kNet/qt/NetworkDialog.h"
 #include "kNet/qt/MessageConnectionDialog.h"
+#include "kNet/qt/GraphDialog.h"
 #include "kNet/qt/ui/ui_NetworkDialog.h"
 
 namespace kNet
@@ -42,9 +43,8 @@ NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 	dialog = new Ui_NetworkDialog;
 	dialog->setupUi(this);
 
-	QTreeWidget *connectionsTree = findChild<QTreeWidget*>("connectionsTree");
-	if (connectionsTree)
-		connect(connectionsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(ItemDoubleClicked(QTreeWidgetItem *)));
+	connect(dialog->connectionsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(ItemDoubleClicked(QTreeWidgetItem *)));
+	connect(dialog->treeStats, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(EventItemDoubleClicked(QTreeWidgetItem *)));
 
 	Update();
 }
@@ -65,6 +65,17 @@ public:
 	}
 
 	Ptr(MessageConnection) connection;
+};
+
+class StatsEventTreeItem : public QTreeWidgetItem
+{
+public:
+	StatsEventTreeItem(QTreeWidgetItem *parent, const char *eventName_)
+	:QTreeWidgetItem(parent), eventName(eventName_)
+	{
+	}
+
+	std::string eventName;
 };
 
 QTreeWidgetItem *NewTreeItemFromString(QTreeWidget *parent, const char *str)
@@ -133,15 +144,16 @@ QTreeWidgetItem *FindChild(QTreeWidgetItem *parent, int column, QString text)
 	return 0;
 }
 
-void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &statsNode, int timeMSecs)
+void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &statsNode, int timeMSecs, std::string parentNodeName)
 {
 	for(StatsEventHierarchyNode::NodeMap::iterator iter = statsNode.children.begin(); iter != statsNode.children.end();
 		++iter)
 	{
 		QTreeWidgetItem *child = FindChild(parent, 0, iter->first.c_str());
+		std::string childNodeName = parentNodeName.empty() ? iter->first : (parentNodeName + "." + iter->first);
 		if (!child)
 		{
-			child = new QTreeWidgetItem(parent);
+			child = new StatsEventTreeItem(parent, childNodeName.c_str());
 			child->setText(0, iter->first.c_str());
 		}
 		StatsEventHierarchyNode &node = iter->second;
@@ -200,7 +212,7 @@ void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &sta
 		else
 			child->setText(6, QString("%1").arg(node.LatestValue()));
 
-		PopulateStatsTreeNode(child, node, timeMSecs);
+		PopulateStatsTreeNode(child, node, timeMSecs, childNodeName);
 	}
 }
 
@@ -220,9 +232,16 @@ void NetworkDialog::PopulateStatsTree()
 		statistics = *stats;
 	}
 
-	PopulateStatsTreeNode(dialog->treeStats->invisibleRootItem(), statistics, timeMSecs);
+	PopulateStatsTreeNode(dialog->treeStats->invisibleRootItem(), statistics, timeMSecs, "");
 	for(int i = 0; i < 7; ++i)
 		dialog->treeStats->resizeColumnToContents(i);
+
+	for(GraphMap::iterator iter = graphs.begin(); iter != graphs.end(); ++iter)
+	{
+		StatsEventHierarchyNode *node = statistics.FindChild(iter->first.c_str());
+		if (node)
+			iter->second->Update(*node, timeMSecs);
+	}
 }
 
 void NetworkDialog::ItemDoubleClicked(QTreeWidgetItem *item)
@@ -234,6 +253,21 @@ void NetworkDialog::ItemDoubleClicked(QTreeWidgetItem *item)
 	MessageConnectionDialog *dialog = new MessageConnectionDialog(0, msgItem->connection);
 	dialog->show();
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
+}
+
+void NetworkDialog::EventItemDoubleClicked(QTreeWidgetItem *item)
+{
+	StatsEventTreeItem *msgItem = dynamic_cast<StatsEventTreeItem*>(item);
+	if (!msgItem)
+		return;
+
+	if (graphs.find(msgItem->eventName) != graphs.end())
+		return;
+
+	QPointer<GraphDialog> graphDialog = new GraphDialog(0, msgItem->eventName.c_str());
+	graphDialog->show();
+	graphDialog->setAttribute(Qt::WA_DeleteOnClose);
+	graphs[msgItem->eventName] = graphDialog;
 }
 
 } // ~kNet
