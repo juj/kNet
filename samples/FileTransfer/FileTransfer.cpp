@@ -358,6 +358,8 @@ void NetworkApp::RunSender(const char *address, unsigned short port, SocketTrans
 	QTimer::singleShot(100, this, SLOT(SenderMainLoopIteration()));
 
 	QApplication::exec();
+	if (connection)
+		connection->Close();
 	delete networkDialog;
 }
 
