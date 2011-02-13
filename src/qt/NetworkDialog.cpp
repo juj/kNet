@@ -97,6 +97,7 @@ void NetworkDialog::Update()
 	Ptr(NetworkServer) server = network->GetServer();
 	if (server)
 	{
+		setWindowTitle("kNet Server");
 		QTreeWidgetItem *serverItem = NewTreeItemFromString(connectionsTree, server->ToString().c_str());
 		connectionsTree->addTopLevelItem(serverItem);
 
@@ -108,6 +109,8 @@ void NetworkDialog::Update()
 			serverItem->setExpanded(true);
 		}
 	}
+	else
+		setWindowTitle("kNet Client");
 
 	std::set<MessageConnection*> connections = network->Connections();
 	for(std::set<MessageConnection*>::iterator iter = connections.begin(); iter != connections.end(); ++iter)
