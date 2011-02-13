@@ -111,12 +111,19 @@ public:
 		if (node->next)
 			node->next->prev = node->prev;
 		--size;
+
+		assert(root || size == 0);
 	}
 
-	T *Front() { return root ? &root->value : 0; }
+	T *Front()
+	{ 
+		assert(root || size == 0);
+		return root ? &root->value : 0;
+	}
 
 	Node *First()
 	{
+		assert(root || size == 0);
 		return root;
 	}
 
