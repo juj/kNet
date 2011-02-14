@@ -128,7 +128,7 @@ MessageConnection::SocketReadResult TCPMessageConnection::ReadSocket(size_t &tot
 	if (totalBytesRead > 0)
 	{
 		lastHeardTime = Clock::Tick();
-		ADDEVENT("tcpDataIn", totalBytesRead, "bytes");
+		ADDEVENT("tcpDataIn", (float)totalBytesRead, "bytes");
 		AddInboundStats(totalBytesRead, 1, 0);
 	}
 
@@ -254,7 +254,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 	LOG(LogData, "TCPMessageConnection::SendOutPacket: Sent %d bytes (%d messages) to peer %s.", (int)writer.BytesFilled(), (int)serializedMessages.size(), socket->ToString().c_str());
 	AddOutboundStats(writer.BytesFilled(), 1, numMessagesPacked);
-	ADDEVENT("tcpDataOut", writer.BytesFilled(), "bytes");
+	ADDEVENT("tcpDataOut", (float)writer.BytesFilled(), "bytes");
 
 	// The messages in serializedMessages array are now in the TCP driver to handle. It will guarantee
 	// delivery if possible, so we can free the messages already.
@@ -266,7 +266,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 			ss << "messageOut." << serializedMessages[i]->profilerName;
 		else
 			ss << "messageOut." << serializedMessages[i]->id;
-		ADDEVENT(ss.str().c_str(), serializedMessages[i]->Size(), "msg");
+		ADDEVENT(ss.str().c_str(), (float)serializedMessages[i]->Size(), "bytes");
 #endif
 		FreeMessage(serializedMessages[i]);
 	}
