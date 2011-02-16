@@ -1056,8 +1056,10 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 {
 	AssertInWorkerThreadContext();
 
+	if (!socket)
+		return; // Ignore all messages from connections that have already died.
+
 	assert(data && numBytes > 0);
-	assert(socket);
 
 	// Read the message ID.
 	DataDeserializer reader(data, numBytes);
