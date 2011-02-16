@@ -70,11 +70,7 @@ previousReceivedPacketID(0)
 UDPMessageConnection::~UDPMessageConnection()
 {
 	while(outboundPacketAckTrack.Size() > 0)
-	{
-		size_t size = outboundPacketAckTrack.Size();
 		FreeOutboundPacketAckTrack(outboundPacketAckTrack.Front()->packetID);
-		assert(outboundPacketAckTrack.Size() < size);
-	}
 
 	outboundPacketAckTrack.Clear();
 
@@ -505,7 +501,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			else
 				FreeMessage(datagramSerializedMessages[i]);
 		}
-		outboundPacketAckTrack.Insert(ack);
+		outboundPacketAckTrack.InsertWithResize(ack);
 	}
 	else // We sent an unreliable datagram.
 	{
@@ -908,12 +904,15 @@ void UDPMessageConnection::FreeOutboundPacketAckTrack(packet_id_t packetID)
 {
 	AssertInWorkerThreadContext();
 
-	OrderedHashTable<PacketAckTrack, PacketAckTrack>::Node *item = outboundPacketAckTrack.Find(packetID);
-	if (!item)
+	int itemIndex = 0;
+	for(; itemIndex < outboundPacketAckTrack.Size(); ++itemIndex)
+		if (outboundPacketAckTrack.ItemAt(itemIndex)->packetID == packetID)
+			break;
+	if (itemIndex >= outboundPacketAckTrack.Size())
 		return;
 
 	// Free up all the messages in the acked packet. We don't need to keep track of those any more (to be sent to peer).
-	PacketAckTrack &track = item->value;
+	PacketAckTrack &track = *outboundPacketAckTrack.ItemAt(itemIndex);
 	for(size_t i = 0; i < track.messages.size(); ++i)
 	{
 		// If the message was part of a fragmented transfer, remove the message from that data structure.
@@ -933,7 +932,7 @@ void UDPMessageConnection::FreeOutboundPacketAckTrack(packet_id_t packetID)
 		++numAcksLastFrame;
 	}
 
-	outboundPacketAckTrack.Remove(packetID);
+	outboundPacketAckTrack.EraseItemAt(itemIndex);
 }
 
 static const float minRTOTimeoutValue = 1000.f;
