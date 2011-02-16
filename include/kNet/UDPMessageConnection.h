@@ -221,10 +221,13 @@ private:
 	/// Contains the messages we have sent out that we are waiting for the other party to Ack.
 //	PacketAckTrackMap outboundPacketAckTrack;
 	typedef WaitFreeQueue<PacketAckTrack> PacketAckTrackQueue;
-//	PacketAckTrackQueue outboundPacketAckTrack;
-	OrderedHashTable<PacketAckTrack, PacketAckTrack> outboundPacketAckTrack;
+	PacketAckTrackQueue outboundPacketAckTrack;
+//	typedef OrderedHashTable<PacketAckTrack, PacketAckTrack> PacketAckTrackTable;
+//	PacketAckTrackTable outboundPacketAckTrack;
 
 	static int BiasedBinarySearchFindPacketIndex(UDPMessageConnection::PacketAckTrackQueue &queue, int packetID);
+
+//	void FreeOutboundPacketAckTrack(PacketAckTrackTable::Node *node); // [worker thread]
 
 	void FreeOutboundPacketAckTrack(packet_id_t packetID); // [worker thread]
 

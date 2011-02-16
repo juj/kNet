@@ -97,7 +97,8 @@ public:
 		e.value = value;
 		e.time = Clock::Tick();
 		PruneOldEventsThisLevel(oldAgeMSecs);
-		events.InsertWithResize(e);
+		if (events.Size() < 16384)
+			events.InsertWithResize(e);
 	}
 
 	///\ @param name The event track in the profiler hierachy to add the event to, e.g. "connection.messageIn.myMessageName". This

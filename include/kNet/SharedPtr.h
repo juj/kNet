@@ -53,13 +53,13 @@ public:
 		--refCount; 
 	}
 
-	unsigned int RefCount() const
+	int RefCount() const
 	{ 
 		return refCount;
 	}
 
 private:
-	unsigned int refCount;
+	int refCount;
 };
 
 /** @brief SharedPtr is an intrusive refcount-tracked single-object lifetime-manager.

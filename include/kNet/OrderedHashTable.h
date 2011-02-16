@@ -53,6 +53,8 @@ public:
 	void Insert(const T &value)
 	{
 		int idx = HashFunc::Hash(value, numElemsMask);
+		if (data[idx].used)
+			Remove(&data[idx]);
 		data[idx].value = value;
 		if (root)
 		{
@@ -99,7 +101,8 @@ public:
 
 	void Remove(Node *node)
 	{
-		assert(node);
+		if (!node)
+			return;
 		assert(node->used);
 
 		if (node == root)
@@ -113,6 +116,11 @@ public:
 		--size;
 
 		assert(root || size == 0);
+	}
+
+	Node *FrontNode()
+	{
+		return root;
 	}
 
 	T *Front()
