@@ -239,7 +239,7 @@ void NetworkDialog::PopulateStatsTree()
 	for(GraphMap::iterator iter = graphs.begin(); iter != graphs.end(); ++iter)
 	{
 		StatsEventHierarchyNode *node = statistics.FindChild(iter->first.c_str());
-		if (node)
+		if (node && iter->second)
 			iter->second->Update(*node, timeMSecs);
 	}
 }
