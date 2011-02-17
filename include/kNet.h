@@ -16,7 +16,7 @@
 /** @file kNet.h
 	@brief The main file of kNet that #includes all the commonly used headers for the the 
 	       client application. This file is ideal to be added to a PCH. If you are not using a PCH,
-			 #including the individual files when necessary is most likely faster. */
+	       #including the individual files when necessary is most likely faster. */
 
 ///\todo Remove this in favor of pimpl.
 #ifndef KNET_USE_BOOST

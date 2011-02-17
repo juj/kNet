@@ -245,7 +245,10 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 			LOG(LogError, "Critical! UDP socket data received into a TCP socket!");
 		}
 		else
-			udpConnection->ExtractMessages(recvData->buffer.buf, recvData->bytesContains);
+		{
+			udpConnection->QueueInboundDatagram(recvData->buffer.buf, recvData->bytesContains);
+//			udpConnection->ExtractMessages(recvData->buffer.buf, recvData->bytesContains);
+		}
 	}
 	else
 	{

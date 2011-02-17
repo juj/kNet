@@ -83,6 +83,7 @@ public:
 	float PacketLossCount() const { return packetLossCount; }
 
 	float PacketLossRate() const { return packetLossRate; }
+
 private:
 	/// Reads all the new bytes available in the socket.
 	/// @return The number of bytes successfully read.
@@ -123,6 +124,12 @@ private:
 	void AddReceivedPacketIDStats(packet_id_t packetID); // [worker thread]
 	/// @return True if we have received a packet with the given packetID already.
 	bool HaveReceivedPacketID(packet_id_t packetID) const; // [worker thread]
+
+	/// Copies the given message to an internal queue to wait to be processed by the worker thread that owns this connection.
+	void QueueInboundDatagram(const char *data, size_t numBytes); // [thread-safe].
+
+	/// Handles all the previously queued datagrams this connection has received.
+	void ProcessQueuedDatagrams(); // [worker thread]
 
 	/// Specifies the PacketID of the last received datagram with InOrder flag set.
 	packet_id_t lastReceivedInOrderPacketID;
@@ -227,7 +234,7 @@ private:
 
 	static int BiasedBinarySearchFindPacketIndex(UDPMessageConnection::PacketAckTrackQueue &queue, int packetID);
 
-//	void FreeOutboundPacketAckTrack(PacketAckTrackTable::Node *node); // [worker thread]
+	WaitFreeQueue<Datagram> queuedInboundDatagrams;
 
 	void FreeOutboundPacketAckTrack(packet_id_t packetID); // [worker thread]
 

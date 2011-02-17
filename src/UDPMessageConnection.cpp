@@ -63,19 +63,59 @@ packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatag
 datagramInRatePerSecond(initialDatagramRatePerSecond),
 datagramSendRate(10),
 receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
-previousReceivedPacketID(0)
+previousReceivedPacketID(0), queuedInboundDatagrams(128)
 {
 }
 
 UDPMessageConnection::~UDPMessageConnection()
 {
+	// The first thing we do when starting to close down a connection is to ensure that this connection gets detached from its worker thread.
+	// Therefore, as the first thing, invoke CloseConnection which achieves this.
+	if (owner)
+		owner->CloseConnection(this);
+
+	assert(!workerThread);
+
 	while(outboundPacketAckTrack.Size() > 0)
 		FreeOutboundPacketAckTrack(outboundPacketAckTrack.Front()->packetID);
 
 	outboundPacketAckTrack.Clear();
+}
 
-	if (owner)
-		owner->CloseConnection(this);
+void UDPMessageConnection::QueueInboundDatagram(const char *data, size_t numBytes)
+{
+	if (!data || numBytes == 0)
+	{
+		LOG(LogError, "UDPMessageConnection::QueueInboundDatagram: Ignoring received zero-sized datagram!");
+		return;
+	}
+	if (numBytes > cDatagramBufferSize)
+	{
+		LOG(LogError, "UDPMessageConnection::QueueInboundDatagram: Discarding received over-sized datagram (%d bytes)!", (int)numBytes);
+		return;
+	}
+
+	Datagram d;
+	memcpy(d.data, data, numBytes);
+	d.size = numBytes;
+	bool success = queuedInboundDatagrams.Insert(d);
+	if (!success)
+	{
+		LOG(LogError, "UDPMessageConnection::QueueInboundDatagram: Dropping received datagram, since the client receive buffer is full!");
+		return;
+	}
+}
+
+void UDPMessageConnection::ProcessQueuedDatagrams()
+{
+	AssertInWorkerThreadContext();
+
+	while(queuedInboundDatagrams.Size() > 0)
+	{
+		Datagram *d = queuedInboundDatagrams.Front();
+		ExtractMessages((const char*)d->data, d->size);
+		queuedInboundDatagrams.PopFront();
+	}
 }
 
 UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &bytesRead)
@@ -541,6 +581,8 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 void UDPMessageConnection::DoUpdateConnection()
 {
 	AssertInWorkerThreadContext();
+
+	ProcessQueuedDatagrams();
 
 	if (udpUpdateTimer.TriggeredOrNotRunning())
 	{
