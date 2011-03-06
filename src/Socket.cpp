@@ -173,23 +173,7 @@ bool Socket::Connected() const
 {
 	return connectSocket != INVALID_SOCKET;
 }
-/*
-bool Socket::WaitForData(int msecs)
-{
-	if (!readOpen)
-		return false;
 
-	fd_set readSet;
-	FD_ZERO(&readSet);
-	FD_SET(connectSocket, &readSet);
-	TIMEVAL tv = { msecs / 1000, (msecs % 1000) * 1000 };
-	int ret = select(0, &readSet, NULL, NULL, &tv);
-	if (ret == KNET_SOCKET_ERROR || ret == 0)
-		return false;
-	else
-		return true;
-}
-*/
 OverlappedTransferBuffer *AllocateOverlappedTransferBuffer(int bytes)
 {
 	OverlappedTransferBuffer *buffer = new OverlappedTransferBuffer;
@@ -304,6 +288,9 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 	{
 		if (ret == 0 && buffer->bytesContains == 0)
 		{
+			if (IsUDPServerSocket())
+				LOG(LogError, "Unexpected: Received a message of 0 bytes on a UDP server socket!");
+
 			LOG(LogInfo, "Socket::EnqueueNewReceiveBuffer: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
 			readOpen = false;
 			DeleteOverlappedTransferBuffer(buffer);
@@ -320,6 +307,9 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 	}
 	else if (error == WSAEDISCON)
 	{
+		if (IsUDPServerSocket())
+			LOG(LogError, "Unexpected: Received WSAEDISCON on a UDP server socket!");
+
 		LOG(LogError, "Socket::EnqueueNewReceivebuffer: WSAEDISCON. Connection closed in socket %s.", ToString().c_str());
 		readOpen = false;
 		///\todo Should do writeOpen = false; here as well?
@@ -330,16 +320,22 @@ void Socket::EnqueueNewReceiveBuffer(OverlappedTransferBuffer *buffer)
 	{
 		if (error != WSAEWOULDBLOCK && error != 0)
 		{
-			LOG(LogError, "Socket::EnqueueNewReceiveBuffer: WSARecv failed in socket %s. Error %s. Closing down socket.", ToString().c_str(), Network::GetErrorString(error).c_str());
-			readOpen = false;
-			writeOpen = false;
-			if (IsUDPServerSocket())
-				LOG(LogError, "Socket::EnqueueNewReceiveBuffer: Closed UDP server socket!");
-			Close();
+			LOG(LogError, "Socket::EnqueueNewReceiveBuffer: %s for overlapped socket %s failed! Error: %s.", IsUDPServerSocket() ? "WSARecvFrom" : "WSARecv", ToString().c_str(), Network::GetErrorString(error).c_str());
+
+			// We never close the server socket as a reaction on any error, since an error on one client could shut down
+			// the whole server for all clients. This check is mainly here to ignore the 10054 error (WSAECONNRESET) which
+			// is returned when UDP clients give back a ICMP Host Unreachable message, but since there may be other
+			// client-specific errors, we don't explicitly check for the 10054 case only.
+			if (!IsUDPServerSocket())
+			{
+				LOG(LogError, "Socket::EnqueueNewReceiveBuffer: Closing down socket.",  Network::GetErrorString(error).c_str());
+				readOpen = false;
+				writeOpen = false;
+				Close();
+			}
 		}
 
-		LOG(LogError, "Socket::EnqueueNewReceiveBuffer: WSARecv for overlapped socket failed! Error code: %d.", error);
-		DeleteOverlappedTransferBuffer(buffer);
+		DeleteOverlappedTransferBuffer(buffer); // We failed to queue the buffer, free it up immediately to avoid leaking memory.
 		return;
 	}
 }
@@ -404,7 +400,6 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 	{
 		LOG(LogInfo, "Socket::Receive: Received 0 bytes from network. Read-connection closed to socket %s.", ToString().c_str());
 		readOpen = false;
-//		Disconnect();
 		return 0;
 	}
 	else
@@ -413,9 +408,17 @@ size_t Socket::Receive(char *dst, size_t maxBytes, EndPoint *endPoint)
 		if (error != KNET_EWOULDBLOCK && error != 0)
 		{
 			LOG(LogError, "Socket::Receive: recv failed in socket %s. Error %s", ToString().c_str(), Network::GetErrorString(error).c_str());
-			readOpen = false;
-			writeOpen = false;
-			Close();
+
+			// We never close the server socket as a reaction on any error, since an error on one client could shut down
+			// the whole server for all clients. This check is mainly here to ignore the 10054 error (WSAECONNRESET) which
+			// is returned when UDP clients give back a ICMP Host Unreachable message, but since there may be other
+			// client-specific errors, we don't explicitly check for the 10054 case only.
+			if (!IsUDPServerSocket())
+			{
+				readOpen = false;
+				writeOpen = false;
+				Close();
+			}
 		}
 		return 0;
 	}
@@ -529,8 +532,6 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 			return 0;
 		}
 
-//		DumpBuffer("Socket::BeginReceive", receivedData->buffer.buf, receivedData->bytesContains);
-
 		return receivedData;
 	}
 	else if (error == WSAEDISCON)
@@ -540,7 +541,7 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 		if (readOpen || writeOpen)
 			LOG(LogError, "Socket::BeginReceive: WSAEDISCON. Bidirectionally closing connection in socket %s.", ToString().c_str());
 		if (IsUDPServerSocket())
-			LOG(LogError, "Socket::BeginReceive: Closed UDP server socket!");
+			LOG(LogError, "Socket::BeginReceive: Unexpected: Received WSAEDISCON on UDP server socket!");
 		Close();
 		return 0;
 	}
@@ -848,8 +849,6 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 
 	int ret;
 
-//	DumpBuffer("Socket::EndSend", sendBuffer->buffer.buf, sendBuffer->buffer.len);
-
 	if (transport == SocketOverUDP)
 		ret = WSASendTo(connectSocket, &sendBuffer->buffer, 1, (LPDWORD)&bytesSent, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress), &sendBuffer->overlapped, 0);
 	else
@@ -912,17 +911,7 @@ void Socket::AbortSend(OverlappedTransferBuffer *send)
 	DeleteOverlappedTransferBuffer(send);
 #endif
 }
-/*
-unsigned short Socket::LocalPort() const
-{
-	sockaddr_in addr;
-	socklen_t namelen = sizeof(addr);
 
-	int sockRet = getsockname(connectSocket, (sockaddr*)&addr, &namelen); // Note: This works only if family==INETv4
-	EndPoint sockName = EndPoint::FromSockAddrIn(addr);
-	return sockName.port;
-}
-*/
 std::string Socket::ToString() const
 {
 	sockaddr_in addr;
