@@ -385,8 +385,18 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 {
 	AssertInWorkerThreadContext();
 
-	if (connectionState != ConnectionOK)
-		return;
+	// If we are write-closed, discard all outbound messages from the client code, since we can't send them to the peer.
+	if (connectionState == ConnectionDisconnecting || connectionState == ConnectionClosed)
+	{
+		while(outboundAcceptQueue.Size() > 0)
+		{
+			NetworkMessage *msg = *outboundAcceptQueue.Front();
+			outboundAcceptQueue.PopFront();
+			LOG(LogVerbose, "Warning: Discarding outbound network message with ID %d, since the connection is write-closed.", 
+			msg->id);
+			FreeMessage(msg);
+		}
+	}
 
 //	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 
