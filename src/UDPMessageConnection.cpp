@@ -417,7 +417,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		if (msg->reliable)
 		{
 			reliable = true;
-			smallestReliableMessageNumber = PrecedingMessageNumber(smallestReliableMessageNumber, msg->reliableMessageNumber);
+            smallestReliableMessageNumber = (smallestReliableMessageNumber == 0xFFFFFFFF) ? msg->reliableMessageNumber : PrecedingMessageNumber(smallestReliableMessageNumber, msg->reliableMessageNumber);
 		}
 
 		if (msg->inOrder)
