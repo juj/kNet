@@ -326,7 +326,15 @@ void NetworkWorkerThread::MainLoop()
 		// contains a list of UDP connections which are now, or will very soon (in less than 1msec) be ready for writing. 
 		// Poll each and try to send a message.
 		for(size_t i = 0; i < writeWaitConnections.size(); ++i)
-			writeWaitConnections[i]->SendOutPackets();
+        {
+			try
+			{
+			    writeWaitConnections[i]->SendOutPackets();
+            } catch(const NetException &e)
+            {
+				LOG(LogError, (std::string("kNet::NetException thrown when sending out a network message: ") + e.what()).c_str());
+            }
+        }
 	}
 	falseEvent.Close();
 	LOG(LogInfo, "NetworkWorkerThread quit.");
