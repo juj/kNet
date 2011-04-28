@@ -150,7 +150,7 @@ bool MessageConnection::IsReadOpen() const
 		return true;
 	if (socket && socket->IsOverlappedReceiveReady()) // If the socket is physically open, we are read-open.
 		return true;
-	if (connectionState == ConnectionPeerClosed || connectionState == ConnectionClosed) // Check against the main connectionState variable.
+	if (!socket || connectionState == ConnectionPeerClosed || connectionState == ConnectionClosed) // Check against the main connectionState variable.
 		return false;
 	return true;
 }
@@ -206,16 +206,7 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 
 	if (!socket || !socket->IsWriteOpen())
 		return;
-/*
-	// First, check the actual status of the Socket, and update the connectionState of this MessageConnection accordingly.
-	///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
-	if (!socket->IsReadOpen() && !socket->IsWriteOpen())
-		connectionState = ConnectionClosed;
-	if (!socket->IsReadOpen() && connectionState != ConnectionClosed)
-		connectionState = ConnectionPeerClosed;
-	if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
-		connectionState = ConnectionDisconnecting;
-*/
+
 	if (connectionState == ConnectionClosed || connectionState == ConnectionDisconnecting)
 		return;
 
@@ -225,48 +216,13 @@ void MessageConnection::Disconnect(int maxMSecsToWait)
 	assert(maxMSecsToWait >= 0);
 
 	PerformDisconnection();
-/*
-	switch(connectionState)
-	{
-	case ConnectionPending:
-		LOG(LogVerbose, "MessageConnection::Disconnect called when in ConnectionPending state! %s", ToString().c_str());
-		// Intentional fall-through.
-	case ConnectionOK:
-		LOG(LogInfo, "MessageConnection::Disconnect. Write-closing connection %s.", ToString().c_str());
-		PerformDisconnection();
-		connectionState = ConnectionDisconnecting;
-		break;
-	case ConnectionDisconnecting:
-		LOG(LogVerbose, "MessageConnection::Disconnect. Already disconnecting. %s", ToString().c_str());
-		break;
-	case ConnectionPeerClosed: // The peer has already signalled it will not send any more data.
-		PerformDisconnection();
-		connectionState = ConnectionClosed;
-		break;
-	case ConnectionClosed:
-		LOG(LogVerbose, "MessageConnection::Disconnect. Already closed connection. %s", ToString().c_str());
-		return;
-	default:
-		LOG(LogError, "ERROR! MessageConnection::Disconnect called when in an unknown state! %s", ToString().c_str());
-		connectionState = ConnectionClosed;
-		break;
-	}
-*/
+
 	if (maxMSecsToWait > 0)
 	{
 		PolledTimer timer((float)maxMSecsToWait);
 		while(socket && socket->IsWriteOpen() && !timer.Test())
 		{
 			Clock::Sleep(1); ///\todo Instead of waiting multiple 1msec slices, should wait for proper event.
-/*
-			///\todo Avoid this inconsistency of having to propagate socket state to MessageConnection state.
-			if (!socket->IsReadOpen() && !socket->IsWriteOpen())
-				connectionState = ConnectionClosed;
-			if (!socket->IsReadOpen() && connectionState != ConnectionClosed)
-				connectionState = ConnectionPeerClosed;
-			if (!socket->IsWriteOpen() && connectionState != ConnectionClosed)
-				connectionState = ConnectionDisconnecting;
-*/
 		}
 
 		LOG(LogWaits, "MessageConnection::Disconnect: Waited %f msecs for disconnection. Result: %s.",
@@ -429,8 +385,18 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 {
 	AssertInWorkerThreadContext();
 
-	if (connectionState != ConnectionOK)
-		return;
+	// If we are write-closed, discard all outbound messages from the client code, since we can't send them to the peer.
+	if (connectionState == ConnectionDisconnecting || connectionState == ConnectionClosed)
+	{
+		while(outboundAcceptQueue.Size() > 0)
+		{
+			NetworkMessage *msg = *outboundAcceptQueue.Front();
+			outboundAcceptQueue.PopFront();
+			LOG(LogVerbose, "Warning: Discarding outbound network message with ID %d, since the connection is write-closed.", 
+			msg->id);
+			FreeMessage(msg);
+		}
+	}
 
 //	assert(ContainerUniqueAndNoNullElements(outboundAcceptQueue));
 

@@ -271,12 +271,6 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		FreeMessage(serializedMessages[i]);
 	}
 
-	// Thread-safely clear the eventMsgsOutAvailable event if we don't have any messages to process.
-	if (NumOutboundMessagesPending() == 0)
-		eventMsgsOutAvailable.Reset();
-	if (NumOutboundMessagesPending() > 0)
-		eventMsgsOutAvailable.Set();
-			
 	return PacketSendOK;
 }
 
@@ -296,6 +290,12 @@ void TCPMessageConnection::SendOutPackets()
 	int maxSends = 500; // Place an arbitrary limit to how many packets we will send at a time.
 	while(result == PacketSendOK && maxSends-- > 0)
 		result = SendOutPacket();
+
+	// Thread-safely clear the eventMsgsOutAvailable event if we don't have any messages to process.
+	if (NumOutboundMessagesPending() == 0)
+		eventMsgsOutAvailable.Reset();
+	if (NumOutboundMessagesPending() > 0)
+		eventMsgsOutAvailable.Set();
 }
 
 void TCPMessageConnection::ExtractMessages()

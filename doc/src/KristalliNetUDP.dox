@@ -84,7 +84,7 @@ for its own use. All other <span style="background-color: #E8E8E8; border-bottom
 The <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">PingRequest</span> message is sent to detect that the other end is still responding and to estimate the current round-trip-time.
  
 <div style="background-color: #B0B0E0; padding: 5px; border: solid 1px black;">
-<b>MessageID 0: PingRequest</b> \anchor PingRequestMsg
+<b>MessageID 1: PingRequest</b> \anchor PingRequestMsg
 <pre>
 u8                 pingID.
 </pre>
@@ -93,7 +93,7 @@ Unreliable. Out-of-order. May not be fragmented.
 The <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">PingReply</span> message is a response to the PingRequest message.
 
 <div style="background-color: #B0B0E0; padding: 5px; border: solid 1px black;">
-<b>MessageID 1: PingReply</b> \anchor PingReplyMsg
+<b>MessageID 2: PingReply</b> \anchor PingReplyMsg
 <pre>
 u8                 pingID.
 </pre>
@@ -104,7 +104,7 @@ To request a new inbound datagram send rate limit, the client can issue a
 <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">FlowControlRequest</span> message.
 
 <div style="background-color: #B0B0E0; padding: 5px; border: solid 1px black;">
-<b>MessageID 2: FlowControlRequest</b> \anchor FlowControlRequestMsg
+<b>MessageID 3: FlowControlRequest</b> \anchor FlowControlRequestMsg
 <pre>
 u16                 newDatagramReceiveRate.
 </pre>
@@ -114,7 +114,7 @@ Reliable. Out-of-order. May not be fragmented.
 The <span style="background-color: #D5D5FF; border-bottom: dashed 1px blue;">PacketAck</span> message is sent to acknowedge the receival of reliable datagrams.
 
 <div style="background-color: #B0B0E0; padding: 5px; border: solid 1px black;">
-<b>MessageID 3: PacketAck</b> \anchor PacketAckMsg
+<b>MessageID 4: PacketAck</b> \anchor PacketAckMsg
 <pre>
 u24     bits  0-21  PacketID.
         bits 22-23  PacketID sequence bits.
