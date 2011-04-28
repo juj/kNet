@@ -37,13 +37,15 @@ typedef void (*ThreadEntryFunc)(void *threadStartData);
 namespace kNet
 {
 
-#ifdef KNET_USE_BOOST
+#ifdef WIN32
+typedef DWORD ThreadId; // Don't use boost::thread::id on Windows even if KNET_USE_BOOST is #defined, since it has issues.
+#elif KNET_USE_BOOST
 typedef boost::thread::id ThreadId;
-#elif WIN32
-typedef DWORD ThreadId;
 #else
 typedef unsigned int ThreadId;
 #endif
+
+std::string ThreadIdToString(const ThreadId &id);
 
 class Thread : public RefCountable
 {
@@ -71,6 +73,10 @@ public:
 	/// Tries first to gracefully close the thread (waits for a while), and forcefully terminates the thread if
 	/// it didn't respond in that time. \todo Allow specifying the timeout period.
 	void Stop();
+
+	/// Sets the name of this thread. This method is implemented for debugging purposes only, and does not do anything
+	/// if running outside Visual Studio debugger.
+	void SetName(const char *name);
 
 	template<typename Class, typename MemberFuncPtr, typename FuncParam>
 	void Run(Class *obj, MemberFuncPtr memberFuncPtr, const FuncParam &param);

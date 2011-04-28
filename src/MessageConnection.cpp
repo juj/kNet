@@ -1256,8 +1256,14 @@ MessageConnection::SocketReadResult MessageConnection::ReadSocket()
 void MessageConnection::AssertInWorkerThreadContext() const
 {
 #ifdef THREAD_CHECKING_ENABLED
-	bool ret = workerThread == 0 || Thread::CurrentThreadId() == workerThreadId;
-	assert(ret);
+	const bool haveWorkerThread = (workerThread != 0);
+	kNet::ThreadId currentThreadId = Thread::CurrentThreadId();
+	if (haveWorkerThread && currentThreadId != workerThreadId)
+	{
+		LOG(LogError, "Assert failure in MessageConnection::AssertInWorkerThreadContext()!: haveWorkerThread: %s, currentThreadId: %s, workerThreadId: %s,",
+			haveWorkerThread ? "true" : "false", ThreadIdToString(currentThreadId).c_str(), ThreadIdToString(workerThreadId).c_str());
+		assert(false && "MessageConnection::AssertInWorkerThreadContext assert failure!");
+	}
 #endif
 }
 
@@ -1265,8 +1271,14 @@ void MessageConnection::AssertInWorkerThreadContext() const
 void MessageConnection::AssertInMainThreadContext() const
 {
 #ifdef THREAD_CHECKING_ENABLED
-	bool ret = workerThread == 0 || Thread::CurrentThreadId() != workerThreadId;
-	assert(ret);
+	const bool haveWorkerThread = (workerThread != 0);
+	kNet::ThreadId currentThreadId = Thread::CurrentThreadId();
+	if (haveWorkerThread && currentThreadId == workerThreadId)
+	{
+		LOG(LogError, "Assert failure in MessageConnection::AssertInMainThreadContext()!: haveWorkerThread: %s, currentThreadId: %s, workerThreadId: %s,",
+			haveWorkerThread ? "true" : "false", ThreadIdToString(currentThreadId).c_str(), ThreadIdToString(workerThreadId).c_str());
+		assert(false && "MessageConnection::AssertInMainThreadContext assert failure!");
+	}
 #endif
 }
 
