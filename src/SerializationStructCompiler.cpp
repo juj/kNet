@@ -321,8 +321,8 @@ void SerializationStructCompiler::WriteMessage(const SerializedMessageDesc &mess
 		<< Indent(2) << "priority = defaultPriority;" << endl
 		<< Indent(1) << "}" << endl << endl;
 
-	out << Indent(1) << "static const u32 messageID = "<< message.id << ";" << endl;
-	out << Indent(1) << "static const char name[] = \"" << message.name << "\";" << endl << endl;
+	out << Indent(1) << "enum { messageID = "<< message.id << " };" << endl;
+	out << Indent(1) << "static inline const char * const Name() { return \"" << message.name << "\"; }" << endl << endl;
 
 	out << Indent(1) << "static const bool defaultReliable = " << (message.reliable ? "true" : "false") << ";" << endl;
 	out << Indent(1) << "static const bool defaultInOrder = " << (message.inOrder ? "true" : "false") << ";" << endl;

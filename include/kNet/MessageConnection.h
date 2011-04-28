@@ -580,7 +580,7 @@ void MessageConnection::Send(const SerializableMessage &data, unsigned long cont
 
 	const size_t dataSize = data.Size();
 
-	NetworkMessage *msg = StartNewMessage(data.MessageID(), dataSize);
+	NetworkMessage *msg = StartNewMessage(SerializableMessage::messageID, dataSize);
 
 	if (dataSize > 0)
 	{
@@ -589,7 +589,7 @@ void MessageConnection::Send(const SerializableMessage &data, unsigned long cont
 		assert(mb.BytesFilled() == dataSize);
 	}
 
-	msg->id = data.MessageID();
+	msg->id = SerializableMessage::messageID;
 	msg->contentID = contentID;
 	msg->inOrder = data.inOrder;
 	msg->priority = data.priority;

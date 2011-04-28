@@ -432,7 +432,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			if (reliableDelta > VLE8_16::maxValue) // We use a VLE8_16 to store deltas, so 32767 is the largest delta we can store. If two messages have a delta larger than this,
 			{                                      // they will have to be serialized in separate datagrams.
 				LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Too large msgnum delta present - skipping serialization of message with ID %d (lowest: %d, delta: %d)",
-				(int)datagramSerializedMessages[i]->reliableMessageNumber, (int)smallestReliableMessageNumber, (int)reliableDelta);
+					(int)datagramSerializedMessages[i]->reliableMessageNumber, (int)smallestReliableMessageNumber, (int)reliableDelta);
 				skippedMessages.push_back(datagramSerializedMessages[i]);
 				datagramSerializedMessages.erase(datagramSerializedMessages.begin() + i);
 				--i;
