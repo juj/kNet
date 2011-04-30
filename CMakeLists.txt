@@ -32,7 +32,7 @@ file(APPEND ${BUILD_CONFIG_FILE} "#pragma once\n\n")
 
 macro(AddCompilationDefine define)
    add_definitions(-D${define})
-   file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define THREAD_CHECKING_ENABLED\n#endif\n\n")
+   file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define ${define}\n#endif\n\n")
 endmacro()
 
 set(USE_BOOST TRUE)
