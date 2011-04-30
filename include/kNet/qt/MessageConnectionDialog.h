@@ -16,6 +16,10 @@
 /** @file MessageConnectionDialog.h
 	@brief Shows a debugging console dialog of a kNet MessageConnection object. */
 
+#include "kNetBuildConfig.h"
+
+#ifdef KNET_USE_QT
+
 #include <QObject>
 #include <QWidget>
 #include <QTimer>
@@ -44,3 +48,5 @@ public slots:
 };
 
 } // ~kNet
+
+#endif

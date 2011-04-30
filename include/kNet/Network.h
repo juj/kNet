@@ -23,6 +23,7 @@
 #include <netdb.h>
 #endif
 
+#include "kNetBuildConfig.h"
 #include "Socket.h"
 #include "NetworkServer.h"
 #include "MessageConnection.h"

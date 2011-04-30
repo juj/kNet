@@ -16,6 +16,10 @@
 /** @file GraphDialog.h
 	@brief Shows a graph display of a network event counter. */
 
+#include "kNetBuildConfig.h"
+
+#ifdef KNET_USE_QT
+
 #include <QObject>
 #include <QWidget>
 #include <QTimer>
@@ -44,3 +48,5 @@ public:
 };
 
 } // ~kNet
+
+#endif

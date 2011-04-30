@@ -21,6 +21,7 @@
 #include <utility>
 #include <set>
 
+#include "kNetBuildConfig.h"
 #include "WaitFreeQueue.h"
 #include "LockFreePoolAllocator.h"
 #include "Lockable.h"
