@@ -19,6 +19,8 @@
 #include <boost/thread/thread.hpp>
 #endif
 
+#include <sstream>
+
 #include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/Event.h" ///\todo Investigate the inclusion chain of these two files. Is this #include necessary?
 #include "kNet/NetworkLogging.h"
@@ -120,7 +122,11 @@ void SetThreadName(DWORD dwThreadID, const char *threadName)
 void Thread::SetName(const char *name)
 {
 #ifdef WIN32
-	SetThreadName((DWORD)thread.native_handle(), name);
+#ifdef KNET_USE_BOOST
+	SetThreadName(GetThreadId(thread.native_handle()), name);
+#else
+	SetThreadName(GetThreadId(threadHandle), name);
+#endif
 #endif
 }
 

@@ -16,6 +16,8 @@
 /** @file Thread.h
 	@brief The Thread class. Implements threading either using Boost or native Win32 constructs. */
 
+#include <string>
+
 #ifdef KNET_USE_BOOST
 #include <boost/thread.hpp>
 #elif WIN32
