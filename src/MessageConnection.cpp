@@ -444,7 +444,6 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 	if (statsRefreshTimer.TriggeredOrNotRunning())
 	{
 		ComputeStats();
-		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 
 		// Check if the socket is dead and mark it read-closed.
 		if (connectionState == ConnectionOK || connectionState == ConnectionDisconnecting)
@@ -453,6 +452,19 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 				LOG(LogInfo, "Peer closed connection.");
 				SetPeerClosed();
 			}
+
+		ADDEVENT("roundTripTime", RoundTripTime(), "msecs");
+		ADDEVENT("lastHeardTime", LastHeardTime(), "msecs");
+		ADDEVENT("packetsInPerSec", PacketsInPerSec(), "#");
+		ADDEVENT("packetsOutPerSec", PacketsOutPerSec(), "#");
+		ADDEVENT("msgsInPerSec", MsgsInPerSec(), "#");
+		ADDEVENT("msgsOutPerSec", MsgsOutPerSec(), "#");
+		ADDEVENT("bytesInPerSec", BytesInPerSec(), "bytes");
+		ADDEVENT("bytesOutPerSec", BytesOutPerSec(), "bytes");
+		ADDEVENT("bytesInTotal", BytesInTotal(), "bytes");
+		ADDEVENT("bytesOutTotal", BytesOutTotal(), "bytes");
+
+		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 	}
 
 	// Perform the TCP/UDP -specific connection update.

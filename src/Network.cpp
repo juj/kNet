@@ -57,7 +57,7 @@ std::string Network::GetErrorString(int error)
 
 	// Copy message to C++ -style string, since the data need to be freed before return.
 	std::stringstream ss;
-	ss << (LPCSTR)lpMsgBuf << "(" << error << ")";
+	ss << (LPCSTR)lpMsgBuf << "(" << error << ")"; ///\todo Bug: The cast to LPCSTR converts wstr -> str if UNICODE is defined, which will cut out text.
 	LocalFree(lpMsgBuf);
 	return ss.str();
 #else

@@ -618,6 +618,15 @@ void UDPMessageConnection::DoUpdateConnection()
 		// worthwhile or if some of them are timing out.
 		PerformPacketAckSends();
 
+		ADDEVENT("retransmissionTimeout", RetransmissionTimeout(), "msecs");
+		ADDEVENT("datagramSendRate", DatagramSendRate(), "msgs");
+		ADDEVENT("smoothedRtt", SmoothedRtt(), "msecs");
+		ADDEVENT("rttVariation", RttVariation(), "");
+		ADDEVENT("numOutboundUnackedDatagrams", NumOutboundUnackedDatagrams(), "");
+		ADDEVENT("numReceivedUnackedDatagrams", NumReceivedUnackedDatagrams(), "");
+		ADDEVENT("packetLossCount", PacketLossCount(), "");
+		ADDEVENT("packetLossRate", PacketLossRate(), "");
+
 		udpUpdateTimer.StartMSecs(10.f);
 	}
 
