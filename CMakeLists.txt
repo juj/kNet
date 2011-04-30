@@ -15,6 +15,11 @@
 cmake_minimum_required(VERSION 2.6)
 project(kNet)
 
+# Generate a build configuration file to ensure the build flags match for the user of the library.
+SET(BUILD_CONFIG_FILE include/kNetBuildConfig.h)
+file(WRITE ${BUILD_CONFIG_FILE} "// This file is programmatically generated using CMake.\n// This file shows the compilation settings that were used to build kNet.\n// These need to match for the client code using kNet.\n")
+file(APPEND ${BUILD_CONFIG_FILE} "#pragma once\n\n")
+
 # This macro adds to each .cpp file listed in the parameter 'cppFiles' a #define DEBUG_CPP_NAME "thisCppFileName"
 #macro(AddCompilationUnitNameDefines cppFiles)
 #  message("cppFiles ${cppFiles} ${${cppFiles}}")
@@ -24,6 +29,11 @@ project(kNet)
 #        message("${srcFile} with ${baseName}")
 #      endforeach()
 #endmacro()
+
+macro(AddCompilationDefine define)
+   add_definitions(-D${define})
+   file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define THREAD_CHECKING_ENABLED\n#endif\n\n")
+endmacro()
 
 set(USE_BOOST TRUE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
@@ -36,17 +46,17 @@ set(USE_BOOST TRUE)
 # To enable specific flags only in debug mode, use the following syntax.
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
 
-add_definitions(-DTHREAD_CHECKING_ENABLED)
+AddCompilationDefine(THREAD_CHECKING_ENABLED)
 
 # Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
 # extra performance by avoiding all logging-related string operations.
-add_definitions(-DKNET_LOGGING_SUPPORT_ENABLED)
+AddCompilationDefine(KNET_LOGGING_SUPPORT_ENABLED)
 
 # Enable storing profiling data from different network level events.
-add_definitions(-DKNET_NETWORK_PROFILING)
+AddCompilationDefine(KNET_NETWORK_PROFILING)
 
 if (USE_BOOST)
-   add_definitions(-DKNET_USE_BOOST)
+   AddCompilationDefine(KNET_USE_BOOST)
 
    if (WIN32)
       set(Boost_FIND_REQUIRED TRUE)
@@ -60,7 +70,7 @@ if (USE_BOOST)
 endif()
 
 if (USE_TINYXML)
-   add_definitions(-DKNET_USE_TINYXML)
+   AddCompilationDefine(KNET_USE_TINYXML)
    
    include_directories(${TINYXML_ROOT})
    link_directories(${TINYXML_ROOT})
@@ -71,7 +81,7 @@ file(GLOB kNetSourceFiles ./src/*.cpp)
 file(GLOB kNetHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/*.inl)
 
 if (USE_QT)
-   add_definitions(-DKNET_USE_QT)
+   AddCompilationDefine(KNET_USE_QT)
    
    set(QT_USE_QTMAIN TRUE)
    set(QT_USE_QTUITOOLS TRUE)
