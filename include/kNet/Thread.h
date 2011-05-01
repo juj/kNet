@@ -86,11 +86,14 @@ public:
 	template<typename Class, typename MemberFuncPtr>
 	void Run(Class *obj, MemberFuncPtr memberFuncPtr);
 
+	template<typename FuncPtr, typename FuncParam, typename FuncParam2>
+	void RunFunc(FuncPtr funcPtr, const FuncParam &param, const FuncParam2 &param2);
+
 	template<typename FuncPtr, typename FuncParam>
-	void Run(FuncPtr funcPtr, const FuncParam &param);
+	void RunFunc(FuncPtr funcPtr, const FuncParam &param);
 
 	template<typename FuncPtr>
-	void Run(FuncPtr funcPtr);
+	void RunFunc(FuncPtr funcPtr);
 
 	/// Sleeps the current thread for the given amount of time, or interrupts the sleep if the thread was signalled
 	/// to quit in between.
@@ -124,7 +127,7 @@ private:
 		FuncInvokerVoid(FuncPtr funcPtr_)
 		:funcPtr(funcPtr_){}
 
-        virtual void Invoke() { funcPtr(); }
+		virtual void Invoke() { funcPtr(); }
 	};
 
 	template<typename FuncPtr, typename FuncParam>
@@ -136,7 +139,20 @@ private:
 		FuncInvokerUnary(FuncPtr funcPtr_, const FuncParam &param_)
 		:funcPtr(funcPtr_), param(param_){}
 
-        virtual void Invoke() { funcPtr(param); }
+		virtual void Invoke() { funcPtr(param); }
+	};
+
+	template<typename FuncPtr, typename FuncParam, typename FuncParam2>
+	class FuncInvokerBinary : public ObjInvokeBase
+	{
+	public:
+		FuncPtr funcPtr;
+		FuncParam param;
+		FuncParam2 param2;
+		FuncInvokerBinary(FuncPtr funcPtr_, const FuncParam &param_, const FuncParam2 &param2_)
+		:funcPtr(funcPtr_), param(param_), param2(param2_){}
+
+		virtual void Invoke() { funcPtr(param, param2); }
 	};
 
 	template<typename Class, typename MemberFuncPtr>
@@ -204,8 +220,16 @@ void Thread::Run(Class *obj, MemberFuncPtr memberFuncPtr)
 	StartThread();
 }
 
+template<typename FuncPtr, typename FuncParam, typename FuncParam2>
+void Thread::RunFunc(FuncPtr funcPtr, const FuncParam &param, const FuncParam2 &param2)
+{
+	Stop();
+	invoker = new FuncInvokerBinary<FuncPtr, FuncParam, FuncParam2>(funcPtr, param, param2);
+	StartThread();
+}
+
 template<typename FuncPtr, typename FuncParam>
-void Thread::Run(FuncPtr funcPtr, const FuncParam &param)
+void Thread::RunFunc(FuncPtr funcPtr, const FuncParam &param)
 {
 	Stop();
 	invoker = new FuncInvokerUnary<FuncPtr, FuncParam>(funcPtr, param);
@@ -213,7 +237,7 @@ void Thread::Run(FuncPtr funcPtr, const FuncParam &param)
 }
 
 template<typename FuncPtr>
-void Thread::Run(FuncPtr funcPtr)
+void Thread::RunFunc(FuncPtr funcPtr)
 {
 	Stop();
 	invoker = new FuncInvokerVoid<FuncPtr>(funcPtr);
