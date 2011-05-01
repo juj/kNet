@@ -86,7 +86,6 @@ public:
 	/// UnsafeClearAll(), which ignores compare-and-swap updates.
 	void ClearAll()
 	{
-		assert(!DebugHasCycle());
 		while(root)
 		{
 			T *node = New();
