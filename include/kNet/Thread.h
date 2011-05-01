@@ -86,6 +86,12 @@ public:
 	template<typename Class, typename MemberFuncPtr>
 	void Run(Class *obj, MemberFuncPtr memberFuncPtr);
 
+	template<typename FuncPtr, typename FuncParam>
+	void Run(FuncPtr funcPtr, const FuncParam &param);
+
+	template<typename FuncPtr>
+	void Run(FuncPtr funcPtr);
+
 	/// Sleeps the current thread for the given amount of time, or interrupts the sleep if the thread was signalled
 	/// to quit in between.
 	static void Sleep(int msecs);
@@ -110,27 +116,50 @@ private:
 		}
 	};
 
+	template<typename FuncPtr>
+	class FuncInvokerVoid : public ObjInvokeBase
+	{
+	public:
+		FuncPtr funcPtr;
+		FuncInvokerVoid(FuncPtr funcPtr_)
+		:funcPtr(funcPtr_){}
+
+        virtual void Invoke() { funcPtr(); }
+	};
+
+	template<typename FuncPtr, typename FuncParam>
+	class FuncInvokerUnary : public ObjInvokeBase
+	{
+	public:
+		FuncPtr funcPtr;
+		FuncParam param;
+		FuncInvokerUnary(FuncPtr funcPtr_, const FuncParam &param_)
+		:funcPtr(funcPtr_), param(param_){}
+
+        virtual void Invoke() { funcPtr(param); }
+	};
+
 	template<typename Class, typename MemberFuncPtr>
-	class ObjInvokerVoid : public ObjInvokeBase
+	class ClassInvokerVoid : public ObjInvokeBase
 	{
 	public:
 		Class *obj;
 		MemberFuncPtr memberFuncPtr;
-		ObjInvokerVoid(Class *obj_, MemberFuncPtr memberFuncPtr_)
+		ClassInvokerVoid(Class *obj_, MemberFuncPtr memberFuncPtr_)
 		:obj(obj_), memberFuncPtr(memberFuncPtr_){}
 
 		virtual void Invoke() { CALL_MEMBER_FN(*obj, memberFuncPtr)(); }
 	};
 
 	template<typename Class, typename MemberFuncPtr, typename FuncParam>
-	class ObjInvokerUnary : public ObjInvokeBase
+	class ClassInvokerUnary : public ObjInvokeBase
 	{
 	public:
 		Class *obj;
 		MemberFuncPtr memberFuncPtr;
 		FuncParam param;
-		ObjInvokerUnary(Class *obj_, MemberFuncPtr memberFuncPtr_, const FuncParam &param_)
-		:obj(obj_), memberFuncPtr(memberFuncPtr_),param(param_){}
+		ClassInvokerUnary(Class *obj_, MemberFuncPtr memberFuncPtr_, const FuncParam &param_)
+		:obj(obj_), memberFuncPtr(memberFuncPtr_), param(param_){}
 
 		virtual void Invoke() { CALL_MEMBER_FN(*obj, memberFuncPtr)(param); }
 	};
@@ -163,7 +192,7 @@ template<typename Class, typename MemberFuncPtr, typename FuncParam>
 void Thread::Run(Class *obj, MemberFuncPtr memberFuncPtr, const FuncParam &param)
 {
 	Stop();
-	invoker = new ObjInvokerUnary<Class, MemberFuncPtr, FuncParam>(obj, memberFuncPtr, param);
+	invoker = new ClassInvokerUnary<Class, MemberFuncPtr, FuncParam>(obj, memberFuncPtr, param);
 	StartThread();
 }
 
@@ -171,7 +200,23 @@ template<typename Class, typename MemberFuncPtr>
 void Thread::Run(Class *obj, MemberFuncPtr memberFuncPtr)
 {
 	Stop();
-	invoker = new ObjInvokerVoid<Class, MemberFuncPtr>(obj, memberFuncPtr);
+	invoker = new ClassInvokerVoid<Class, MemberFuncPtr>(obj, memberFuncPtr);
+	StartThread();
+}
+
+template<typename FuncPtr, typename FuncParam>
+void Thread::Run(FuncPtr funcPtr, const FuncParam &param)
+{
+	Stop();
+	invoker = new FuncInvokerUnary<FuncPtr, FuncParam>(funcPtr, param);
+	StartThread();
+}
+
+template<typename FuncPtr>
+void Thread::Run(FuncPtr funcPtr)
+{
+	Stop();
+	invoker = new FuncInvokerVoid<FuncPtr>(funcPtr);
 	StartThread();
 }
 
