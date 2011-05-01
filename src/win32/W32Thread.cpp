@@ -171,6 +171,8 @@ void Thread::StartThread()
 		throw NetException("Failed to create thread!");
 	else
 		LOG(LogInfo, "Thread::Run(): Thread created.");
+
+    SetName("kNet Thread");
 }
 
 void Thread::Sleep(int msecs)
