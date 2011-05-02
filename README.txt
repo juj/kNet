@@ -21,6 +21,7 @@ Windows:
  - If you do not want to use TinyXML, edit the root CMakeLists.txt and make sure the USE_TINYXML directive is commented out. This will disable the functionality of SerializedMessageList/MessageListParser though. 
  - Optional: kNet can use Qt to provider debug statistics and profiling windows. Install and build Qt (4.6.2 or newer recommended) and uncomment #set(USE_QT TRUE) in the root CMakeLists.txt.
  - Execute in project root folder the command 'cmake -G "Visual Studio 10"' (case sensitive!), or click the cmake_vs2010.bat.
+ - If CMake fails to find your Qt installation, or if you want to explicitly specify the source location, set the QMAKESPEC and QTDIR environment variables or alter the cmake_vs2008.bat/cmake_vs2010.bat files.
  - Open and build the kNet.sln.
 
 Linux:
