@@ -50,7 +50,7 @@ void NetworkWorkerThread::AddConnection(MessageConnection *connection)
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::RemoveConnection(MessageConnection * connection)
+void NetworkWorkerThread::RemoveConnection(MessageConnection *connection)
 {
 	workThread.Hold();
 
@@ -68,7 +68,7 @@ void NetworkWorkerThread::RemoveConnection(MessageConnection * connection)
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::AddServer(NetworkServer * server)
+void NetworkWorkerThread::AddServer(NetworkServer *server)
 {
 	workThread.Hold();
 	Lockable<std::vector<NetworkServer *> >::LockType lock = servers.Acquire();
@@ -77,7 +77,7 @@ void NetworkWorkerThread::AddServer(NetworkServer * server)
 	workThread.Resume();
 }
 
-void NetworkWorkerThread::RemoveServer(NetworkServer * server)
+void NetworkWorkerThread::RemoveServer(NetworkServer *server)
 {
 	workThread.Hold();
 
@@ -186,7 +186,11 @@ void NetworkWorkerThread::MainLoop()
 
 			connection.UpdateConnection();
 			if (connection.GetConnectionState() == ConnectionClosed || !connection.GetSocket() || !connection.GetSocket()->Connected()) // This does not need to be checked each iteration.
+			{
+				connectionList.erase(connectionList.begin()+i);
+				--i;
 				continue;
+			}
 
 			// The event that is triggered when data is received on the socket.
 			Event readEvent = connection.GetSocket()->GetOverlappedReceiveEvent();
@@ -326,15 +330,15 @@ void NetworkWorkerThread::MainLoop()
 		// contains a list of UDP connections which are now, or will very soon (in less than 1msec) be ready for writing. 
 		// Poll each and try to send a message.
 		for(size_t i = 0; i < writeWaitConnections.size(); ++i)
-        {
+		{
 			try
 			{
-			    writeWaitConnections[i]->SendOutPackets();
-            } catch(const NetException &e)
-            {
+				writeWaitConnections[i]->SendOutPackets();
+			} catch(const NetException &e)
+			{
 				LOG(LogError, (std::string("kNet::NetException thrown when sending out a network message: ") + e.what()).c_str());
-            }
-        }
+			}
+		}
 	}
 	falseEvent.Close();
 	LOG(LogInfo, "NetworkWorkerThread quit.");
