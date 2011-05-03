@@ -16,6 +16,10 @@
 /** @file NetworkDialog.h
 	@brief Shows a debugging console dialog of the main kNet Network object. */
 
+#include "kNetBuildConfig.h"
+
+#ifdef KNET_USE_QT
+
 #include <QObject>
 #include <QPointer>
 #include <QWidget>
@@ -55,3 +59,5 @@ private:
 };
 
 } // ~kNet
+
+#endif

@@ -16,6 +16,7 @@
 /** @file NetworkMessage.h
 	@brief The class NetworkMessage. Stores an outbound network message. */
 
+#include "kNetBuildConfig.h"
 #include "LockFreePoolAllocator.h"
 #include "FragmentedTransferManager.h"
 

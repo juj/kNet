@@ -65,10 +65,13 @@ datagramSendRate(10),
 receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
 previousReceivedPacketID(0), queuedInboundDatagrams(128)
 {
+	LOG(LogObjectAlloc, "Allocated UDPMessageConnection %p.", this);
 }
 
 UDPMessageConnection::~UDPMessageConnection()
 {
+	LOG(LogObjectAlloc, "Deleted UDPMessageConnection %p.", this);
+
 	// The first thing we do when starting to close down a connection is to ensure that this connection gets detached from its worker thread.
 	// Therefore, as the first thing, invoke CloseConnection which achieves this.
 	if (owner)
@@ -317,10 +320,10 @@ void UDPMessageConnection::SendOutPackets()
 /// Returns the 'earlier' of the two message numbers, taking number wrap-around into account.
 unsigned long PrecedingMessageNumber(unsigned long num1, unsigned long num2)
 {
-	if ((unsigned long)(num1 - num2) < 0x80000000)
-		return num1 - num2;
+	if ((unsigned long)(num2 - num1) < 0x80000000)
+		return num1;
 	else
-		return num2 - num1;
+		return num2;
 }
 
 /// Packs several messages from the outbound priority queue into a single packet and sends it out the wire.
@@ -431,8 +434,8 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			u32 reliableDelta = (u32)(datagramSerializedMessages[i]->reliableMessageNumber - smallestReliableMessageNumber);
 			if (reliableDelta > VLE8_16::maxValue) // We use a VLE8_16 to store deltas, so 32767 is the largest delta we can store. If two messages have a delta larger than this,
 			{                                      // they will have to be serialized in separate datagrams.
-				LOG(LogVerbose, "UDPMessageConnection::SendOutPacket: Too large msgnum delta present - skipping serialization of message with ID %d (lowest: %d, delta: %d)",
-				(int)datagramSerializedMessages[i]->reliableMessageNumber, (int)smallestReliableMessageNumber, (int)reliableDelta);
+				LOG(LogError, "UDPMessageConnection::SendOutPacket: Too large msgnum delta present - skipping serialization of message with ID %d (lowest: %d, delta: %d)",
+					(int)datagramSerializedMessages[i]->reliableMessageNumber, (int)smallestReliableMessageNumber, (int)reliableDelta);
 				skippedMessages.push_back(datagramSerializedMessages[i]);
 				datagramSerializedMessages.erase(datagramSerializedMessages.begin() + i);
 				--i;
@@ -617,6 +620,15 @@ void UDPMessageConnection::DoUpdateConnection()
 		// Generate an Ack message if we've accumulated enough reliable messages to make it
 		// worthwhile or if some of them are timing out.
 		PerformPacketAckSends();
+
+		ADDEVENT("retransmissionTimeout", RetransmissionTimeout(), "msecs");
+		ADDEVENT("datagramSendRate", DatagramSendRate(), "msgs");
+		ADDEVENT("smoothedRtt", SmoothedRtt(), "msecs");
+		ADDEVENT("rttVariation", RttVariation(), "");
+		ADDEVENT("numOutboundUnackedDatagrams", NumOutboundUnackedDatagrams(), "");
+		ADDEVENT("numReceivedUnackedDatagrams", NumReceivedUnackedDatagrams(), "");
+		ADDEVENT("packetLossCount", PacketLossCount(), "");
+		ADDEVENT("packetLossRate", PacketLossRate(), "");
 
 		udpUpdateTimer.StartMSecs(10.f);
 	}

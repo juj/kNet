@@ -15,6 +15,7 @@
 /** @file main.cpp
 	@brief */
 
+#include "kNetBuildConfig.h"
 #include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/NetworkLogging.h"
 
@@ -22,6 +23,7 @@ void VLETest();
 void DataSerializerTest();
 void MaxHeapTest();
 void EventTest();
+void LockFreePoolAllocatorTest();
 
 int main()
 {
@@ -31,4 +33,6 @@ int main()
 	MaxHeapTest();
 	VLETest();
 	EventTest();
+	for(int i = 0; i < 100; ++i)
+		LockFreePoolAllocatorTest();
 }

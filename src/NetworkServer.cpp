@@ -129,11 +129,12 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 
 void NetworkServer::CleanupDeadConnections()
 {
-	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+	// When we acquire the list of client connections, don't hold on to it for long, so that the worker thread can properly detach from it.
+	ConnectionMap clientsMap = *clients.Acquire();
 
 	// Clean up all disconnected/timed out connections.
-	ConnectionMap::iterator iter = clientsLock->begin();
-	while(iter != clientsLock->end())
+	ConnectionMap::iterator iter = clientsMap.begin();
+	while(iter != clientsMap.end())
 	{
 		ConnectionMap::iterator next = iter;
 		++next;
@@ -144,7 +145,11 @@ void NetworkServer::CleanupDeadConnections()
 				networkServerListener->ClientDisconnected(iter->second);
 			if (iter->second->GetSocket() && iter->second->GetSocket()->TransportLayer() == SocketOverTCP)
 				owner->CloseConnection(iter->second);
-			clientsLock->erase(iter->first);
+
+			{
+				Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+				clientsLock->erase(iter->first);
+			}
 		}
 		iter = next;
 	}
@@ -203,12 +208,12 @@ void NetworkServer::Process()
 	}
 
 	// Process all new inbound data for each connection handled by this server.
-	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
-	for(ConnectionMap::iterator iter = clientsLock->begin(); iter != clientsLock->end(); ++iter)
+	ConnectionMap clientMap = *clients.Acquire();
+	for(ConnectionMap::iterator iter = clientMap.begin(); iter != clientMap.end(); ++iter)
 		iter->second->Process();
 }
 
-void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
+void NetworkServer::ReadUDPSocketData(Socket *listenSocket) // [worker thread]
 {
 	using namespace std;
 
@@ -228,27 +233,29 @@ void NetworkServer::ReadUDPSocketData(Socket *listenSocket)
 		endPoint.ToString().c_str());
 
 	PolledTimer timer;
-	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
-	if (timer.MSecsElapsed() > 50.f)
+	MessageConnection *receiverConnection = 0;
+
 	{
-		LOG(LogWaits, "NetworkServer::ReadUDPSocketData: Accessing the connection list in UDP server receive code took %f msecs.",
+		Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
+		if (timer.MSecsElapsed() > 50.f)
+		{
+			LOG(LogWaits, "NetworkServer::ReadUDPSocketData: Accessing the connection list in UDP server receive code took %f msecs.",
 			timer.MSecsElapsed());
+		}
+
+		ConnectionMap::iterator iter = clientsLock->find(endPoint); ///\todo HashTable for performance.
+		if (iter != clientsLock->end())
+			receiverConnection = iter->second;
 	}
 
-	ConnectionMap::iterator iter = clientsLock->find(endPoint); ///\todo HashTable for performance.
-	if (iter != clientsLock->end())
+	if (receiverConnection)
 	{
 		// If the datagram came from a known endpoint, pass it to the connection object that handles that endpoint.
-		UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(iter->second.ptr());
-		if (!udpConnection)
-		{
-			LOG(LogError, "Critical! UDP socket data received into a TCP socket!");
-		}
-		else
-		{
+		UDPMessageConnection *udpConnection = dynamic_cast<UDPMessageConnection *>(receiverConnection);
+		if (udpConnection)
 			udpConnection->QueueInboundDatagram(recvData->buffer.buf, recvData->bytesContains);
-//			udpConnection->ExtractMessages(recvData->buffer.buf, recvData->bytesContains);
-		}
+		else
+			LOG(LogError, "Critical! UDP socket data received into a TCP socket!");
 	}
 	else
 	{

@@ -20,6 +20,7 @@
 #include <cassert>
 #include <string>
 
+#include "kNetBuildConfig.h"
 #include "kNet/SharedPtr.h"
 
 #include "kNet/MessageListParser.h"

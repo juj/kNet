@@ -35,7 +35,7 @@ namespace kNet
 {
 
 /// Specifies in msecs how often we update NetworkDialog.
-const int dialogUpdateInterval = 1000;
+const int dialogUpdateInterval = 100;
 
 NetworkDialog::NetworkDialog(QWidget *parent, Network *network_)
 :network(network_), QWidget(parent)
@@ -236,11 +236,18 @@ void NetworkDialog::PopulateStatsTree()
 	for(int i = 0; i < 7; ++i)
 		dialog->treeStats->resizeColumnToContents(i);
 
-	for(GraphMap::iterator iter = graphs.begin(); iter != graphs.end(); ++iter)
+	for(GraphMap::iterator iter = graphs.begin(); iter != graphs.end();)
 	{
 		StatsEventHierarchyNode *node = statistics.FindChild(iter->first.c_str());
 		if (node && iter->second)
+		{
 			iter->second->Update(*node, timeMSecs);
+			++iter;
+		}
+		else
+		{
+			iter = graphs.erase(iter);
+		}
 	}
 }
 
@@ -261,8 +268,12 @@ void NetworkDialog::EventItemDoubleClicked(QTreeWidgetItem *item)
 	if (!msgItem)
 		return;
 
-	if (graphs.find(msgItem->eventName) != graphs.end())
+	GraphMap::iterator iter = graphs.find(msgItem->eventName);
+	if (iter != graphs.end() && iter->second)
+	{
+		iter->second->activateWindow();
 		return;
+	}
 
 	QPointer<GraphDialog> graphDialog = new GraphDialog(0, msgItem->eventName.c_str());
 	graphDialog->show();

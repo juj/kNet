@@ -72,6 +72,8 @@ public:
 
 	float DatagramSendRate() const { return datagramSendRate; }
 
+	void SetDatagramSendRate(float newRateDgramsPerSecond) { datagramSendRate = newRateDgramsPerSecond; }
+
 	float SmoothedRtt() const { return smoothedRTT; }
 
 	float RttVariation() const { return rttVariation; }

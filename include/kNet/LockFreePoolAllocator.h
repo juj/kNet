@@ -25,7 +25,10 @@ namespace kNet
 template<typename T>
 struct PoolAllocatable
 {
-	T *next;
+	/// Points to the next item in the lock-free linked list. Do not access or 
+	/// dereference this variable in client code, as it is used internally by
+	/// LockFreePoolAllocator only.
+	T * volatile next;
 };
 
 /// T must implement PoolAllocatable.
@@ -43,42 +46,53 @@ public:
 		UnsafeClearAll();
 	}
 
-	/// Allocates a new object of type T and returns a pointer to it.
-	/// Call Free() to deallocate the object.
+	/// Allocates a new object of type T. Call Free() to deallocate the object.
 	T *New()
 	{
-		if (!root)
+		// Currently the use of lockfree allocation pool is disabled, since it has a known race condition, documented below.
+		return new T();
+
+		/*
+		for(;;)
 		{
-			T *n = new T();
-			return n;
+			T *allocated = root;
+			if (!allocated) // If the root is null, there are no objects in the pool, so we must create new from the runtime heap.
+			{
+				allocated = new T();
+				allocated->next = 0;
+				return allocated;
+			}
+
+			///\bug Note that this function is not thread-safe. Accessing allocated->next may already be dangling if another thread has deleted it.
+			T *newRoot = allocated->next;
+
+			if (CmpXChgPointer((void**)&root, newRoot, allocated))
+			{
+				allocated->next = 0;
+				return allocated;
+			}
 		}
-
-		T *allocated;
-		T *newRoot;
-
-		do
-		{
-			allocated = root;
-			newRoot = root->next;
-		} while(CmpXChgPointer((void**)&root, newRoot, allocated) == false);
-
-		assert(allocated != root);
-		return allocated;
+		*/
 	}
 
 	void Free(T *ptr)
 	{
+		delete ptr;
+
+		// Currently the use of lockfree allocation pool is disabled, since it has a known race condition.
+/*
 		if (!ptr)
 			return;
 
 		assert(ptr != root);
-		T *top;
 
-		do
+		for(;;)
 		{
-			top = root;
-			ptr->next = top;
-		} while(CmpXChgPointer((void**)&root, ptr, top) == false);
+			ptr->next = root;
+			if (CmpXChgPointer((void**)&root, ptr, ptr->next))
+				return;
+		}
+*/
 	}
 
 	/// Deallocates all cached unused nodes in this pool. Thread-safe and lock-free. If you are manually tearing
@@ -86,7 +100,6 @@ public:
 	/// UnsafeClearAll(), which ignores compare-and-swap updates.
 	void ClearAll()
 	{
-		assert(!DebugHasCycle());
 		while(root)
 		{
 			T *node = New();

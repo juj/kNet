@@ -187,16 +187,18 @@ public:
 
 	/// Returns a pointer to the item at the given index. ItemAt(0) will return the first item (the front item)
 	/// in the queue. Can be called only from a single consumer thread.
+	/// Never returns a null pointer.
 	T *ItemAt(int index)
 	{
-		assert(index < (int)Size());
+		assert(index >= 0 && index < (int)Size());
 		return &data[(head + index) & maxElementsMask];
 	}
 
 	/// Returns a pointer to the item at the given index. Can be called only from a single consumer thread.
+	/// Never returns a null pointer.
 	const T *ItemAt(int index) const
 	{
-		assert(index < (int)Size());
+		assert(index >= 0 && index < (int)Size());
 		return &data[(head + index) & maxElementsMask];
 	}
 

@@ -18,8 +18,8 @@
 
 #include <list>
 
+#include "kNetBuildConfig.h"
 #include "SharedPtr.h"
-
 #include "Socket.h"
 #include "MessageConnection.h"
 #include "Datagram.h"

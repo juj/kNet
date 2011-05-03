@@ -83,6 +83,8 @@ void Thread::StartThread()
 	threadResumeEvent = CreateNewEvent(EventWaitSignal);
 
 	thread = boost::thread(boost::ref(*invoker));
+
+	SetName("kNet Thread");
 }
 
 void Thread::Sleep(int msecs)
@@ -92,17 +94,35 @@ void Thread::Sleep(int msecs)
 
 ThreadId Thread::Id()
 {
+#ifdef WIN32
+	HANDLE threadHandle = (HANDLE)thread.native_handle();
+	if (threadHandle == NULL)
+		return NullThreadId();
+
+	ThreadId id = GetThreadId(threadHandle);
+	return id;
+
+#else
 	return thread.get_id();
+#endif
 }
 
 ThreadId Thread::CurrentThreadId()
 {
+#ifdef WIN32 // On Windows, don't rely on Boost, since it is known to improperly read thread ids at least on Boost 1.40.0.
+	return GetCurrentThreadId();
+#else
 	return boost::this_thread::get_id();
+#endif
 }
 
 ThreadId Thread::NullThreadId()
 {
+#ifdef WIN32
+	return 0;
+#else
 	return boost::thread::id();
+#endif
 }
 
 } // ~kNet

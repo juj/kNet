@@ -16,6 +16,7 @@
 /** @file DataDeserializer.h
 	@brief The class \ref kNet::DataDeserializer DataDeserializer. */
 
+#include "kNetBuildConfig.h"
 #include "kNet/Types.h"
 
 #include "BasicSerializedDataTypes.h"
