@@ -98,7 +98,7 @@ public:
 
 	/// Wraps the given WSAEVENT into this event.
 	explicit Event(WSAEVENT wsaEvent, EventWaitType eventType);
-#elif UNIX
+#elif defined(UNIX)
 public:
 	int fd[2]; // fd[0] is used for reading, fd[1] for writing.
 

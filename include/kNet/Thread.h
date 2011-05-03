@@ -20,7 +20,7 @@
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread.hpp>
-#elif WIN32
+#elif defined(WIN32)
 #include <Windows.h>
 
 #include "Event.h"
@@ -41,7 +41,7 @@ namespace kNet
 
 #ifdef WIN32
 typedef DWORD ThreadId; // Don't use boost::thread::id on Windows even if KNET_USE_BOOST is #defined, since it has issues.
-#elif KNET_USE_BOOST
+#elif defined(KNET_USE_BOOST)
 typedef boost::thread::id ThreadId;
 #else
 typedef unsigned int ThreadId;
@@ -191,7 +191,7 @@ private:
 
 #ifdef KNET_USE_BOOST
 	boost::thread thread;
-#elif WIN32
+#elif defined(WIN32)
 	HANDLE threadHandle;
 
 	/// The entry point that is called from the trampoline. Do not call this function.

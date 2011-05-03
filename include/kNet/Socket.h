@@ -29,7 +29,7 @@ namespace kNet
 typedef int socklen_t;
 }
 
-#elif UNIX
+#elif defined(UNIX)
 
 #include <sys/types.h>
 #include <sys/socket.h>

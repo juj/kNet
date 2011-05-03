@@ -19,7 +19,7 @@
 #ifdef KNET_USE_BOOST
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
-#elif WIN32
+#elif defined(WIN32)
 #include <Windows.h>
 #else
 #error No Mutex implementation available!
@@ -189,7 +189,7 @@ public:
 	{
 #ifdef KNET_USE_BOOST
 		boostMutex.lock();
-#elif WIN32
+#elif defined(WIN32)
 		EnterCriticalSection(&lockObject);
 #endif
 		return value;
@@ -199,7 +199,7 @@ public:
 	{
 #ifdef KNET_USE_BOOST
 		boostMutex.lock();
-#elif WIN32
+#elif defined(WIN32)
 		EnterCriticalSection(&lockObject);
 #endif
 		return value;
@@ -209,7 +209,7 @@ public:
 	{
 #ifdef KNET_USE_BOOST
 		boostMutex.unlock();
-#elif WIN32
+#elif defined(WIN32)
 		LeaveCriticalSection(&lockObject);
 #endif
 	}
@@ -244,7 +244,7 @@ public:
 
 #ifdef KNET_USE_BOOST
 	mutable boost::recursive_mutex boostMutex;
-#elif WIN32
+#elif defined(WIN32)
 	mutable CRITICAL_SECTION lockObject;
 #endif
 

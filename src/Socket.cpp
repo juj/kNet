@@ -878,7 +878,7 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	}
 	return true;
 
-#elif UNIX
+#elif defined(UNIX)
 	bool success = Send(sendBuffer->buffer.buf, sendBuffer->buffer.len);
 	DeleteOverlappedTransferBuffer(sendBuffer);
 	return success;
