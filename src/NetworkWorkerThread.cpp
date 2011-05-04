@@ -184,7 +184,16 @@ void NetworkWorkerThread::MainLoop()
 		{
 			MessageConnection &connection = *connectionList[i];
 
-			connection.UpdateConnection();
+			try
+			{
+				connection.UpdateConnection();
+			} catch(const NetException &e)
+			{
+				LOG(LogError, (std::string("kNet::NetException thrown when processing UpdateConnection() for client connection: ") + e.what()).c_str());
+				if (connection.GetSocket())
+					connection.GetSocket()->Close();
+			}
+
 			if (connection.GetConnectionState() == ConnectionClosed || !connection.GetSocket() || !connection.GetSocket()->Connected()) // This does not need to be checked each iteration.
 			{
 				connectionList.erase(connectionList.begin()+i);
