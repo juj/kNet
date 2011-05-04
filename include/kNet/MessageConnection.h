@@ -577,26 +577,7 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
-	AssertInMainThreadContext();
-
-	const size_t dataSize = data.Size();
-
-	NetworkMessage *msg = StartNewMessage(SerializableMessage::messageID, dataSize);
-
-	if (dataSize > 0)
-	{
-		DataSerializer mb(msg->data, dataSize);
-		data.SerializeTo(mb);
-		assert(mb.BytesFilled() == dataSize);
-	}
-
-	msg->id = SerializableMessage::messageID;
-	msg->contentID = contentID;
-	msg->inOrder = data.inOrder;
-	msg->priority = data.priority;
-	msg->reliable = data.reliable;
-
-	EndAndQueueMessage(msg);
+	SendStruct(data, SerializableMessage::messageID, data.inOrder, data.reliable, data.priority, contentID);
 }
 
 } // ~kNet
