@@ -336,7 +336,7 @@ protected:
 	/// connections and servers, and not just this one.
 	NetworkWorkerThread *workerThread; // [set and read only by worker thread]
 
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	/// In debug mode, we track and enforce thread safety constraints through this ID. 
 	ThreadId workerThreadId; // [set by worker thread on thread startup, read by both main and worker thread]
 #endif

@@ -97,7 +97,7 @@ outboundQueue(16 * 1024),
 #endif
 workerThread(0),
 bytesInTotal(0), bytesOutTotal(0)
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 ,workerThreadId(Thread::NullThreadId())
 #endif
 {
@@ -527,7 +527,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 {
 	using namespace std;
 
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	if (internalQueue)
 		AssertInWorkerThreadContext();
 	else
@@ -624,7 +624,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 
 void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes, bool internalQueue)
 {
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	if (internalQueue)
 		AssertInWorkerThreadContext();
 	else
@@ -1100,7 +1100,7 @@ void MessageConnection::RegisterInboundMessageHandler(IMessageHandler *handler)
 
 void MessageConnection::SendPingRequestMessage(bool internalQueue)
 {
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	if (internalQueue)
 		AssertInWorkerThreadContext();
 	else
@@ -1267,7 +1267,7 @@ MessageConnection::SocketReadResult MessageConnection::ReadSocket()
 // worker thread running at all.
 void MessageConnection::AssertInWorkerThreadContext() const
 {
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	const bool haveWorkerThread = (workerThread != 0);
 	kNet::ThreadId currentThreadId = Thread::CurrentThreadId();
 	if (haveWorkerThread && currentThreadId != workerThreadId)
@@ -1282,7 +1282,7 @@ void MessageConnection::AssertInWorkerThreadContext() const
 // This function returns true if the current thread of execution is in the main thread.
 void MessageConnection::AssertInMainThreadContext() const
 {
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	const bool haveWorkerThread = (workerThread != 0);
 	kNet::ThreadId currentThreadId = Thread::CurrentThreadId();
 	if (haveWorkerThread && currentThreadId == workerThreadId)
@@ -1297,7 +1297,7 @@ void MessageConnection::AssertInMainThreadContext() const
 void MessageConnection::SetWorkerThread(NetworkWorkerThread *thread)
 {
 	workerThread = thread;
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	workerThreadId = thread ? thread->ThreadObject().Id() : Thread::NullThreadId();
 #endif
 	

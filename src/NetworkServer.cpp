@@ -39,7 +39,7 @@ namespace kNet
 NetworkServer::NetworkServer(Network *owner_, std::vector<Socket *> listenSockets_)
 :owner(owner_), listenSockets(listenSockets_), acceptNewConnections(true), networkServerListener(0),
 udpConnectionAttempts(64), workerThread(0)
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 ,workerThreadId(Thread::NullThreadId())
 #endif
 {
@@ -65,7 +65,7 @@ void NetworkServer::SetAcceptNewConnections(bool acceptNewConnections_)
 void NetworkServer::SetWorkerThread(NetworkWorkerThread *thread) // [main thread]
 {
 	workerThread = thread;
-#ifdef THREAD_CHECKING_ENABLED
+#ifdef KNET_THREAD_CHECKING_ENABLED
 	workerThreadId = thread ? thread->ThreadObject().Id() : Thread::NullThreadId();
 #endif
 }

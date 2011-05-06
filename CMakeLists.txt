@@ -46,7 +46,7 @@ set(USE_BOOST TRUE)
 # To enable specific flags only in debug mode, use the following syntax.
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
 
-AddCompilationDefine(THREAD_CHECKING_ENABLED)
+AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
 
 # Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
 # extra performance by avoiding all logging-related string operations.
