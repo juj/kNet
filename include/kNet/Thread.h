@@ -39,8 +39,10 @@ typedef void (*ThreadEntryFunc)(void *threadStartData);
 namespace kNet
 {
 
-#ifdef WIN32
-typedef DWORD ThreadId; // Don't use boost::thread::id on Windows even if KNET_USE_BOOST is #defined, since it has issues.
+#if defined(KNET_USE_BOOST) && defined(KNET_ENABLE_WINXP_SUPPORT)
+typedef boost::thread::id ThreadId;
+#elif defined(WIN32)
+typedef DWORD ThreadId; // Don't use boost::thread::id on Windows even if KNET_USE_BOOST is #defined, since it has issues identifying threads across dll boundaries.
 #elif defined(KNET_USE_BOOST)
 typedef boost::thread::id ThreadId;
 #else

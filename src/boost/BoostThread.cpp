@@ -94,7 +94,7 @@ void Thread::Sleep(int msecs)
 
 ThreadId Thread::Id()
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_ENABLE_WINXP_SUPPORT)
 	HANDLE threadHandle = (HANDLE)thread.native_handle();
 	if (threadHandle == NULL)
 		return NullThreadId();
@@ -109,7 +109,8 @@ ThreadId Thread::Id()
 
 ThreadId Thread::CurrentThreadId()
 {
-#ifdef WIN32 // On Windows, don't rely on Boost, since it is known to improperly read thread ids at least on Boost 1.40.0.
+#if defined(WIN32) && !defined(KNET_ENABLE_WINXP_SUPPORT)
+	// On Windows, don't rely on Boost, since it is known to improperly read thread ids at least on Boost 1.40.0.
 	return GetCurrentThreadId();
 #else
 	return boost::this_thread::get_id();
@@ -118,7 +119,7 @@ ThreadId Thread::CurrentThreadId()
 
 ThreadId Thread::NullThreadId()
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_ENABLE_WINXP_SUPPORT)
 	return 0;
 #else
 	return boost::thread::id();

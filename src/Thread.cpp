@@ -121,7 +121,7 @@ void SetThreadName(DWORD dwThreadID, const char *threadName)
 
 void Thread::SetName(const char *name)
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(KNET_ENABLE_WINXP_SUPPORT)
 #ifdef KNET_USE_BOOST
 	SetThreadName(GetThreadId(thread.native_handle()), name);
 #else
