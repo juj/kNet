@@ -625,8 +625,8 @@ void UDPMessageConnection::DoUpdateConnection()
 		ADDEVENT("datagramSendRate", DatagramSendRate(), "msgs");
 		ADDEVENT("smoothedRtt", SmoothedRtt(), "msecs");
 		ADDEVENT("rttVariation", RttVariation(), "");
-		ADDEVENT("numOutboundUnackedDatagrams", NumOutboundUnackedDatagrams(), "");
-		ADDEVENT("numReceivedUnackedDatagrams", NumReceivedUnackedDatagrams(), "");
+		ADDEVENT("numOutboundUnackedDatagrams", (float)NumOutboundUnackedDatagrams(), "");
+		ADDEVENT("numReceivedUnackedDatagrams", (float)NumReceivedUnackedDatagrams(), "");
 		ADDEVENT("packetLossCount", PacketLossCount(), "");
 		ADDEVENT("packetLossRate", PacketLossRate(), "");
 

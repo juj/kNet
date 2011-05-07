@@ -119,7 +119,7 @@ void LockFreePoolAllocatorTest()
 
     for(int i = 0; i < numThreads; ++i)
     {
-        for(int j = 0; j < foos[i].size(); ++j)
+        for(size_t j = 0; j < foos[i].size(); ++j)
             delete foos[i][j];
         foos[i].clear();
     }

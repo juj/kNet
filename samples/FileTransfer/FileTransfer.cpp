@@ -238,10 +238,10 @@ void NetworkApp::SenderMainLoopIteration()
 		// Add new data fragments into the queue.
 		const int outboundMsgQueueSize = 1000;
 		int i = outboundMsgQueueSize - connection->NumOutboundMessagesPending();
-		while(i-- > 0 && connection->IsWriteOpen() && bytesSent < (size_t)fileSize)
+		while(i-- > 0 && connection->IsWriteOpen() && bytesSent < fileSize)
 		{
 			// File payload data bytes in this message.
-			const size_t bytesInThisFragment = min((int)fragmentSize, (int)(fileSize - bytesSent));
+			const size_t bytesInThisFragment = min((int)fragmentSize, fileSize - bytesSent);
 
 			NetworkMessage *msg = connection->StartNewMessage(cFileTransferFragment, bytesInThisFragment+4);
 			msg->priority = 100;
@@ -269,7 +269,7 @@ void NetworkApp::SenderMainLoopIteration()
 		}
 
 		// If we've put out all file fragments to the network, close the connection down.
-		if (connection->IsWriteOpen() && bytesSent >= (size_t)fileSize && connection->NumOutboundMessagesPending() == 0)
+		if (connection->IsWriteOpen() && bytesSent >= fileSize && connection->NumOutboundMessagesPending() == 0)
 		{
 			LOG(LogUser, "All data sent. Disconnecting.");
 			connection->Disconnect(15000);

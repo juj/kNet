@@ -461,8 +461,8 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		ADDEVENT("msgsOutPerSec", MsgsOutPerSec(), "#");
 		ADDEVENT("bytesInPerSec", BytesInPerSec(), "bytes");
 		ADDEVENT("bytesOutPerSec", BytesOutPerSec(), "bytes");
-		ADDEVENT("bytesInTotal", BytesInTotal(), "bytes");
-		ADDEVENT("bytesOutTotal", BytesOutTotal(), "bytes");
+		ADDEVENT("bytesInTotal", (float)BytesInTotal(), "bytes");
+		ADDEVENT("bytesOutTotal", (float)BytesOutTotal(), "bytes");
 
 		statsRefreshTimer.StartMSecs(statsRefreshIntervalMSecs);
 	}
