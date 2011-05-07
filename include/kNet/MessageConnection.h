@@ -570,6 +570,9 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 	msg->inOrder = inOrder;
 	msg->priority = priority;
 	msg->reliable = reliable;
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = SerializableMessage::name;
+#endif
 
 	EndAndQueueMessage(msg);
 }
@@ -578,6 +581,9 @@ template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
 	SendStruct(data, SerializableMessage::messageID, data.inOrder, data.reliable, data.priority, contentID);
+#ifdef KNET_NETWORK_PROFILING
+	msg->profilerName = SerializableMessage::name;
+#endif
 }
 
 } // ~kNet
