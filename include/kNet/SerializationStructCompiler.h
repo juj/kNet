@@ -42,8 +42,8 @@ private:
 	void WriteStructMembers(const SerializedElementDesc &elem, int level, std::ofstream &out);
 	void WriteNestedStructs(const SerializedElementDesc &elem, int level, std::ofstream &out);
 	void WriteStructSizeMemberFunction(const SerializedElementDesc &elem, int level, std::ofstream &out);
-	void WriteSerializeMemberFunction(const SerializedElementDesc &elem, int level, std::ofstream &out);
-	void WriteDeserializeMemberFunction(const SerializedElementDesc &elem, int level, std::ofstream &out);
+	void WriteSerializeMemberFunction(/*const std::string &className, */const SerializedElementDesc &elem, int level, std::ofstream &out);
+	void WriteDeserializeMemberFunction(/*const std::string &className, */const SerializedElementDesc &elem, int level, std::ofstream &out);
 
 	static std::string Indent(int level);
 };

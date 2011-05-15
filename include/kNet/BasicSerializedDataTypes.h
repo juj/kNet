@@ -48,6 +48,7 @@ enum BasicSerializedDataType
 	SerialString,  ///< An ASCII string.
 	SerialStruct,  ///< Not associated with a basic type, but defines that the given node contains an aggregate of multiple other types.
 	SerialDynamicCount, ///< Not a data type, but an identifier for the SerializedMessageIterator to return when a dynamic count of a block is the next field to fill.
+	SerialOther, ///< The type is something that is not registered in this enum.
 
 	/// The maximum number of different values for BasicSerializedDataType.
 	NumSerialTypes

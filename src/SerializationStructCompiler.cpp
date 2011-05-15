@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstring>
 
+#include "kNet/NetException.h"
 #include "kNet/DebugMemoryLeakCheck.h"
 
 #include "kNet/SerializationStructCompiler.h"
@@ -52,11 +53,17 @@ void SerializationStructCompiler::WriteFilePreamble(std::ofstream &out)
 
 void SerializationStructCompiler::WriteMemberDefinition(const SerializedElementDesc &elem, int level, std::ofstream &out)
 {
-	string type = SerialTypeToString(elem.type); ///\todo What if type == struct?
+	string type;
+
+	if (elem.type == SerialInvalid)
+		throw kNet::NetException("Invalid element type for SerializationStructCompiler::WriteMemberDefinition!");
+
 	string name = ParseToValidCSymbolName(elem.name.c_str());
 
-	if (elem.type == SerialStruct)
-		type = string("S_") + name; ///\todo Add a ClassName parameter for better control over naming here?
+	if (elem.type == SerialStruct || elem.type == SerialOther)
+		type = elem.typeString;
+	else
+		type = SerialTypeToString(elem.type);
 
 	if (elem.varyingCount == true)
 		out << Indent(level) << "std::vector<" << type << "> " << name << ";" << endl;
@@ -123,6 +130,7 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 				out << e.count / 8 << " + ";
 		}
 
+/*
 		if (e.type == SerialStruct)
 		{
 			if (e.varyingCount)
@@ -131,6 +139,16 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 				out << "kNet::SumArray(" << memberName << ", " << e.count << ")";
 			else
 				out << memberName << ".Size()";
+		}
+		else*/ if (e.type == SerialStruct || e.type == SerialOther)
+		{
+			std::string typeSerializer = "kNet::TypeSerializer<" + e.typeString + ">";
+			if (e.varyingCount)
+				out << "kNet::ArraySize<" << typeSerializer << " >(" << memberName << ", " << memberName << ".size())";
+			else if (e.count > 1)
+				out << "kNet::ArraySize(" << typeSerializer << " >(" << memberName << ", " << e.count << ")";
+			else
+				out << typeSerializer << "::Size(" << memberName << ")";
 		}
 		else
 		{
@@ -150,7 +168,7 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 		<< Indent(level) << "}" << endl << endl;
 }
 
-void SerializationStructCompiler::WriteSerializeMemberFunction(const SerializedElementDesc &elem, int level, std::ofstream &out)
+void SerializationStructCompiler::WriteSerializeMemberFunction(/*const std::string &className, */const SerializedElementDesc &elem, int level, std::ofstream &out)
 {
 	assert(&elem && elem.type == SerialStruct);
 
@@ -174,7 +192,7 @@ void SerializationStructCompiler::WriteSerializeMemberFunction(const SerializedE
 
 			out << Indent(level) << "dst.Add<u" << e.count << ">(" << memberName << ".size());" << endl;
 		}
-
+/*
 		if (e.type == SerialStruct)
 		{
 			if (e.varyingCount == true)
@@ -189,6 +207,23 @@ void SerializationStructCompiler::WriteSerializeMemberFunction(const SerializedE
 			}
 			else
 				out << Indent(level) << memberName << ".SerializeTo(dst);" << endl;
+		}
+		else*/ if (e.type == SerialStruct || e.type == SerialOther)
+		{
+			std::string typeSerializer = "kNet::TypeSerializer<" + e.typeString + ">";
+
+			if (e.varyingCount == true)
+			{
+				out << Indent(level) << "for(size_t i = 0; i < " << memberName << ".size(); ++i)" << endl;
+				out << Indent(level+1) << typeSerializer << "::SerializeTo(dst, " << memberName << "[i]);" << endl;
+			}
+			else if (e.count > 1)
+			{
+				out << Indent(level) << "for(size_t i = 0; i < " << e.count << "; ++i)" << endl;
+				out << Indent(level+1) << typeSerializer << "::SerializeTo(dst, " << memberName << "[i]);" << endl;
+			}
+			else
+				out << Indent(level) << typeSerializer << "::SerializeTo(dst, " << memberName << ");" << endl;
 		}
 		else
 		{
@@ -207,10 +242,12 @@ void SerializationStructCompiler::WriteSerializeMemberFunction(const SerializedE
 		}
 	}
 	--level;
-	out << Indent(level) << "}" << endl << endl;
+	out << Indent(level) << "}" << endl;
+//	out << Indent(level) << "inline static void SerializeTo(knet::DataSerializer &dst, const " << className << " &src) { src.SerializeTo(dst); }"<< endl;
+	out << endl;
 }
 
-void SerializationStructCompiler::WriteDeserializeMemberFunction(const SerializedElementDesc &elem, int level, std::ofstream &out)
+void SerializationStructCompiler::WriteDeserializeMemberFunction(/*const std::string &className, */const SerializedElementDesc &elem, int level, std::ofstream &out)
 {
 	assert(&elem && elem.type == SerialStruct);
 
@@ -235,7 +272,7 @@ void SerializationStructCompiler::WriteDeserializeMemberFunction(const Serialize
 			out << Indent(level) << memberName << ".resize(src.Read<u" << e.count << ">());" << endl;
 		}
 
-		if (e.type == SerialStruct)
+/*		if (e.type == SerialStruct)
 		{
 			if (e.varyingCount == true)
 			{
@@ -249,8 +286,25 @@ void SerializationStructCompiler::WriteDeserializeMemberFunction(const Serialize
 			}
 			else
 				out << Indent(level) << memberName << ".DeserializeFrom(src);" << endl;
+		} */
+		if (e.type == SerialStruct || e.type == SerialOther)
+		{
+			std::string typeSerializer = "kNet::TypeSerializer<" + e.typeString + ">";
+
+			if (e.varyingCount == true)
+			{
+				out << Indent(level) << "for(size_t i = 0; i < " << memberName << ".size(); ++i)" << endl;
+				out << Indent(level+1) << typeSerializer << "::DeserializeFrom(src, " << memberName << "[i]);" << endl;
+			}
+			else if (e.count > 1)
+			{
+				out << Indent(level) << "for(size_t i = 0; i < " << e.count << "; ++i)" << endl;
+				out << Indent(level+1) << typeSerializer << "::DeserializeFrom(src, " << memberName << "[i]);" << endl;
+			}
+			else
+				out << Indent(level) << typeSerializer << "::DeserializeFrom(src, " << memberName << ");" << endl;
 		}
-		else
+		else 
 		{
 			if (e.varyingCount == true)
 			{
@@ -266,7 +320,9 @@ void SerializationStructCompiler::WriteDeserializeMemberFunction(const Serialize
 		}
 	}
 	--level;
-	out << Indent(level) << "}" << endl << endl;
+	out << Indent(level) << "}" << endl;
+//	out << Indent(level) << "inline static void DeserializeFrom(knet::DataDeserializer &src, " << className << " &dst) { dst.DeserializeFrom(src); }"<< endl;
+	out << endl;
 }
 
 void SerializationStructCompiler::WriteStruct(const SerializedElementDesc &elem, int level, std::ofstream &out)
@@ -283,8 +339,8 @@ void SerializationStructCompiler::WriteStruct(const SerializedElementDesc &elem,
 	WriteNestedStructs(elem, level+1, out);
 	WriteStructMembers(elem, level+1, out);
 	WriteStructSizeMemberFunction(elem, level+1, out);
-	WriteSerializeMemberFunction(elem, level+1, out);
-	WriteDeserializeMemberFunction(elem, level+1, out);
+	WriteSerializeMemberFunction(/*className, */elem, level+1, out);
+	WriteDeserializeMemberFunction(/*className, */elem, level+1, out);
 	out << Indent(level) << "};" << endl << endl;
 }
 
@@ -335,8 +391,8 @@ void SerializationStructCompiler::WriteMessage(const SerializedMessageDesc &mess
 	WriteNestedStructs(*message.data, 1, out);
 	WriteStructMembers(*message.data, 1, out);
 	WriteStructSizeMemberFunction(*message.data, 1, out);
-	WriteSerializeMemberFunction(*message.data, 1, out);
-	WriteDeserializeMemberFunction(*message.data, 1, out);
+	WriteSerializeMemberFunction(/*structName, */*message.data, 1, out);
+	WriteDeserializeMemberFunction(/*structName, */*message.data, 1, out);
 
 	out << "};" << endl << endl;
 

@@ -26,6 +26,7 @@
 #include "kNet/MessageListParser.h"
 #include "kNet/SerializedDataIterator.h"
 #include "kNet/VLEPacker.h"
+#include "kNetFwd.h"
 
 namespace kNet
 {
@@ -196,14 +197,54 @@ void DataSerializer::AddArray(const T *data, u32 count)
 	if (count == 0 && iter)
 		iter->ProceedToNextVariable();
 }
-
+/*
 /// Sums up the sizes of each element of an array.
-template<typename T> size_t SumArray(const T &data, size_t numElems)
+template<typename T>
+size_t SumArray(const T &data, size_t numElems)
 {
 	size_t size = 0;
 	for(size_t i = 0; i < numElems; ++i)
 		size += data[i].Size();
 	return size;
 }
+*/
+template<typename TypeSerializer, typename T>
+size_t ArraySize(const T &data, size_t numElems)
+{
+	size_t size = 0;
+	for(size_t i = 0; i < numElems; ++i)
+		size += TypeSerializer::Size(data[i]);
+	return size;
+}
+
+/// TypeSerializer<T> is a helper 'trait' structure for the type 'T', and helps
+/// to serialize and deserialize objects of type T. This class is used by
+/// the message structure compiler to produce automatically generated message
+/// structs from the message XML files.
+template<typename T>
+class TypeSerializer
+{
+public:
+	static size_t Size(const T &value)
+	{
+		return value.Size();
+	}
+
+	static void SerializeTo(DataSerializer &dst, const T &src)
+	{
+#ifdef _DEBUG
+		size_t bitPos = dst.BitsFilled();
+#endif
+		src.SerializeTo(dst);
+#ifdef _DEBUG
+		assert(bitPos + Size(src) == dst.BitsFilled());
+#endif
+	}
+
+	static void DeserializeFrom(DataDeserializer &src, T &dst)
+	{
+		dst.DeserializeFrom(src);
+	}
+};
 
 } // ~kNet

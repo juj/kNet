@@ -36,6 +36,10 @@ struct SerializedElementDesc
 	/// The data type of this element.
 	BasicSerializedDataType type;
 
+	/// A string version of this type is stored here. This field is used if the type of this element is something 
+	/// else than a basic type.
+	std::string typeString;
+
 	/// If true, the number of times this element is instanced is specified in the stream.
 	bool varyingCount;
 
