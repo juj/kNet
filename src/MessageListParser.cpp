@@ -43,18 +43,17 @@ namespace kNet
 
 BasicSerializedDataType StringToSerialType(const char *type)
 {
-	assert(NumSerialTypes-1 == NUMELEMS(data));
+	assert(NumSerialTypes-2 == NUMELEMS(data));
 	for(int i = 0; i < NUMELEMS(data); ++i)
 		if (!strcmp(type, data[i]))
 			return (BasicSerializedDataType)i;
-
 
 	return SerialInvalid;
 }
 
 const char *SerialTypeToString(BasicSerializedDataType type)
 {
-	assert(NumSerialTypes-1 == NUMELEMS(data));
+	assert(NumSerialTypes-2 == NUMELEMS(data));
 	assert(type >= SerialInvalid);
 	assert(type < NumSerialTypes); 
 	return data[type];
@@ -62,7 +61,7 @@ const char *SerialTypeToString(BasicSerializedDataType type)
 
 size_t SerialTypeSize(BasicSerializedDataType type)
 {
-	assert(NumSerialTypes-1 == NUMELEMS(data));
+	assert(NumSerialTypes-2 == NUMELEMS(data));
 	assert(type >= SerialInvalid);
 	assert(type < NumSerialTypes); 
 	return typeSizes[type];	
@@ -74,6 +73,7 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 	elements.push_back(SerializedElementDesc());
 	SerializedElementDesc *elem = &elements.back();
 	elem->parent = parentNode;
+	elem->name = node->Attribute("name") ? node->Attribute("name") : "";
 
 	if (!strcmp(node->Value(), "message"))
 	{
@@ -103,10 +103,13 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 			elem->varyingCount = false;
 		}
 
+		elem->typeString = node->Value();
 		elem->type = StringToSerialType(node->Value());
+		if (elem->type == SerialInvalid && !elem->typeString.empty())
+			elem->type = SerialOther;
+		if (elem->type == SerialStruct)
+			elem->typeString = "S_" + elem->name; ///\todo Add a ClassName parameter for better control over naming here?
 	}
-
-	elem->name = node->Attribute("name") ? node->Attribute("name") : "";
 
 	// If this node is a structure, parse all its members.
 	if (elem->type == SerialStruct)
