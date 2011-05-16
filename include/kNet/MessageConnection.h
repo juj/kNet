@@ -581,9 +581,6 @@ template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
 	SendStruct(data, SerializableMessage::messageID, data.inOrder, data.reliable, data.priority, contentID);
-#ifdef KNET_NETWORK_PROFILING
-	msg->profilerName = SerializableMessage::name;
-#endif
 }
 
 } // ~kNet
