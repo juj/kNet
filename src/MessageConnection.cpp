@@ -393,7 +393,8 @@ void MessageConnection::AcceptOutboundMessages() // [worker thread]
 			NetworkMessage *msg = *outboundAcceptQueue.Front();
 			outboundAcceptQueue.PopFront();
 			LOG(LogVerbose, "Warning: Discarding outbound network message with ID %d, since the connection is write-closed.", 
-			msg->id);
+				msg->id);
+			// assert(!HaveOutboundMessageWithContentID(msg));
 			FreeMessage(msg);
 		}
 	}
@@ -478,7 +479,7 @@ NetworkMessage *MessageConnection::AllocateNewMessage()
 	return msg;
 }
 
-void MessageConnection::FreeMessage(NetworkMessage *msg)
+void MessageConnection::FreeMessage(NetworkMessage *msg) // [main and worker thread]
 {
 	if (!msg)
 		return;
@@ -962,8 +963,9 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 
 	MsgContentIDPair key = std::make_pair(msg->id, msg->contentID);
 	ContentIDSendTrack::iterator iter = outboundContentIDMessages.find(key);
-	if (iter != outboundContentIDMessages.end())
+	if (iter != outboundContentIDMessages.end()) // We have a previous message in the queue which is now obsoleted by this message.
 	{
+		// Sanity check: The message numbers must be in the proper order. msg must have been admitted later to send queue than the existing message.
 		if (msg->IsNewerThan(*iter->second))
 		{
 			iter->second->obsolete = true;
@@ -975,7 +977,7 @@ void MessageConnection::CheckAndSaveOutboundMessageWithContentID(NetworkMessage 
 			assert(iter->first.second == msg->contentID);
 			iter->second = msg;
 		}
-		else
+		else // This shouldn't happen, but gracefully handle that situation if it does!
 		{
 			LOG(LogError, "Warning! Adding new message ID %d, number %d, content ID %d, priority %d, but it was obsoleted by an already existing message number %d.", 
 				(int)msg->id, (int)msg->messageNumber, (int)msg->contentID, (int)iter->second->priority, (int)iter->second->messageNumber);
@@ -992,7 +994,9 @@ void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 {
 	AssertInWorkerThreadContext();
 
-	///\bug Possible race condition here. Accessed by both main and worker thread through a call from FreeMessage.
+	if (!msg)
+		return;
+
 	assert(msg);
 	if (msg->contentID == 0)
 		return;

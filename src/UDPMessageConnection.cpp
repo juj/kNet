@@ -379,6 +379,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		if (msg->obsolete)
 		{
 			outboundQueue.PopFront();
+			ClearOutboundMessageWithContentID(msg);
 			FreeMessage(msg);
 			continue;
 		}
@@ -566,7 +567,10 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 			if (datagramSerializedMessages[i]->reliable)
 				ack.messages.push_back(datagramSerializedMessages[i]); // The ownership of these messages is transferred into this struct.
 			else
+			{
+				ClearOutboundMessageWithContentID(datagramSerializedMessages[i]);
 				FreeMessage(datagramSerializedMessages[i]);
+			}
 		}
 		outboundPacketAckTrack.InsertWithResize(ack);
 	}
@@ -574,7 +578,10 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	{
 		// This is send-and-forget, we can free all the message data we just sent.
 		for(size_t i = 0; i < datagramSerializedMessages.size(); ++i)
+		{
+			ClearOutboundMessageWithContentID(datagramSerializedMessages[i]);
 			FreeMessage(datagramSerializedMessages[i]);
+		}
 	}
 
 	// If we sent out the Disconnect message, it means we have closed our write connection, but are still
@@ -1001,6 +1008,7 @@ void UDPMessageConnection::FreeOutboundPacketAckTrack(packet_id_t packetID)
 		}
 
 		// Free up the message, the peer acked this message and we're now free from having to resend it (again).
+		ClearOutboundMessageWithContentID(track.messages[i]);
 		FreeMessage(track.messages[i]);
 	}
 

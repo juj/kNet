@@ -203,6 +203,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 
 		if (msg->obsolete)
 		{
+			ClearOutboundMessageWithContentID(msg);
 			FreeMessage(msg);
 			outboundQueue.PopFront();
 			continue;
@@ -268,6 +269,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 			ss << "messageOut." << serializedMessages[i]->id;
 		ADDEVENT(ss.str().c_str(), (float)serializedMessages[i]->Size(), "bytes");
 #endif
+		ClearOutboundMessageWithContentID(serializedMessages[i]);
 		FreeMessage(serializedMessages[i]);
 	}
 
