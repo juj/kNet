@@ -60,6 +60,11 @@ public:
 	MessageConnectionTreeItem(QTreeWidgetItem *parent, Ptr(MessageConnection) connection_)
 	:QTreeWidgetItem(parent), connection(connection_)
 	{
+		UpdateText();
+	}
+
+	void UpdateText()
+	{
 		if (connection)
 			setText(0, connection->ToString().c_str());
 	}
@@ -85,6 +90,23 @@ QTreeWidgetItem *NewTreeItemFromString(QTreeWidget *parent, const char *str)
 	return item;
 }
 
+void GetItems(QTreeWidgetItem *widget, QList<QTreeWidgetItem *> &items)
+{
+	for(int i = 0; i < widget->childCount(); ++i)
+	{
+		items.append(widget->child(i));
+		GetItems(widget->child(i), items);
+	}
+}
+
+QTreeWidgetItem *FindItem(QList<QTreeWidgetItem *> &items, void *data)
+{
+	foreach(QTreeWidgetItem *item, items)
+		if (item->data(0, Qt::UserRole).value<void*>() == data)
+			return item;
+	return 0;
+}
+
 void NetworkDialog::Update()
 {
 	if (!network)
@@ -103,20 +125,36 @@ void NetworkDialog::Update()
 	machineIp->setText(network->LocalAddress());
 	numRunningThreads->setText(QString::number(network->NumWorkerThreads()));
 
-	connectionsTree->clear();
+	QList<QTreeWidgetItem *> items;
+	GetItems(connectionsTree->invisibleRootItem(), items);
+//	connectionsTree->clear();
 
 	Ptr(NetworkServer) server = network->GetServer();
 	if (server)
 	{
 		setWindowTitle("kNet Server");
-		QTreeWidgetItem *serverItem = NewTreeItemFromString(connectionsTree, server->ToString().c_str());
-		connectionsTree->addTopLevelItem(serverItem);
+		QTreeWidgetItem *serverItem = FindItem(items, (void*)server.ptr());
+		if (!serverItem)
+		{
+			serverItem = NewTreeItemFromString(connectionsTree, server->ToString().c_str());
+			connectionsTree->addTopLevelItem(serverItem);
+		}
+		else
+			items.removeOne(serverItem);
+		serverItem->setData(0, Qt::UserRole, QVariant::fromValue<void*>(server.ptr()));
 
 		NetworkServer::ConnectionMap connections = server->GetConnections();
 		for(NetworkServer::ConnectionMap::iterator iter = connections.begin(); iter != connections.end(); ++iter)
 		{
-			QTreeWidgetItem *connectionItem = new MessageConnectionTreeItem(serverItem, iter->second);
-			serverItem->addChild(connectionItem);
+			QTreeWidgetItem *connectionItem = FindItem(items, (void*)iter->second.ptr());
+			if (!connectionItem)
+			{
+				connectionItem = new MessageConnectionTreeItem(serverItem, iter->second);
+				serverItem->addChild(connectionItem);
+				connectionItem->setData(0, Qt::UserRole, QVariant::fromValue<void*>((void*)iter->second.ptr()));
+			}
+			else
+				items.removeOne(connectionItem);
 			serverItem->setExpanded(true);
 		}
 	}
@@ -126,9 +164,28 @@ void NetworkDialog::Update()
 	std::set<MessageConnection*> connections = network->Connections();
 	for(std::set<MessageConnection*>::iterator iter = connections.begin(); iter != connections.end(); ++iter)
 		if ((*iter)->GetSocket() && (*iter)->GetSocket()->Type() == ClientSocket)
-			new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
+		{
+			QTreeWidgetItem *existingItem = FindItem(items, (void*)*iter);
+			if (existingItem && dynamic_cast<MessageConnectionTreeItem*>(existingItem))
+			{
+				dynamic_cast<MessageConnectionTreeItem*>(existingItem)->UpdateText();
+				items.removeOne(existingItem);
+			}
+			else
+			{
+				MessageConnectionTreeItem* item = new MessageConnectionTreeItem(connectionsTree->invisibleRootItem(), *iter);
+				item->setData(0, Qt::UserRole, QVariant::fromValue<void*>((void*)*iter));
+			}
+		}
 
 	PopulateStatsTree();
+
+	// Clear all old items from the connection list.
+	while(items.size() > 0)
+	{
+		delete items.back();
+		items.pop_back();
+	}
 
 	QTimer::singleShot(dialogUpdateInterval, this, SLOT(Update()));
 }
