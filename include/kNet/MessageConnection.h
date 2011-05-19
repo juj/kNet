@@ -571,7 +571,9 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 	msg->priority = priority;
 	msg->reliable = reliable;
 #ifdef KNET_NETWORK_PROFILING
-	msg->profilerName = SerializableData::Name();
+	char str[512];
+	sprintf(str, "%s (%u)", SerializableData::Name(), (unsigned int)id);
+	msg->profilerName = str;
 #endif
 
 	EndAndQueueMessage(msg);
