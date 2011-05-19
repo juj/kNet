@@ -409,9 +409,12 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		// This computation is not exact, but as it only needs to be an upper bound, keeping it simple is good. \todo Can be more precise here.
 		int totalMessageSize = msg->GetTotalDatagramPackedSize();// + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
 
-		// If this message won't fit into the buffer, send out all the previously gathered messages.
-		if ((size_t)packetSizeInBytes >= minSendSize && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
+		// If this message won't fit into the buffer, send out all the previously gathered messages (there must at least be one previously submitted message).		
+		if (datagramSerializedMessages.size() > 0 && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
 			break;
+
+		if (totalMessageSize > maxSendSize)
+			LOG(LogError, "Warning: Sending out a message of ID %d and size %d bytes, but UDP socket max send size is only %d bytes!", (int)msg->id, totalMessageSize, (int)maxSendSize);
 
 		datagramSerializedMessages.push_back(msg);
 		outboundQueue.PopFront();
