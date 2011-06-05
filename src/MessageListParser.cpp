@@ -43,6 +43,8 @@ namespace kNet
 
 BasicSerializedDataType StringToSerialType(const char *type)
 {
+	if (type == "string" || type == "std::string")
+		return SerialString;
 	assert(NumSerialTypes-2 == NUMELEMS(data));
 	for(int i = 0; i < NUMELEMS(data); ++i)
 		if (!strcmp(type, data[i]))
@@ -51,8 +53,18 @@ BasicSerializedDataType StringToSerialType(const char *type)
 	return SerialInvalid;
 }
 
-const char *SerialTypeToString(BasicSerializedDataType type)
+const char *SerialTypeToReadableString(BasicSerializedDataType type)
 {
+	assert(NumSerialTypes-2 == NUMELEMS(data));
+	assert(type >= SerialInvalid);
+	assert(type < NumSerialTypes); 
+	return data[type];
+}
+
+const char *SerialTypeToCTypeString(BasicSerializedDataType type)
+{
+	if (type == SerialString)
+		return "std::string";
 	assert(NumSerialTypes-2 == NUMELEMS(data));
 	assert(type >= SerialInvalid);
 	assert(type < NumSerialTypes); 
@@ -104,6 +116,8 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 		}
 
 		elem->typeString = node->Value();
+		if (elem->typeString == "string")
+			elem->typeString = "std::string";
 		elem->type = StringToSerialType(node->Value());
 		if (elem->type == SerialInvalid && !elem->typeString.empty())
 			elem->type = SerialOther;

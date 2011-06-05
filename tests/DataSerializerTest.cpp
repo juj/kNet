@@ -104,12 +104,12 @@ public:
 	void Serialize(DataSerializer &dst)
 	{ 
 		dst.Add<T>(value);
-		cout << "Serialized type " << SerialTypeToString(SerializedDataTypeTraits<T>::type) << ", value: " << value << endl;
+		cout << "Serialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << value << endl;
 	}
 	void Deserialize(DataDeserializer &src)
 	{ 
 		T deserialized = src.Read<T>(); 
-		cout << "Deserialized type " << SerialTypeToString(SerializedDataTypeTraits<T>::type) << ", value: " << deserialized << endl;
+		cout << "Deserialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << deserialized << endl;
 		assert(deserialized == value);
 	}
 };

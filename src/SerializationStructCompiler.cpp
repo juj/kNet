@@ -63,7 +63,10 @@ void SerializationStructCompiler::WriteMemberDefinition(const SerializedElementD
 	if (elem.type == SerialStruct || elem.type == SerialOther)
 		type = elem.typeString;
 	else
-		type = SerialTypeToString(elem.type);
+		type = SerialTypeToCTypeString(elem.type);
+
+	if (type == "string")
+		type = "std::string"; // Make a hardcoded fix for std::string so that the user doesn't have to specify 'std::string' into the XML, which would be clumsy.
 
 	if (elem.varyingCount == true)
 		out << Indent(level) << "std::vector<" << type << "> " << name << ";" << endl;
@@ -140,7 +143,7 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 			else
 				out << memberName << ".Size()";
 		}
-		else*/ if (e.type == SerialStruct || e.type == SerialOther)
+		else*/ if (e.type == SerialStruct || e.type == SerialOther || e.type == SerialString)
 		{
 			std::string typeSerializer = "kNet::TypeSerializer<" + e.typeString + ">";
 			if (e.varyingCount)
@@ -230,14 +233,14 @@ void SerializationStructCompiler::WriteSerializeMemberFunction(/*const std::stri
 			if (e.varyingCount == true)
 			{
 				out << Indent(level) << "if (" << memberName << ".size() > 0)" << endl;
-				out << Indent(level+1) << "dst.AddArray<" << SerialTypeToString(e.type) << ">(&" << memberName
+				out << Indent(level+1) << "dst.AddArray<" << SerialTypeToCTypeString(e.type) << ">(&" << memberName
 					<< "[0], " << memberName << ".size());" << endl;
 			}
 			else if (e.count > 1)
-				out << Indent(level) << "dst.AddArray<" << SerialTypeToString(e.type) << ">(" << memberName
+				out << Indent(level) << "dst.AddArray<" << SerialTypeToCTypeString(e.type) << ">(" << memberName
 					<< ", " << e.count << ");" << endl;
 			else 
-				out << Indent(level) << "dst.Add<" << SerialTypeToString(e.type) << ">(" << memberName
+				out << Indent(level) << "dst.Add<" << SerialTypeToCTypeString(e.type) << ">(" << memberName
 					<< ");" << endl;
 		}
 	}
@@ -309,14 +312,14 @@ void SerializationStructCompiler::WriteDeserializeMemberFunction(/*const std::st
 			if (e.varyingCount == true)
 			{
 				out << Indent(level) << "if (" << memberName << ".size() > 0)" << endl;
-				out << Indent(level+1) << "src.ReadArray<" << SerialTypeToString(e.type) << ">(&" << memberName
+				out << Indent(level+1) << "src.ReadArray<" << SerialTypeToCTypeString(e.type) << ">(&" << memberName
 					<< "[0], " << memberName << ".size());" << endl;
 			}
 			else if (e.count > 1)
-				out << Indent(level) << "src.ReadArray<" << SerialTypeToString(e.type) << ">(" << memberName
+				out << Indent(level) << "src.ReadArray<" << SerialTypeToCTypeString(e.type) << ">(" << memberName
 					<< ", " << e.count << ");" << endl;
 			else 
-				out << Indent(level) << memberName << " = src.Read<" << SerialTypeToString(e.type) << ">();" << endl;
+				out << Indent(level) << memberName << " = src.Read<" << SerialTypeToCTypeString(e.type) << ">();" << endl;
 		}
 	}
 	--level;

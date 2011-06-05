@@ -26,6 +26,7 @@
 #include "kNet/MessageListParser.h"
 #include "kNet/SerializedDataIterator.h"
 #include "kNet/VLEPacker.h"
+#include "kNet/DataDeserializer.h"
 #include "kNetFwd.h"
 
 namespace kNet
@@ -248,4 +249,29 @@ public:
 	}
 };
 
+template<>
+class TypeSerializer<std::string>
+{
+public:
+	static size_t Size(const std::string &value)
+	{
+		return value.length()+1;
+	}
+
+	static void SerializeTo(DataSerializer &dst, const std::string &src)
+	{
+#ifdef _DEBUG
+		size_t bitPos = dst.BitsFilled();
+#endif
+		dst.AddString(src);
+#ifdef _DEBUG
+		assert(bitPos + Size(src) == dst.BitsFilled());
+#endif
+	}
+
+	static void DeserializeFrom(DataDeserializer &src, std::string &dst)
+	{
+		dst = src.ReadString();
+	}
+};
 } // ~kNet
