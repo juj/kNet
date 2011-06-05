@@ -239,7 +239,7 @@ public:
 #endif
 		src.SerializeTo(dst);
 #ifdef _DEBUG
-		assert(bitPos + Size(src) == dst.BitsFilled());
+		assert(bitPos + Size(src)*8 == dst.BitsFilled());
 #endif
 	}
 
@@ -265,7 +265,7 @@ public:
 #endif
 		dst.AddString(src);
 #ifdef _DEBUG
-		assert(bitPos + Size(src) == dst.BitsFilled());
+		assert(bitPos + Size(src)*8 == dst.BitsFilled());
 #endif
 	}
 
