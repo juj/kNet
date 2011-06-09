@@ -537,6 +537,12 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		else
 			ss << "messageOut." << datagramSerializedMessages[i]->id;
 		ADDEVENT(ss.str().c_str(), (float)datagramSerializedMessages[i]->Size(), "bytes");
+		if (datagramSerializedMessages[i]->transfer)
+		{
+			if (datagramSerializedMessages[i]->fragmentIndex > 0)
+				ADDEVENT("FragmentedSend_Fragment", 1, "");
+			ADDEVENT("FragmentedSend_Start", 1, "");
+		}
 #endif
 	}
 
@@ -828,7 +834,11 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 			}
 
 			if (!duplicateMessage)
+			{
 				fragmentedReceives.NewFragmentStartReceived(fragmentTransferID, numTotalFragments, &data[reader.BytePos()], contentLength);
+				ADDEVENT("FragmentStartReceived", 1, "");
+			}
+
 		}
 		// If we received a fragment that is a part of an old fragmented transfer, pass it to the fragmented transfer manager
 		// so that it can reconstruct the final stream when the transfer finishes.
@@ -839,6 +849,8 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 				LOG(LogError, "Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
 				throw NetException("Malformed UDP packet received! This packet has fragment flag on, but parsing the fragment number failed!");
 			}
+
+			ADDEVENT("FragmentReceived", 1, "");
 
 			bool messageReady = fragmentedReceives.NewFragmentReceived(fragmentTransferID, fragmentNumber, &data[reader.BytePos()], contentLength);
 			if (messageReady)

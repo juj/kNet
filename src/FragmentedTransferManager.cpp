@@ -95,9 +95,12 @@ void FragmentedSendManager::RemoveMessage(FragmentedTransfer *transfer, NetworkM
 
 bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &transfer)
 {
-	assert(transfer.id == -1);
+	assert(transfer.id == -1); // The FragmentedTransfer object must not have a previously allocated transfer ID at all.
 
-	int transferID = 0;
+	// We start allocating the ID's from number 1, and the number 0 is never used, so that we get some redundancy in the protocol
+	// and are able to detect badly formed input.
+	int transferID = 1;
+
 	///\todo Maintain a sorted order in Insert() instead of doing a search here - better for performance.
 	bool used = true;
 	while(used)
