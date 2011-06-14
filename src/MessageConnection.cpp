@@ -567,6 +567,13 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 		LOG(LogVerbose, "Upgraded a nonreliable message with ID %d and size %d to a reliable message since it had to be fragmented!", (int)message->id, (int)message->dataSize);
 	}
 
+	if (message->contentID != 0)
+	{
+		LOG(LogVerbose, "Warning: Content IDs are not supported with fragmented transfers. Removing the content ID %d of message %d of size %d.",
+			(int)message->contentID, (int)message->id, (int)message->Size());
+		message->contentID = 0;
+	}
+
 	// Split the message into fragments.
 	while(byteOffset < message->dataSize)
 	{
@@ -584,7 +591,7 @@ void MessageConnection::SplitAndQueueMessage(NetworkMessage *message, bool inter
 		fragment->fragmentIndex = currentFragmentIndex++;
 		fragment->reliableMessageNumber = outboundReliableMessageNumberCounter++; ///\todo Convert to atomic increment, or this is a race condition.
 #ifdef KNET_NETWORK_PROFILING
-		fragment->profilerName = message->profilerName;
+		fragment->profilerName = message->profilerName + "_Fragment";
 #endif
 
 		// Copy the data from the old message that's supposed to go into this fragment.

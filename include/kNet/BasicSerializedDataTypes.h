@@ -54,8 +54,10 @@ enum BasicSerializedDataType
 	NumSerialTypes
 };
 
-/// Converts a give BasicSerializedDataType to a readable string representation.
-const char *SerialTypeToString(BasicSerializedDataType type);
+/// Converts a given BasicSerializedDataType to a readable string representation.
+const char *SerialTypeToReadableString(BasicSerializedDataType type);
+/// Converts a given BasicSerializedDataType to the corresponding C type.
+const char *SerialTypeToCTypeString(BasicSerializedDataType type);
 /// Tries to parse a BasicSerializedDataType out of a string, or returns SerialInvalid if no match.
 BasicSerializedDataType StringToSerialType(const char *type);
 /// Returns the number of bytes the passed BasicSerializedDataType requires for serialization.

@@ -233,8 +233,14 @@ public:
 	/// Returns the number of messages that have been received from the network but haven't been handled by the application yet.
 	size_t NumInboundMessagesPending() const { return inboundMessageQueue.Size(); } // [main and worker thread]
 
-	/// Returns the number of messages in the outbound queue that are pending to be sent.
+	/// Returns the total number of messages pending to be sent out.
 	size_t NumOutboundMessagesPending() const { return outboundQueue.Size() + outboundAcceptQueue.Size(); } // [main and worker thread]
+
+	/// Returns the number of outbound messages the main thread has queued for the worker thread to send out. (still unaccepted by the worker thread).
+	size_t OutboundAcceptQueueSize() const { return outboundAcceptQueue.Size(); } // [main and worker thread]
+
+	/// Returns the number of outbound messages in the worker thread outbound message queue (already accepted and pending a send by the worker thread).
+	size_t OutboundQueueSize() const { return outboundQueue.Size(); } // [main and worker thread]
 
 	/// Returns the underlying raw socket. [main and worker thread]
 	Socket *GetSocket() { return socket; }
@@ -571,7 +577,9 @@ void MessageConnection::SendStruct(const SerializableData &data, unsigned long i
 	msg->priority = priority;
 	msg->reliable = reliable;
 #ifdef KNET_NETWORK_PROFILING
-	msg->profilerName = SerializableData::Name();
+	char str[512];
+	sprintf(str, "%s (%u)", SerializableData::Name(), (unsigned int)id);
+	msg->profilerName = str;
 #endif
 
 	EndAndQueueMessage(msg);

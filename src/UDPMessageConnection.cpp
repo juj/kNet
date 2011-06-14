@@ -409,9 +409,12 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		// This computation is not exact, but as it only needs to be an upper bound, keeping it simple is good. \todo Can be more precise here.
 		int totalMessageSize = msg->GetTotalDatagramPackedSize();// + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
 
-		// If this message won't fit into the buffer, send out all the previously gathered messages.
-		if ((size_t)packetSizeInBytes >= minSendSize && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
+		// If this message won't fit into the buffer, send out all the previously gathered messages (there must at least be one previously submitted message).		
+		if (datagramSerializedMessages.size() > 0 && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
 			break;
+
+		if (totalMessageSize > maxSendSize)
+			LOG(LogError, "Warning: Sending out a message of ID %d and size %d bytes, but UDP socket max send size is only %d bytes!", (int)msg->id, totalMessageSize, (int)maxSendSize);
 
 		datagramSerializedMessages.push_back(msg);
 		outboundQueue.PopFront();
@@ -534,6 +537,12 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		else
 			ss << "messageOut." << datagramSerializedMessages[i]->id;
 		ADDEVENT(ss.str().c_str(), (float)datagramSerializedMessages[i]->Size(), "bytes");
+		if (datagramSerializedMessages[i]->transfer)
+		{
+			if (datagramSerializedMessages[i]->fragmentIndex > 0)
+				ADDEVENT("FragmentedSend_Fragment", 1, "");
+			ADDEVENT("FragmentedSend_Start", 1, "");
+		}
 #endif
 	}
 
@@ -825,7 +834,11 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 			}
 
 			if (!duplicateMessage)
+			{
 				fragmentedReceives.NewFragmentStartReceived(fragmentTransferID, numTotalFragments, &data[reader.BytePos()], contentLength);
+				ADDEVENT("FragmentStartReceived", 1, "");
+			}
+
 		}
 		// If we received a fragment that is a part of an old fragmented transfer, pass it to the fragmented transfer manager
 		// so that it can reconstruct the final stream when the transfer finishes.
@@ -836,6 +849,8 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 				LOG(LogError, "Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
 				throw NetException("Malformed UDP packet received! This packet has fragment flag on, but parsing the fragment number failed!");
 			}
+
+			ADDEVENT("FragmentReceived", 1, "");
 
 			bool messageReady = fragmentedReceives.NewFragmentReceived(fragmentTransferID, fragmentNumber, &data[reader.BytePos()], contentLength);
 			if (messageReady)

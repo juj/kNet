@@ -26,6 +26,7 @@
 #include "kNet/MessageListParser.h"
 #include "kNet/SerializedDataIterator.h"
 #include "kNet/VLEPacker.h"
+#include "kNet/DataDeserializer.h"
 #include "kNetFwd.h"
 
 namespace kNet
@@ -197,7 +198,8 @@ void DataSerializer::AddArray(const T *data, u32 count)
 	if (count == 0 && iter)
 		iter->ProceedToNextVariable();
 }
-/*
+
+/// @note This function will be deleted! Use ArraySize instead!
 /// Sums up the sizes of each element of an array.
 template<typename T>
 size_t SumArray(const T &data, size_t numElems)
@@ -207,7 +209,7 @@ size_t SumArray(const T &data, size_t numElems)
 		size += data[i].Size();
 	return size;
 }
-*/
+
 template<typename TypeSerializer, typename T>
 size_t ArraySize(const T &data, size_t numElems)
 {
@@ -237,7 +239,7 @@ public:
 #endif
 		src.SerializeTo(dst);
 #ifdef _DEBUG
-		assert(bitPos + Size(src) == dst.BitsFilled());
+		assert(bitPos + Size(src)*8 == dst.BitsFilled());
 #endif
 	}
 
@@ -247,4 +249,29 @@ public:
 	}
 };
 
+template<>
+class TypeSerializer<std::string>
+{
+public:
+	static size_t Size(const std::string &value)
+	{
+		return value.length()+1;
+	}
+
+	static void SerializeTo(DataSerializer &dst, const std::string &src)
+	{
+#ifdef _DEBUG
+		size_t bitPos = dst.BitsFilled();
+#endif
+		dst.AddString(src);
+#ifdef _DEBUG
+		assert(bitPos + Size(src)*8 == dst.BitsFilled());
+#endif
+	}
+
+	static void DeserializeFrom(DataDeserializer &src, std::string &dst)
+	{
+		dst = src.ReadString();
+	}
+};
 } // ~kNet

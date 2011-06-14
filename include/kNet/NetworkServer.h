@@ -214,6 +214,13 @@ void NetworkServer::BroadcastStruct(const SerializableData &data, unsigned long 
 		msg->inOrder = inOrder;
 		msg->priority = priority;
 		msg->contentID = contentID;
+
+#ifdef KNET_NETWORK_PROFILING
+		char str[512];
+		sprintf(str, "%s (%u)", SerializableData::Name(), (unsigned int)id);
+		msg->profilerName = str;
+#endif
+
 		connection->EndAndQueueMessage(msg);
 	}
 }
