@@ -709,7 +709,8 @@ bool Socket::Send(const char *data, size_t numBytes)
 	}
 
 	int bytesSent = 0;
-	if (transport == SocketOverUDP)
+	// sendto() to a connected socket causes EISCONN on OSX, so avoid it for client UDP sockets
+	if (transport == SocketOverUDP && type != ClientSocket)
 		bytesSent = sendto(connectSocket, data, numBytes, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
 	else
 		bytesSent = send(connectSocket, data, numBytes, 0);
