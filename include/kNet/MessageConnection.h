@@ -124,6 +124,11 @@ enum ConnectionState
 /// Returns a textual representation of a ConnectionState.
 std::string ConnectionStateToString(ConnectionState state);
 
+// Prevent confusion with Win32 functions
+#ifdef SendMessage
+#undef SendMessage
+#endif
+
 /// Represents a single established network connection. MessageConnection maintains its own worker thread that manages
 /// connection control, the scheduling and prioritization of outbound messages, and receiving inbound messages.
 class MessageConnection : public RefCountable
