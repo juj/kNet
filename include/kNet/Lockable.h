@@ -22,7 +22,8 @@
 #elif defined(WIN32)
 #include <Windows.h>
 #else
-#error No Mutex implementation available!
+#include <pthread.h>
+#include <assert.h>
 #endif
 
 #include "PolledTimer.h"
@@ -147,8 +148,15 @@ public:
 
 	Lockable()
 	{
-#if defined(WIN32) && !defined(KNET_USE_BOOST)
+#ifndef KNET_USE_BOOST
+#ifdef WIN32
 		InitializeCriticalSection(&lockObject);
+#else
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init(&mutex, &attr);
+#endif
 #endif
 	}
 /* Lockable objects are noncopyable. If thread-safe copying were to be supported, it should be implemented something like this:
@@ -162,15 +170,26 @@ public:
 	explicit Lockable(const T &value_)
 	:value(value_)
 	{
-#if defined(WIN32) && !defined(KNET_USE_BOOST)
+#ifndef KNET_USE_BOOST
+#ifdef WIN32
 		InitializeCriticalSection(&lockObject);
+#else
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init(&mutex, &attr);
+#endif
 #endif
 	}
 
 	~Lockable()
 	{
-#if defined(WIN32) && !defined(KNET_USE_BOOST)
+#ifndef KNET_USE_BOOST
+#ifdef WIN32
 		DeleteCriticalSection(&lockObject);
+#else
+		pthread_mutex_destroy(&mutex);
+#endif
 #endif
 	}
 /* Lockable objects are nonassignable. If thread-safe copying were to be supported, it should be implemented something like this:
@@ -191,6 +210,8 @@ public:
 		boostMutex.lock();
 #elif defined(WIN32)
 		EnterCriticalSection(&lockObject);
+#else
+		pthread_mutex_lock(&mutex);
 #endif
 		return value;
 	}
@@ -201,6 +222,8 @@ public:
 		boostMutex.lock();
 #elif defined(WIN32)
 		EnterCriticalSection(&lockObject);
+#else
+		pthread_mutex_lock(&mutex);
 #endif
 		return value;
 	}
@@ -211,6 +234,8 @@ public:
 		boostMutex.unlock();
 #elif defined(WIN32)
 		LeaveCriticalSection(&lockObject);
+#else
+		pthread_mutex_unlock(&mutex);
 #endif
 	}
 
@@ -246,6 +271,8 @@ public:
 	mutable boost::recursive_mutex boostMutex;
 #elif defined(WIN32)
 	mutable CRITICAL_SECTION lockObject;
+#else
+	mutable pthread_mutex_t mutex;
 #endif
 
 private:

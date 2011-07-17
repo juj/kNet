@@ -150,6 +150,12 @@ elseif (UNIX)
    set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetUnixHeaderFiles})
 
    add_definitions(-DUNIX)
+   
+   if (USE_BOOST)
+      list(REMOVE_ITEM kNetUnixSourceFiles ${PROJECT_SOURCE_DIR}/./src/unix/UnixThread.cpp)
+   else()
+      set(kNetLinkLibraries ${kNetLinkLibraries} pthread)
+   endif()
 endif()
 
 #AddCompilationUnitNameDefines(kNetSourceFiles)

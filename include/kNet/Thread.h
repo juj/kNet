@@ -14,14 +14,19 @@
 #pragma once
 
 /** @file Thread.h
-	@brief The Thread class. Implements threading either using Boost or native Win32 constructs. */
+	@brief The Thread class. Implements threading either using Boost, native Win32 or pthreads constructs. */
 
 #include <string>
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread.hpp>
-#elif defined(WIN32)
+#else
+
+#ifdef WIN32
 #include <Windows.h>
+#else
+#include <pthread.h>
+#endif
 
 #include "Event.h"
 
@@ -46,7 +51,7 @@ typedef DWORD ThreadId; // Don't use boost::thread::id on Windows even if KNET_U
 #elif defined(KNET_USE_BOOST)
 typedef boost::thread::id ThreadId;
 #else
-typedef unsigned int ThreadId;
+typedef pthread_t ThreadId;
 #endif
 
 std::string ThreadIdToString(const ThreadId &id);
@@ -202,7 +207,14 @@ private:
 	friend DWORD WINAPI ThreadEntryPoint(LPVOID lpParameter);
 private:
 	bool threadEnabled;
+#else
+	pthread_t thread;
 
+	void _ThreadRun();
+
+	friend void* ThreadEntryPoint(void* data);
+private:
+	bool threadEnabled;
 #endif
 };
 
