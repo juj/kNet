@@ -106,7 +106,8 @@ tick_t Clock::Tick()
 	timespec t;
 	clock_gettime(CLOCK_MONOTONIC, &t);
     return (tick_t)t.tv_sec * 1000 * 1000 * 1000 + (tick_t)t.tv_nsec;
-#elif _POSIX_C_SOURCE
+//_POSIX_C_SOURCE is not defined on OSX
+#elif defined(_POSIX_C_SOURCE) || defined(__APPLE__)
 	timeval t;
 	gettimeofday(&t, NULL);
 	return (tick_t)t.tv_sec * 1000 * 1000 + (tick_t)t.tv_usec;
@@ -124,7 +125,8 @@ tick_t Clock::TicksPerSec()
 {
 #ifdef _POSIX_MONOTONIC_CLOCK
     return 1000 * 1000 * 1000;
-#elif _POSIX_C_SOURCE
+//_POSIX_C_SOURCE is not defined on OSX
+#elif defined(_POSIX_C_SOURCE) || defined(__APPLE__)
     return 1000 * 1000;
 #else
     return 1;
