@@ -200,6 +200,7 @@ private:
 	boost::thread thread;
 #elif defined(WIN32)
 	HANDLE threadHandle;
+	ThreadId threadId;
 
 	/// The entry point that is called from the trampoline. Do not call this function.
 	void _ThreadRun();

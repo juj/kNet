@@ -47,6 +47,7 @@ set(USE_BOOST TRUE)
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
 
 # If set, the function GetThreadId is not used, which was introduced to Kernel32.dll only in Windows Vista.
+# Affects only Boost threads. When native Win32 threads are used, the id is stored on creation.
 AddCompilationDefine(KNET_ENABLE_WINXP_SUPPORT)
 
 # If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.

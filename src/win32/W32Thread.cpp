@@ -31,6 +31,7 @@ namespace kNet
 
 Thread::Thread()
 :threadHandle(NULL),
+threadId(0),
 threadEnabled(false),
 invoker(0)
 {
@@ -94,6 +95,7 @@ void Thread::Stop()
 		else if (exitCode != STILL_ACTIVE)
 		{
 			CloseHandle(threadHandle);
+			threadHandle = NULL;
 			break;
 		}
 		kNet::Clock::Sleep(50);
@@ -109,6 +111,7 @@ void Thread::Stop()
 	LOG(LogInfo, "Thread::Stop() called.");
 
 	threadHandle = NULL;
+	threadId = 0;
 
 	delete invoker;
 	invoker = 0;
@@ -166,13 +169,13 @@ void Thread::StartThread()
 	threadResumeEvent = CreateNewEvent(EventWaitSignal);
 
 	threadEnabled = true;
-	threadHandle = CreateThread(NULL, 0, ThreadEntryPoint, this, 0, NULL);
+	threadHandle = CreateThread(NULL, 0, ThreadEntryPoint, this, 0, &threadId);
 	if (threadHandle == NULL)
 		throw NetException("Failed to create thread!");
 	else
 		LOG(LogInfo, "Thread::Run(): Thread created.");
 
-    SetName("kNet Thread");
+	SetName("kNet Thread");
 }
 
 void Thread::Sleep(int msecs)
@@ -183,16 +186,7 @@ void Thread::Sleep(int msecs)
 
 ThreadId Thread::Id()
 {
-	if (threadHandle == NULL)
-		return NullThreadId();
-
-	ThreadId id = GetThreadId(threadHandle);
-	if (id == 0)
-	{
-		LOG(LogError, "Thread::Id failed: %s!", Network::GetLastErrorString().c_str());
-		return NullThreadId();
-	}
-	return id;
+	return threadId;
 }
 
 ThreadId Thread::CurrentThreadId()
