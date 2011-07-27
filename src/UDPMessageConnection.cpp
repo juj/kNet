@@ -56,7 +56,7 @@ static const u32 cMaxUDPMessageFragmentSize = 470;
 
 UDPMessageConnection::UDPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState)
 :MessageConnection(owner, ownerServer, socket, startingState),
-retransmissionTimeout(3.f), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
+retransmissionTimeout(3.f), numAcksLastFrame(0), numLossesLastFrame(0), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
 lastReceivedInOrderPacketID(0), 
 lastSentInOrderPacketID(0), datagramPacketIDCounter(1),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
