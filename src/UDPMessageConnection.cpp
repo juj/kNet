@@ -650,15 +650,17 @@ void UDPMessageConnection::DoUpdateConnection()
 
 unsigned long UDPMessageConnection::TimeUntilCanSendPacket() const
 {
-	tick_t now = Clock::Tick();
+	const tick_t now = Clock::Tick();
 
-	if (Clock::IsNewer(now, lastDatagramSendTime))
-		return 0;
+	// The interval at which we send out datagrams.
+	const tick_t datagramSendTickDelay = (tick_t)(Clock::TicksPerSec() / datagramSendRate);
 
-	if (Clock::IsNewer(lastDatagramSendTime, now + Clock::TicksPerSec()))
-		lastDatagramSendTime = now + Clock::TicksPerSec();
+	const tick_t nextDatagramSendTime = lastDatagramSendTime + datagramSendTickDelay;
 
-	return (unsigned long)Clock::TimespanToMillisecondsF(now, lastDatagramSendTime);
+	if (Clock::IsNewer(now, nextDatagramSendTime))
+		return 0; // We are already due to send out the next datagram?
+
+	return (unsigned long)Clock::TimespanToMillisecondsF(now, nextDatagramSendTime);
 }
 
 bool UDPMessageConnection::HaveReceivedPacketID(packet_id_t packetID) const
