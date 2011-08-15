@@ -61,11 +61,14 @@ lastReceivedInOrderPacketID(0),
 lastSentInOrderPacketID(0), datagramPacketIDCounter(1),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
 datagramInRatePerSecond(initialDatagramRatePerSecond),
-datagramSendRate(10),
+datagramSendRate(70),
 receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
 previousReceivedPacketID(0), queuedInboundDatagrams(128)
 {
 	LOG(LogObjectAlloc, "Allocated UDPMessageConnection %p.", this);
+
+	lastFrameTime = Clock::Tick();
+	lastDatagramSendTime = Clock::Tick();
 }
 
 UDPMessageConnection::~UDPMessageConnection()
@@ -145,20 +148,6 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 	if (bytesRead > 0)
 		LOG(LogData, "Received %d bytes from UDP socket.", (int)bytesRead);
 	return SocketReadOK;
-}
-
-void UDPMessageConnection::Initialize()
-{
-	// Set RTT initial values as per RFC 2988.
-	rttCleared = true;
-	retransmissionTimeout = 3.f;
-	smoothedRTT = 3.f;
-	rttVariation = 0.f;
-
-	datagramSendRate = 70.f; // At start, send one datagram per second.
-	lastFrameTime = Clock::Tick();
-
-	lastDatagramSendTime = Clock::Tick();
 }
 
 void UDPMessageConnection::PerformPacketAckSends()

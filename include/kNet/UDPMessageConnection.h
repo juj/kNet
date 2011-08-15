@@ -273,8 +273,6 @@ private:
 	/// Returns the percentage of inbound packets that are being lost, [0, 1].
 	float GetPacketLossRate() const { return packetLossRate; }
 
-	void Initialize();
-
 	void DumpConnectionStatus() const;
 
 	friend class NetworkServer;
