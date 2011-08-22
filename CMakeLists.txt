@@ -147,16 +147,16 @@ elseif (UNIX)
    file(GLOB kNetUnixSourceFiles ./src/unix/*.cpp)
    file(GLOB kNetUnixHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/unix/*.h)
 
-   set(kNetSourceFiles ${kNetSourceFiles} ${kNetUnixSourceFiles})
-   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetUnixHeaderFiles})
-
-   add_definitions(-DUNIX)
-   
    if (USE_BOOST)
       list(REMOVE_ITEM kNetUnixSourceFiles ${PROJECT_SOURCE_DIR}/./src/unix/UnixThread.cpp)
    else()
       set(kNetLinkLibraries ${kNetLinkLibraries} pthread)
    endif()
+
+   set(kNetSourceFiles ${kNetSourceFiles} ${kNetUnixSourceFiles})
+   set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetUnixHeaderFiles})
+
+   add_definitions(-DUNIX)
 endif()
 
 #AddCompilationUnitNameDefines(kNetSourceFiles)
@@ -176,7 +176,7 @@ endif()
 include_directories(./include)
 
 if (USE_BOOST)
-   find_package(Boost 1.38.0 COMPONENTS thread)
+   find_package(Boost)
    if (Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
       link_directories(${Boost_LIBRARY_DIRS})
