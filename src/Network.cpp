@@ -778,6 +778,7 @@ void Network::SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage)
 	if (!sendData)
 	{
 		LOG(LogError, "Network::SendUDPConnectDatagram: socket.BeginSend failed! Cannot send UDP connection datagram!");
+		return;
 	}
 	if (connectMessage)
 	{
