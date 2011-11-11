@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-/** @file W32Thread.cpp
+/** @file UnixThread.cpp
 	@brief */
 
 #include <cassert>
@@ -30,8 +30,7 @@ namespace kNet
 {
 
 Thread::Thread()
-:threadHandle(NULL),
-threadId(0),
+:thread(0),
 threadEnabled(false),
 invoker(0)
 {
@@ -43,23 +42,11 @@ Thread::~Thread()
 	delete invoker;
 }
 
-bool Thread::ShouldQuit() const { return threadHandle == NULL || threadEnabled == false; }
+bool Thread::ShouldQuit() const { return !thread || threadEnabled == false; }
 
 bool Thread::IsRunning() const
 { 
-	if (threadHandle == NULL)
-		return false;
-
-	DWORD exitCode = 0;
-	BOOL result = GetExitCodeThread(threadHandle, &exitCode);
-
-	if (result == 0)
-	{
-		LOG(LogError, "Warning: Received error %d from GetExitCodeThread in Thread::IsRunning!", GetLastError());
-		return false;
-	}
-
-	return exitCode == STILL_ACTIVE;
+	return thread != 0;
 }
 
 void Thread::Stop()
@@ -67,7 +54,7 @@ void Thread::Stop()
 	// Signal that the thread should quit now.
 	threadEnabled = false;
 
-	if (threadHandle == NULL)
+	if (!thread)
 	{
 		threadHoldEvent.Close();
 		threadHoldEventAcked.Close();
@@ -79,39 +66,13 @@ void Thread::Stop()
 	}
 
 	kNet::Clock::Sleep(10);
-	assert(threadHandle != 0);
+	assert(thread);
 
-	int numTries = 100;
-	while(numTries-- > 0)
-	{
-		DWORD exitCode = 0;
-		BOOL result = GetExitCodeThread(threadHandle, &exitCode);
-
-		if (result == 0)
-		{
-			LOG(LogError, "Warning: Received error %d from GetExitCodeThread in Thread::Stop()!", GetLastError());
-			break;
-		}
-		else if (exitCode != STILL_ACTIVE)
-		{
-			CloseHandle(threadHandle);
-			threadHandle = NULL;
-			break;
-		}
-		kNet::Clock::Sleep(50);
-	}
-
-	if (threadHandle != NULL)
-	{
-		TerminateThread(threadHandle, -1);
-//		CloseHandle(threadHandle);
-		LOG(LogError, "Warning: Had to forcibly terminate thread!");
-	}
+	/// \todo Do not block indefinitely while waiting for the thread to terminate
+	pthread_join(thread, 0);
+	thread = 0;
 
 	LOG(LogInfo, "Thread::Stop() called.");
-
-	threadHandle = NULL;
-	threadId = 0;
 
 	delete invoker;
 	invoker = 0;
@@ -121,18 +82,18 @@ void Thread::Stop()
 	threadResumeEvent.Close();
 }
 
-DWORD WINAPI ThreadEntryPoint(LPVOID lpParameter)
+void* ThreadEntryPoint(void* data)
 {
-	LOG(LogInfo, "ThreadEntryPoint: Thread started with param 0x%08X.", lpParameter);
+	LOG(LogInfo, "ThreadEntryPoint: Thread started with param 0x%08X.", (unsigned)data);
 
-	Thread *thread = reinterpret_cast<Thread*>(lpParameter);
+	Thread *thread = reinterpret_cast<Thread*>(data);
 	if (!thread)
 	{
 		LOG(LogError, "Invalid thread start parameter 0!");
-		return -1;
+		return 0;
 	}
 	thread->_ThreadRun();
-
+	pthread_exit((void*)0);
 	return 0;
 }
 
@@ -161,7 +122,7 @@ void Thread::_ThreadRun()
 
 void Thread::StartThread()
 {
-	if (threadHandle != NULL)
+	if (thread)
 		return;
 
 	threadHoldEvent = CreateNewEvent(EventWaitSignal);
@@ -169,13 +130,15 @@ void Thread::StartThread()
 	threadResumeEvent = CreateNewEvent(EventWaitSignal);
 
 	threadEnabled = true;
-	threadHandle = CreateThread(NULL, 0, ThreadEntryPoint, this, 0, &threadId);
-	if (threadHandle == NULL)
+	pthread_attr_t type;
+	pthread_attr_init(&type);
+	pthread_attr_setdetachstate(&type, PTHREAD_CREATE_JOINABLE);
+	if (pthread_create(&thread, &type, ThreadEntryPoint, this))
 		throw NetException("Failed to create thread!");
 	else
 		LOG(LogInfo, "Thread::Run(): Thread created.");
 
-	SetName("kNet Thread");
+    SetName("kNet Thread");
 }
 
 void Thread::Sleep(int msecs)
@@ -186,12 +149,12 @@ void Thread::Sleep(int msecs)
 
 ThreadId Thread::Id()
 {
-	return threadId;
+	return thread;
 }
 
 ThreadId Thread::CurrentThreadId()
 {
-	return GetCurrentThreadId();
+	return pthread_self();
 }
 
 ThreadId Thread::NullThreadId()

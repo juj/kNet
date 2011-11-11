@@ -1,4 +1,4 @@
-/* Copyright 2010 Jukka Jylänki
+/* Copyright The kNet Project.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -56,16 +56,19 @@ static const u32 cMaxUDPMessageFragmentSize = 470;
 
 UDPMessageConnection::UDPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState)
 :MessageConnection(owner, ownerServer, socket, startingState),
-retransmissionTimeout(3.f), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
+retransmissionTimeout(3.f), numAcksLastFrame(0), numLossesLastFrame(0), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
 lastReceivedInOrderPacketID(0), 
 lastSentInOrderPacketID(0), datagramPacketIDCounter(1),
 packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
 datagramInRatePerSecond(initialDatagramRatePerSecond),
-datagramSendRate(10),
+datagramSendRate(70),
 receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
 previousReceivedPacketID(0), queuedInboundDatagrams(128)
 {
 	LOG(LogObjectAlloc, "Allocated UDPMessageConnection %p.", this);
+
+	lastFrameTime = Clock::Tick();
+	lastDatagramSendTime = Clock::Tick();
 }
 
 UDPMessageConnection::~UDPMessageConnection()
@@ -145,20 +148,6 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 	if (bytesRead > 0)
 		LOG(LogData, "Received %d bytes from UDP socket.", (int)bytesRead);
 	return SocketReadOK;
-}
-
-void UDPMessageConnection::Initialize()
-{
-	// Set RTT initial values as per RFC 2988.
-	rttCleared = true;
-	retransmissionTimeout = 3.f;
-	smoothedRTT = 3.f;
-	rttVariation = 0.f;
-
-	datagramSendRate = 70.f; // At start, send one datagram per second.
-	lastFrameTime = Clock::Tick();
-
-	lastDatagramSendTime = Clock::Tick();
 }
 
 void UDPMessageConnection::PerformPacketAckSends()
@@ -661,15 +650,17 @@ void UDPMessageConnection::DoUpdateConnection()
 
 unsigned long UDPMessageConnection::TimeUntilCanSendPacket() const
 {
-	tick_t now = Clock::Tick();
+	const tick_t now = Clock::Tick();
 
-	if (Clock::IsNewer(now, lastDatagramSendTime))
-		return 0;
+	// The interval at which we send out datagrams.
+	const tick_t datagramSendTickDelay = (tick_t)(Clock::TicksPerSec() / datagramSendRate);
 
-	if (Clock::IsNewer(lastDatagramSendTime, now + Clock::TicksPerSec()))
-		lastDatagramSendTime = now + Clock::TicksPerSec();
+	const tick_t nextDatagramSendTime = lastDatagramSendTime + datagramSendTickDelay;
 
-	return (unsigned long)Clock::TimespanToMillisecondsF(now, lastDatagramSendTime);
+	if (Clock::IsNewer(now, nextDatagramSendTime))
+		return 0; // We are already due to send out the next datagram?
+
+	return (unsigned long)Clock::TimespanToMillisecondsF(now, nextDatagramSendTime);
 }
 
 bool UDPMessageConnection::HaveReceivedPacketID(packet_id_t packetID) const

@@ -1,4 +1,4 @@
-/* Copyright 2010 Jukka Jylänki
+/* Copyright The kNet Project.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -123,6 +123,11 @@ enum ConnectionState
 
 /// Returns a textual representation of a ConnectionState.
 std::string ConnectionStateToString(ConnectionState state);
+
+// Prevent confusion with Win32 functions
+#ifdef SendMessage
+#undef SendMessage
+#endif
 
 /// Represents a single established network connection. MessageConnection maintains its own worker thread that manages
 /// connection control, the scheduling and prioritization of outbound messages, and receiving inbound messages.
@@ -548,8 +553,6 @@ protected:
 
 	/// Private ctor - MessageConnections are instantiated by Network and NetworkServer classes.
 	explicit MessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
-
-	virtual void Initialize() {} // [main thread]
 
 	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; } // [main thread]
 };

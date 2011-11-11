@@ -1,4 +1,4 @@
-/* Copyright 2010 Jukka Jylänki
+/* Copyright The kNet Project.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -105,8 +105,6 @@ bytesInTotal(0), bytesOutTotal(0)
 
 	eventMsgsOutAvailable = CreateNewEvent(EventWaitSignal);
 	assert(eventMsgsOutAvailable.IsValid());
-
-	Initialize();
 }
 
 MessageConnection::~MessageConnection()

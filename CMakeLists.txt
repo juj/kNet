@@ -47,6 +47,7 @@ set(USE_BOOST TRUE)
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
 
 # If set, the function GetThreadId is not used, which was introduced to Kernel32.dll only in Windows Vista.
+# Affects only Boost threads. When native Win32 threads are used, the id is stored on creation.
 AddCompilationDefine(KNET_ENABLE_WINXP_SUPPORT)
 
 # If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.
@@ -146,6 +147,12 @@ elseif (UNIX)
    file(GLOB kNetUnixSourceFiles ./src/unix/*.cpp)
    file(GLOB kNetUnixHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/unix/*.h)
 
+   if (USE_BOOST)
+      list(REMOVE_ITEM kNetUnixSourceFiles ${PROJECT_SOURCE_DIR}/./src/unix/UnixThread.cpp)
+   else()
+      set(kNetLinkLibraries ${kNetLinkLibraries} pthread)
+   endif()
+
    set(kNetSourceFiles ${kNetSourceFiles} ${kNetUnixSourceFiles})
    set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetUnixHeaderFiles})
 
@@ -169,7 +176,11 @@ endif()
 include_directories(./include)
 
 if (USE_BOOST)
-   find_package(Boost 1.38.0 COMPONENTS thread)
+   if (WIN32)
+      find_package(Boost 1.38.0 COMPONENTS thread)
+   else()
+      find_package(Boost)
+   endif()
    if (Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
       link_directories(${Boost_LIBRARY_DIRS})

@@ -1,4 +1,4 @@
-/* Copyright 2010 Jukka Jylänki
+/* Copyright The kNet Project.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -709,7 +709,8 @@ bool Socket::Send(const char *data, size_t numBytes)
 	}
 
 	int bytesSent = 0;
-	if (transport == SocketOverUDP)
+	// sendto() to a connected socket causes EISCONN on OSX, so avoid it for client UDP sockets
+	if (transport == SocketOverUDP && type != ClientSocket)
 		bytesSent = sendto(connectSocket, data, numBytes, 0, (sockaddr*)&udpPeerAddress, sizeof(udpPeerAddress));
 	else
 		bytesSent = send(connectSocket, data, numBytes, 0);

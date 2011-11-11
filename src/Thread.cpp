@@ -1,4 +1,4 @@
-/* Copyright 2010 Jukka Jylänki
+/* Copyright The kNet Project.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -121,11 +121,10 @@ void SetThreadName(DWORD dwThreadID, const char *threadName)
 
 void Thread::SetName(const char *name)
 {
-#if defined(WIN32) && !defined(KNET_ENABLE_WINXP_SUPPORT)
-#ifdef KNET_USE_BOOST
-	SetThreadName(GetThreadId(thread.native_handle()), name);
-#else
-	SetThreadName(GetThreadId(threadHandle), name);
+// The thread name can only be set when it is ensured that Thread::Id() returns the proper Win32 thread ID
+#ifdef WIN32
+#if !defined(KNET_USE_BOOST) || !defined(KNET_ENABLE_WINXP_SUPPORT)
+	SetThreadName(Id(), name);
 #endif
 #endif
 }
