@@ -20,7 +20,7 @@
 
 #include <cassert>
 
-#ifdef UNIX
+#if defined(UNIX) || defined(ANDROID)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
