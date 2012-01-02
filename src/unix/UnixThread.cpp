@@ -84,7 +84,7 @@ void Thread::Stop()
 
 void* ThreadEntryPoint(void* data)
 {
-	LOG(LogInfo, "ThreadEntryPoint: Thread started with param 0x%08X.", (unsigned)data);
+	LOG(LogInfo, "ThreadEntryPoint: Thread started with param 0x%p.", data);
 
 	Thread *thread = reinterpret_cast<Thread*>(data);
 	if (!thread)
