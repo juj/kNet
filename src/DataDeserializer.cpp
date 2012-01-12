@@ -129,6 +129,133 @@ u32 DataDeserializer::ReadBits(int numBits)
 	return val;
 }
 
+float DataDeserializer::ReadUnsignedFixedPoint(int numIntegerBits, int numDecimalBits)
+{
+	u32 fp = ReadBits(numIntegerBits + numDecimalBits);
+	return fp / (float)(1 << numDecimalBits);
+}
+
+float DataDeserializer::ReadSignedFixedPoint(int numIntegerBits, int numDecimalBits)
+{
+	// Reading a [0, 2k-1] range -> remap back to [-k, k-1] range.
+	return ReadUnsignedFixedPoint(numIntegerBits, numDecimalBits) - (float)(1 << (numIntegerBits-1));
+}
+
+float DataDeserializer::ReadQuantizedFloat(float minRange, float maxRange, int numBits)
+{
+	u32 val = ReadBits(numBits);
+	return minRange + val * (maxRange-minRange) / (float)((1 << numBits) - 1);
+}
+
+#define PI ((float)3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679)
+
+void DataDeserializer::ReadNormalizedVector2D(int numBits, float &x, float &y)
+{
+	float angle = ReadQuantizedFloat(-PI, PI, numBits);
+	x = cos(angle);
+	y = sin(angle);
+}
+
+void DataDeserializer::ReadVector2D(int magnitudeIntegerBits, int magnitudeDecimalBits, int directionBits, float &x, float &y)
+{
+	// Read the length in unsigned fixed point format.
+	// The following line is effectively the same as calling ReadUnsignedFixedPoint, but manually perform it
+	// to be precisely able to examine whether the length is zero.
+	u32 fp = ReadBits(magnitudeIntegerBits + magnitudeDecimalBits);
+	if (fp != 0) // If length is non-zero, the stream also contains the direction.
+	{
+		float length = fp / (float)(1 << magnitudeDecimalBits);
+
+		// Read the direction in the stream.
+		float angle = ReadQuantizedFloat(-PI, PI, directionBits);
+		x = cos(angle) * length;
+		y = sin(angle) * length;
+	}
+	else // Zero length, no direction present in the buffer.
+	{
+		x = y = 0.f;
+	}
+}
+
+void DataDeserializer::ReadNormalizedVector3D(int numBitsYaw, int numBitsPitch, float &x, float &y, float &z)
+{
+	float azimuth = ReadQuantizedFloat(-PI, PI, numBitsYaw);
+	float inclination = ReadQuantizedFloat(-PI/2, PI/2, numBitsPitch);
+
+	float cx = cos(inclination);
+	x = cx * sin(azimuth);
+	y = -sin(inclination);
+	z = cx * cos(azimuth);
+}
+
+void DataDeserializer::ReadVector3D(int numBitsYaw, int numBitsPitch, int magnitudeIntegerBits, int magnitudeDecimalBits, float &x, float &y, float &z)
+{
+	// Read the length in unsigned fixed point format.
+	// The following line is effectively the same as calling ReadUnsignedFixedPoint, but manually perform it
+	// to be precisely able to examine whether the length is zero.
+	u32 fp = ReadBits(magnitudeIntegerBits + magnitudeDecimalBits);
+	if (fp != 0) // If length is non-zero, the stream also contains the direction.
+	{
+		float length = fp / (float)(1 << magnitudeDecimalBits);
+
+		float azimuth = ReadQuantizedFloat(-PI, PI, numBitsYaw);
+		float inclination = ReadQuantizedFloat(-PI/2, PI/2, numBitsPitch);
+
+		float cx = cos(inclination);
+		x = cx * sin(azimuth) * length;
+		y = -sin(inclination) * length;
+		z = cx * cos(azimuth) * length;
+	}
+	else // length is zero, stream does not contain the direction.
+	{
+		x = y = z = 0.f;
+	}
+}
+
+void DataDeserializer::ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2)
+{
+	assert(max1 * max2 < (1 << numBits));
+	u32 val = ReadBits(numBits);
+	val2 = val % max2;
+	val1 = val / max2;
+}
+
+void DataDeserializer::ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3)
+{
+	assert(max1 * max2 * max3 < (1 << numBits));
+	u32 val = ReadBits(numBits);
+	val3 = val % max3;
+	val /= max3;
+	val2 = val % max2;
+	val1 = val / max2;
+}
+
+void DataDeserializer::ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3, int &val4, int max4)
+{
+	assert(max1 * max2 * max3 * max4 < (1 << numBits));
+	u32 val = ReadBits(numBits);
+	val4 = val % max4;
+	val /= max4;
+	val3 = val % max3;
+	val /= max3;
+	val2 = val % max2;
+	val1 = val / max2;
+}
+
+void DataDeserializer::ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3, int &val4, int max4, int &val5, int max5)
+{
+	assert(max1 * max2 * max3 * max4 * max5 < (1 << numBits));
+	u32 val = ReadBits(numBits);
+	val5 = val % max5;
+	val /= max5;
+	val4 = val % max4;
+	val /= max4;
+	val3 = val % max3;
+	val /= max3;
+	val2 = val % max2;
+	val1 = val / max2;
+}
+
 void DataDeserializer::SkipBits(size_t numBits)
 {
 	assert(!iter);

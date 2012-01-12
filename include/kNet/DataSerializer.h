@@ -96,6 +96,94 @@ public:
 	/// this function. A serialization template may not be used when calling this function.
 	void AddAlignedByteArray(const void *data, u32 numBytes);
 
+	/// Writes the given non-negative float quantized to the given fixed-point precision.
+	/// @param value The floating-point value to send. This float must have a value in the range [0, 2^numIntegerBits[.
+	/// @param numIntegerBits The number of bits to use to represent the integer part.
+	/// @param numDecimalBits The number of bits to use to represent the fractional part.
+	/// @note Before writing the value, it is clamped to range specified above to ensure that the written value does not
+	///	 result in complete garbage due to over/underflow.
+	/// @note The total number of bits written is numIntegerBits + numDecimalBits, which must in total be <= 32.
+	/// @return The bit pattern that was written to the buffer.
+	u32 AddUnsignedFixedPoint(int numIntegerBits, int numDecimalBits, float value);
+
+	/// Writes the given float quantized to the given fixed-point precision.
+	/// @param value The floating-point value to send. This float must have a value in the range [-2^(numIntegerBits-1), 2^(numIntegerBits-1)[.
+	/// @param numIntegerBits The number of bits to use to represent the integer part.
+	/// @param numDecimalBits The number of bits to use to represent the fractional part.
+	/// @note Before writing the value, it is clamped to range specified above to ensure that the written value does not
+	///	 result in complete garbage due to over/underflow.
+	/// @note The total number of bits written is numIntegerBits + numDecimalBits, which must in total be <= 32.
+	/// @return The bit pattern that was written to the buffer.
+	u32 AddSignedFixedPoint(int numIntegerBits, int numDecimalBits, float value);
+
+	/// Writes the given float quantized to the number of bits, that are distributed evenly over the range [minRange, maxRange].
+	/// @param value The floating-point value to send. This float must have a value in the range [minRange, maxRange].
+	/// @param numBits The number of bits to use for representing the value. The total number of different values written is then 2^numBits, 
+	///	 which are evenly distributed across the range [minRange, maxRange]. The value numBits must satisfy 1 <= numBits <= 30.
+	/// @param minRange The lower limit for the value that is being written.
+	/// @param maxRange The upper limit for the value that is being written.
+	/// @note This function performs quantization, which results in lossy serialization/deserialization.
+	void AddQuantizedFloat(float minRange, float maxRange, int numBits, float value);
+
+	/// Writes the given normalized 2D vector compressed to a single 1D polar angle value. Then the angle is quantized to the specified 
+	/// precision.
+	/// @param x The x coordinate of the 2D vector.
+	/// @param y The y coordinate of the 2D vector.
+	/// @param numBits The number of bits to quantize the representation down to. This value must satisfy 1 <= numBits <= 30.
+	/// @note The vector (x,y) does not need to be normalized for this function to work properly (don't bother enforcing normality in
+	///	advance prior to calling this). When deserializing, (x,y) is reconstructed as a normalized direction vector.
+	/// @note Do not call this function with (x,y) == (0,0).
+	/// @note This function performs quantization, which results in lossy serialization/deserialization.
+	void AddNormalizedVector2D(float x, float y, int numBits);
+
+	/// Writes the given 2D vector in polar form and quantized to the given precision.
+	/// The length of the 2D vector is stored as fixed-point in magnitudeIntegerBits.magnitudeDecimalBits format.
+	/// The direction of the 2D vector is stores with directionBits.
+	/// @param x The x coordinate of the 2D vector.
+	/// @param y The y coordinate of the 2D vector.
+	/// @param magnitudeIntegerBits The number of bits to use for the integral part of the vector's length. This means
+	///	 that the maximum length of the vector to be written by this function is < 2^magnitudeIntegerBits.
+	/// @param magnitudeDecimalBits The number of bits to use for the fractional part of the vector's length.
+	/// @param directionBits The number of bits of precision to use for storing the direction of the 2D vector.
+	/// @return The number of bits written to the stream.
+	/// @important This function does not write a fixed amount of bits to the stream, but omits the direction if the length is zero. 
+	///	 Therefore only use DataDeserializer::ReadVector2D to extract the vector from the buffer.
+	int AddVector2D(float x, float y, int magnitudeIntegerBits, int magnitudeDecimalBits, int directionBits);
+
+	/// Writes the given normalized 3D vector converted to spherical form (azimuth/yaw, inclination/pitch) and quantized to the specified range.
+	/// The given vector (x,y,z) must be normalized in advance.
+	/// @param numBitsYaw The number of bits to use for storing the azimuth/yaw part of the vector.
+	/// @param numBitsPitch The number of bits to use for storing the inclination/pitch part of the vector.
+	/// @note After converting the euclidean (x,y,z) to spherical (yaw, pitch) format, the yaw value is expressed in the range [-pi, pi] and pitch
+	///	 is expressed in the range [-pi/2, pi/2]. Therefore, to maintain consistent precision, the condition numBitsYaw == numBitsPitch + 1 
+	///	 should hold. E.g. If you specify 8 bits for numBitsPitch, then you should specify 9 bits for numBitsYaw to have yaw & pitch use the same
+	///	 amount of precision.
+	/// @note This function uses the convention that the +Y axis points towards up, i.e. +Y is the "Zenith direction", and the X-Z plane is the horizontal
+	///	 "map" plane.
+	void AddNormalizedVector3D(float x, float y, float z, int numBitsYaw, int numBitsPitch);
+
+	/// Writes the given 3D vector converted to spherical form (azimuth/yaw, inclination/pitch, length) and quantized to the specified range.
+	/// @param numBitsYaw The number of bits to use for storing the azimuth/yaw part of the vector.
+	/// @param numBitsPitch The number of bits to use for storing the inclination/pitch part of the vector.
+	/// @param magnitudeIntegerBits The number of bits to use for the integral part of the vector's length. This means
+	///	 that the maximum length of the vector to be written by this function is < 2^magnitudeIntegerBits.
+	/// @param magnitudeDecimalBits The number of bits to use for the fractional part of the vector's length.
+	/// @return The number of bits written to the stream.
+	/// @important This function does not write a fixed amount of bits to the stream, but omits the direction if the length is zero. 
+	///	 Therefore only use DataDeserializer::ReadVector3D to extract the vector from the buffer.
+	/// @note After converting the euclidean (x,y,z) to spherical (yaw, pitch) format, the yaw value is expressed in the range [-pi, pi] and pitch
+	///	 is expressed in the range [-pi/2, pi/2]. Therefore, to maintain consistent precision, the condition numBitsYaw == numBitsPitch + 1 
+	///	 should hold. E.g. If you specify 8 bits for numBitsPitch, then you should specify 9 bits for numBitsYaw to have yaw & pitch use the same
+	///	 amount of precision.
+	/// @note This function uses the convention that the +Y axis points towards up, i.e. +Y is the "Zenith direction", and the X-Z plane is the horizontal
+	///	 "map" plane.
+	int AddVector3D(float x, float y, float z, int numBitsYaw, int numBitsPitch, int magnitudeIntegerBits, int magnitudeDecimalBits);
+
+	void AddArithmeticEncoded(int numBits, int val1, int max1, int val2, int max2);
+	void AddArithmeticEncoded(int numBits, int val1, int max1, int val2, int max2, int val3, int max3);
+	void AddArithmeticEncoded(int numBits, int val1, int max1, int val2, int max2, int val3, int max3, int val4, int max4);
+	void AddArithmeticEncoded(int numBits, int val1, int max1, int val2, int max2, int val3, int max3, int val4, int max4, int val5, int max5);
+
 	/// Sets the number of instances in a varying element.
 	void SetVaryingElemSize(u32 count);
 

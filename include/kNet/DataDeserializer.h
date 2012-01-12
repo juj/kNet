@@ -86,6 +86,23 @@ public:
 	/// @param numBits the number of bits to read, [1, 32].
 	u32 ReadBits(int numBits);
 
+	float ReadUnsignedFixedPoint(int numIntegerBits, int numDecimalBits);
+
+	float ReadSignedFixedPoint(int numIntegerBits, int numDecimalBits);
+
+	float ReadQuantizedFloat(float minRange, float maxRange, int numBits);
+
+	void ReadNormalizedVector2D(int numBits, float &x, float &y);
+
+	void ReadVector2D(int magnitudeIntegerBits, int magnitudeDecimalBits, int directionBits, float &x, float &y);
+	void ReadNormalizedVector3D(int numBitsYaw, int numBitsPitch, float &x, float &y, float &z);
+	void ReadVector3D(int numBitsYaw, int numBitsPitch, int magnitudeIntegerBits, int magnitudeDecimalBits, float &x, float &y, float &z);
+
+	void ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2);
+	void ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3);
+	void ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3, int &val4, int max4);
+	void ReadArithmeticEncoded(int numBits, int &val1, int max1, int &val2, int max2, int &val3, int max3, int &val4, int max4, int &val5, int max5);
+
 	u32 GetDynamicElemCount();
 
 	/// @return The number of bytes left in the stream to read.
