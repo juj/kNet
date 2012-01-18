@@ -16,6 +16,7 @@
 	@brief */
 
 #include <cstring>
+#include <cmath>
 
 #include "kNet/DebugMemoryLeakCheck.h"
 
