@@ -122,8 +122,9 @@ public:
 	///	 which are evenly distributed across the range [minRange, maxRange]. The value numBits must satisfy 1 <= numBits <= 30.
 	/// @param minRange The lower limit for the value that is being written.
 	/// @param maxRange The upper limit for the value that is being written.
+	/// @return The bit pattern that was written to the buffer.
 	/// @note This function performs quantization, which results in lossy serialization/deserialization.
-	void AddQuantizedFloat(float minRange, float maxRange, int numBits, float value);
+	u32 AddQuantizedFloat(float minRange, float maxRange, int numBits, float value);
 
 	/// Writes the given normalized 2D vector compressed to a single 1D polar angle value. Then the angle is quantized to the specified 
 	/// precision.
@@ -210,6 +211,11 @@ public:
 	/// Returns the current bit offset in the current byte this DataSerializer is writing to, [0, 7].
 	size_t BitOffset() const { return bitOfs; }
 
+	/// Returns the bit serialized at the given bit index of this buffer.
+	bool DebugReadBit(int bitIndex) const;
+
+	/// Returns a string of 0's and 1's corresponding to the given bit indices.
+	std::string DebugReadBits(int startIndex, int endIndex) const;
 private:
 	void AppendByte(u8 byte);
 	void AppendUnalignedByte(u8 byte);

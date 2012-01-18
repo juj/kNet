@@ -16,6 +16,7 @@
 	@brief */
 
 #include <cstring>
+#include <sstream>
 #include <cmath>
 
 #include "kNet/DebugMemoryLeakCheck.h"
@@ -179,10 +180,11 @@ u32 DataSerializer::AddSignedFixedPoint(int numIntegerBits, int numDecimalBits, 
 
 static inline float ClampF(float val, float minVal, float maxVal) { return val <= minVal ? minVal : (val >= maxVal ? maxVal : val); }
 
-void DataSerializer::AddQuantizedFloat(float minRange, float maxRange, int numBits, float value)
+u32 DataSerializer::AddQuantizedFloat(float minRange, float maxRange, int numBits, float value)
 {
 	u32 outVal = (u32)((ClampF(value, minRange, maxRange) - minRange) * (float)((1 << numBits)-1) / (maxRange - minRange));
 	AppendBits(outVal, numBits);
+	return outVal;
 }
 
 #define PI ((float)3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679)
@@ -345,6 +347,19 @@ void DataSerializer::SkipNumBytes(size_t numBytes)
 	elemOfs += numBytes;
 	if (elemOfs + (bitOfs ? 1 : 0) > maxBytes)
 		throw NetException("DataSerializer::SkipNumBytes: Attempted to travel past the end of the array!");
+}
+
+bool DataSerializer::DebugReadBit(int bitIndex) const
+{
+	return (data[bitIndex >> 3] & (1 << (bitIndex & 7))) != 0;
+}
+
+std::string DataSerializer::DebugReadBits(int startIndex, int endIndex) const
+{
+	std::stringstream ss;
+	for(int i = startIndex; i < endIndex; ++i)
+		ss << DebugReadBit(i) ? "1" : "0";
+	return ss.str();
 }
 
 } // ~kNet
