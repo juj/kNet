@@ -38,9 +38,14 @@ endmacro()
 set(USE_BOOST TRUE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
-#set(USE_TINYXML TRUE)
-#set(TINYXML_ROOT "TODO_SpecifyYourTinyXMLRootHereIfUsingTinyXML")
+# TinyXML is embedded to the repository, so you can safely keep this true.
+# However, it is not required for core kNet use, but only for the MessageCompiler tool, in which
+# case you can disable it here by setting USE_TINYXML to FALSE, and excluding MessageCompiler from the build.
+set(USE_TINYXML TRUE)
+set(TINYXML_ROOT "src/tinyxml")
 
+# If you want to enable the use of visual debugging/profiling windows, uncomment the following line (must
+# have Qt installed and set up)
 #set(USE_QT TRUE)
 
 # To enable specific flags only in debug mode, use the following syntax.
@@ -51,6 +56,7 @@ set(USE_BOOST TRUE)
 AddCompilationDefine(KNET_ENABLE_WINXP_SUPPORT)
 
 # If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.
+# (This can considerably slow down kNet performance)
 AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
 
 # Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
@@ -74,16 +80,16 @@ if (USE_BOOST)
    endif()
 endif()
 
+file(GLOB kNetSourceFiles ./src/*.cpp)
+file(GLOB kNetHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/*.inl)
+
 if (USE_TINYXML)
    AddCompilationDefine(KNET_USE_TINYXML)
    
+   file(GLOB TinyXmlSourceFiles ${TINYXML_ROOT}/*.cpp)
+   set(kNetSourceFiles ${kNetSourceFiles} ${TinyXmlSourceFiles})
    include_directories(${TINYXML_ROOT})
-   link_directories(${TINYXML_ROOT})
-   link_directories(${TINYXML_ROOT}/Release)
 endif()
-
-file(GLOB kNetSourceFiles ./src/*.cpp)
-file(GLOB kNetHeaderFiles ./include/*.h ./include/kNet/*.h ./include/kNet/*.inl)
 
 if (USE_QT)
    AddCompilationDefine(KNET_USE_QT)
@@ -168,10 +174,6 @@ endforeach()
 
 add_library(kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
 
-if (USE_TINYXML)
-   target_link_libraries(kNet debug tinyxmld.lib optimized tinyxml.lib)
-endif()
-
 # Add the main kNet include directory root folder to all projects.
 include_directories(./include)
 
@@ -199,7 +201,7 @@ target_link_libraries(kNet ${kNetLinkLibraries})
 #add_subdirectory(samples/HelloClient)
 #add_subdirectory(samples/HelloServer)
 #add_subdirectory(samples/LatencyTest)
-#add_subdirectory(samples/MessageCompiler)
+add_subdirectory(samples/MessageCompiler)
 #add_subdirectory(samples/SilenceTest)
 #add_subdirectory(samples/SimpleChat)
 #add_subdirectory(samples/SpeedTest)
@@ -209,7 +211,7 @@ target_link_libraries(kNet ${kNetLinkLibraries})
 
 #set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
 
-set_target_properties(kNet PROPERTIES 
+set_target_properties(kNet MessageCompiler PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
