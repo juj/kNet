@@ -201,7 +201,7 @@ target_link_libraries(kNet ${kNetLinkLibraries})
 #add_subdirectory(samples/HelloClient)
 #add_subdirectory(samples/HelloServer)
 #add_subdirectory(samples/LatencyTest)
-add_subdirectory(samples/MessageCompiler)
+#add_subdirectory(samples/MessageCompiler)
 #add_subdirectory(samples/SilenceTest)
 #add_subdirectory(samples/SimpleChat)
 #add_subdirectory(samples/SpeedTest)
@@ -211,7 +211,7 @@ add_subdirectory(samples/MessageCompiler)
 
 #set_target_properties(kNet Tests ConnectFlood FileTransfer FirewallTest HelloClient HelloServer LatencyTest MessageCompiler SilenceTest SimpleChat SpeedTest TrashTalk PROPERTIES 
 
-set_target_properties(kNet MessageCompiler PROPERTIES 
+set_target_properties(kNet PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
