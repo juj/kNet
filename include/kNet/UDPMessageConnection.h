@@ -117,7 +117,7 @@ private:
 	void SendPacketAckMessage(); // [worker thread]
 	void HandlePacketAckMessage(const char *data, size_t numBytes); // [worker thread]
 	
-	bool HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes); // [worker thread]
+	bool HandleMessage(packet_id_t packetID, message_id_t messageID, const char *data, size_t numBytes); // [worker thread]
 
 	/// Refreshes Packet Loss related statistics.
 	void ComputePacketLoss(); // [worker thread]

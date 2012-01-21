@@ -1291,7 +1291,7 @@ void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceive
 	EndAndQueueMessage(msg, 2, internalCall);*/
 }
 
-bool UDPMessageConnection::HandleMessage(packet_id_t packetID, u32 messageID, const char *data, size_t numBytes)
+bool UDPMessageConnection::HandleMessage(packet_id_t packetID, message_id_t messageID, const char *data, size_t numBytes)
 {
 	AssertInWorkerThreadContext();
 

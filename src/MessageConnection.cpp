@@ -770,7 +770,7 @@ void MessageConnection::Process(int maxMessagesToProcess)
 		inboundMessageQueue.PopFront();
 		assert(msg);
 
-		inboundMessageHandler->HandleMessage(this, msg->id, (msg->dataSize > 0) ? msg->data : 0, msg->dataSize);
+		inboundMessageHandler->HandleMessage(this, msg->receivedPacketID, msg->id, (msg->dataSize > 0) ? msg->data : 0, msg->dataSize);
 
 		FreeMessage(msg);
 	}
@@ -1012,7 +1012,7 @@ void MessageConnection::ClearOutboundMessageWithContentID(NetworkMessage *msg)
 			outboundContentIDMessages.erase(iter);
 }
 
-bool MessageConnection::CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID)
+bool MessageConnection::CheckAndSaveContentIDStamp(message_id_t messageID, u32 contentID, packet_id_t packetID)
 {
 	AssertInWorkerThreadContext();
 
@@ -1050,7 +1050,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 
 	// Read the message ID.
 	DataDeserializer reader(data, numBytes);
-	u32 messageID = reader.ReadVLE<VLE8_16_32>(); ///\todo Check that there actually is enough space to read.
+	message_id_t messageID = reader.ReadVLE<VLE8_16_32>(); ///\todo Check that there actually is enough space to read.
 	if (messageID == DataDeserializer::VLEReadError)
 	{
 		LOG(LogError, "Error parsing messageID of a message in socket %s. Data size: %d bytes.", socket->ToString().c_str(), (int)numBytes);
@@ -1084,6 +1084,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 			msg->dataSize = reader.BytesLeft();
 			msg->id = messageID;
 			msg->contentID = 0;
+			msg->receivedPacketID = packetID;
 			bool success = inboundMessageQueue.Insert(msg);
 			if (!success)
 			{

@@ -540,7 +540,7 @@ protected:
 	/// by a newer packet and should not be processed.
 	/// @return True if the packet should be processed (there was no superceding record), and
 	///         false if the packet is old and should be discarded.
-	bool CheckAndSaveContentIDStamp(u32 messageID, u32 contentID, packet_id_t packetID); // [worker thread]
+	bool CheckAndSaveContentIDStamp(message_id_t messageID, u32 contentID, packet_id_t packetID); // [worker thread]
 
 	void SplitAndQueueMessage(NetworkMessage *message, bool internalQueue, size_t maxFragmentSize); // [main and worker thread]
 
@@ -554,7 +554,7 @@ protected:
 	/// Private ctor - MessageConnections are instantiated by Network and NetworkServer classes.
 	explicit MessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState);
 
-	virtual bool HandleMessage(packet_id_t /*packetID*/, u32 /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; } // [main thread]
+	virtual bool HandleMessage(packet_id_t /*packetID*/, message_id_t /*messageID*/, const char * /*data*/, size_t /*numBytes*/) { return false; } // [main thread]
 };
 
 template<typename SerializableData>
