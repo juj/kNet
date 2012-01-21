@@ -79,10 +79,13 @@ typedef signed long long s64; ///< 8 bytes signed. 9,223,372,036,854,775,807 ~ 9
 
 // kNet special types:
 
-/// Identifies a UDP datagram by auto-incrementing number. Contains 22 actual bits of data.
-typedef u32 packet_id_t;
-/// Identifies the type of a network message. Contains 30 actual bits of data.
-/// Valid user range is [6, 1073741821 == 0x3FFFFFFD].
-typedef u32 message_id_t;
+namespace kNet
+{
+	/// Identifies a UDP datagram by auto-incrementing number. Contains 22 actual bits of data.
+	typedef unsigned long packet_id_t;
+	/// Identifies the type of a network message. Contains 30 actual bits of data.
+	/// Valid user range is [6, 1073741821 == 0x3FFFFFFD].
+	typedef unsigned long message_id_t;
+}
 
 #endif // ~KNET_NO_FIXEDWIDTH_TYPES
