@@ -59,9 +59,9 @@ public:
 		connection->RegisterInboundMessageHandler(this);
 	}
 
-	void HandleMessage(MessageConnection *source, message_id_t id, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
-		if (id == cChatMessageID)
+		if (messageId == cChatMessageID)
 			OnChatMessageReceived(source, data, numBytes);
 	}
 

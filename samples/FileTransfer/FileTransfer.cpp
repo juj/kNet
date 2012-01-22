@@ -61,9 +61,9 @@ void NetworkApp::NewConnectionEstablished(MessageConnection *connection)
 	connection->RegisterInboundMessageHandler(this);
 }
 
-void NetworkApp::HandleMessage(MessageConnection *source, message_id_t id, const char *data, size_t numBytes)
+void NetworkApp::HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 {
-	switch(id)
+	switch(messageId)
 	{
 	case cFileTransferStartMessage:
 	{

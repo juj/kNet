@@ -25,7 +25,7 @@ class NetworkApp : public IMessageHandler
 {
 	Network network;
 public:
-	void HandleMessage(MessageConnection *,message_id_t,const char *,size_t)
+	void HandleMessage(MessageConnection *, packet_id_t, message_id_t, const char *, size_t)
 	{
 	}
 

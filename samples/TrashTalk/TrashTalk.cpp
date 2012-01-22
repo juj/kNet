@@ -29,7 +29,7 @@ class NetworkApp : public IMessageHandler
 {
 	Network network;
 public:
-	void HandleMessage(MessageConnection *,message_id_t,const char *,size_t)
+	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
 	}
 

@@ -41,9 +41,9 @@ public:
 		connection->EndAndQueueMessage(msg);
 	}
 
-	void HandleMessage(MessageConnection *source, message_id_t id, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
-		cout << "Received a message with ID 0x" << std::hex << id << "!" << endl;
+		cout << "Received a message with ID 0x" << std::hex << messageId << "!" << endl;
 	}
 
 	void RunServer(unsigned short port, SocketTransportLayer transport)

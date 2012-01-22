@@ -46,15 +46,15 @@ public:
 		connection->EndAndQueueMessage(msg);
 	}
 
-	void HandleMessage(MessageConnection *source, message_id_t id, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
-		switch(id)
+		switch(messageId)
 		{
 		case cDataMessage:
-			LOG(LogVerbose, "Received a message of size %d bytes and ID %d.", numBytes, id);
+			LOG(LogVerbose, "Received a message of size %d bytes and ID %d.", numBytes, messageId);
 			break;
 		default:
-			LOG(LogUser, "Received an unknown message with ID 0x%X!", id);
+			LOG(LogUser, "Received an unknown message with ID 0x%X!", messageId);
 			break;
 		}
 	}

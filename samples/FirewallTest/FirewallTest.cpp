@@ -46,13 +46,13 @@ public:
 		connection->RegisterInboundMessageHandler(this);
 	}
 
-	void HandleMessage(MessageConnection *connection, message_id_t id, const char *msg, size_t size)
+	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
-		cout << "Received a message with ID " << id << " and size " << size << "." << endl;
-		switch(id)
+		cout << "Received a message with ID " << messageId << " and size " << numBytes << "." << endl;
+		switch(messageId)
 		{
 		case 123:
-			SendRandomMessage(connection, 456, size);
+			SendRandomMessage(source, 456, numBytes);
 			++numMessagesReceived;
 			break;
 		case 456:
