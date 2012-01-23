@@ -23,9 +23,9 @@
 #include <Windows.h>
 #else
 #include <pthread.h>
-#include <assert.h>
 #endif
 
+#include <assert.h>
 #include "PolledTimer.h"
 #include "NetworkLogging.h"
 

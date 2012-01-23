@@ -52,7 +52,7 @@ class Network;
 class NetworkWorkerThread;
 class FragmentedSendManager;
 
-#ifdef WIN32
+#ifdef _MSC_VER
 struct FragmentedSendManager::FragmentedTransfer;
 #endif
 

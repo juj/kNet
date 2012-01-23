@@ -134,7 +134,7 @@ void SetLogFile(const char *filename)
 
 void EnableMemoryLeakLoggingAtExit()
 {
-#ifdef WIN32
+#ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);

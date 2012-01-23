@@ -21,7 +21,7 @@
 #include "kNet.h"
 #include "kNet/DebugMemoryLeakCheck.h"
 
-//#undef WIN32
+//#undef _MSC_VER
 
 using namespace std;
 using namespace kNet;
@@ -143,7 +143,7 @@ public:
 			connection->SendMessage(cChatMessageID, true, true, 100, 0, message, messageLength);
 	}
 
-#ifdef WIN32 // On windows, poll for new messages to send from the console instead of blocking.
+#ifdef _MSC_VER // On windows, poll for new messages to send from the console instead of blocking.
 	void Win32PeekConsoleInput()
 	{
 		// Get the standard input handle.
@@ -194,7 +194,7 @@ public:
 
 	void RunChat(Ptr(MessageConnection) connection)
 	{
-#ifdef WIN32
+#ifdef _MSC_VER
 		// Get the standard input handle.
 		HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
 		if (hStdin == INVALID_HANDLE_VALUE)
@@ -231,7 +231,7 @@ public:
 				connection->FreeMessage(msg);
 			}
 
-#ifdef WIN32
+#ifdef _MSC_VER
 			Win32PeekConsoleInput();
 #else
 			char inputText[256] = {};
