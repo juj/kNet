@@ -402,7 +402,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		if (datagramSerializedMessages.size() > 0 && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
 			break;
 
-		if (totalMessageSize > maxSendSize)
+		if (totalMessageSize > (int)maxSendSize)
 			LOG(LogError, "Warning: Sending out a message of ID %d and size %d bytes, but UDP socket max send size is only %d bytes!", (int)msg->id, totalMessageSize, (int)maxSendSize);
 
 		datagramSerializedMessages.push_back(msg);
