@@ -10,6 +10,7 @@ kNet has been tested to build on the following platforms:
  - Windows 7 & Visual Studio 2010 Professional
  - Windows 7 & Visual Studio 2008 Standard
  - Ubuntu 9.04 & GCC 4.4.1
+ - Windows 7 & MinGW GCC 4.6.1 versioned 20111118 (beware though, MinGW is not actively supported)
 
 
 
