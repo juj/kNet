@@ -73,8 +73,8 @@ bool VectorsIntersect(const std::vector<T> &a, const std::vector<T> &b)
     if (a.size() == 0 || b.size() == 0)
         return false;
 
-    vector<T>::const_iterator iA = a.begin();
-    vector<T>::const_iterator iB = b.begin();
+    typename vector<T>::const_iterator iA = a.begin();
+    typename vector<T>::const_iterator iB = b.begin();
     while(iA != a.end() && iB != b.end())
     {
         if (*iA == *iB)
