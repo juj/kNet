@@ -92,6 +92,8 @@ public:
 
 	float ReadQuantizedFloat(float minRange, float maxRange, int numBits);
 
+	float ReadMiniFloat(bool signBit, int exponentBits, int mantissaBits, int exponentBias);
+
 	void ReadNormalizedVector2D(int numBits, float &x, float &y);
 
 	void ReadVector2D(int magnitudeIntegerBits, int magnitudeDecimalBits, int directionBits, float &x, float &y);

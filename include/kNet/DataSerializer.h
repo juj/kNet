@@ -78,8 +78,8 @@ public:
 
 	/// Appends the given number of bits to the stream.
 	/// @param value The variable where the bits are taken from. The bits are read from the LSB first, towards the MSB end of the value.
-	/// @param amount The number of bits to read, in the range [1, 32].
-	void AppendBits(u32 value, int amount);
+	/// @param numBits The number of bits to write, in the range [1, 32].
+	void AppendBits(u32 value, int numBits);
 
 	/// Adds a given string as length-prepended (not zero-padded). In the message template, use a
 	/// parameter of type 's8' with dynamicCount field set to e.g. 8.
@@ -125,6 +125,22 @@ public:
 	/// @return The bit pattern that was written to the buffer.
 	/// @note This function performs quantization, which results in lossy serialization/deserialization.
 	u32 AddQuantizedFloat(float minRange, float maxRange, int numBits, float value);
+
+	/// Writes the given float with a reduced amount of bit precision.
+	/// @param signBit If true, a signed float is written (one bit is reserved for sign-magnitude representation).
+	///                If false, an unsigned float is written. Negative numbers clamp to zero (-inf -> zero as well).
+	/// @param exponentBits The number of bits to use to store the exponent value, in the range [1, 8].
+	/// @param mantissaBits The number of bits to use to store the mantissa value, in the range [1, 23].
+	/// @param exponentBias For IEEE-754 floats, the signed exponent is converted to unsigned number by adding an offset bias.
+	///                This field specifies the bias to use. Usually it is ok to reserve the equal number of exponent values
+	///                for negative and positive exponents, meaning that exponentBias == (1 << (exponentBits - 1)) - 1 is an ok default.
+	/// @param value The floating point number to encode.
+	/// @note This function performs quantization, which results in lossy serialization/deserialization.
+	/// @note An example for 8-bit minifloats: signBit==true, exponentBits==3, mantissaBits==4, exponentBias==3.
+	/// @note IEEE-754 16-bit 'half16': signBit==true, exponentBits==5, mantissaBits==10, exponentBias==15.
+	///       See http://en.wikipedia.org/wiki/Half_precision_floating-point_format
+	/// @note IEEE-754 32-bit floats: signBit==true, exponentBits==8, mantissaBits==23, exponentBias==127.
+	void AddMiniFloat(bool signBit, int exponentBits, int mantissaBits, int exponentBias, float value);
 
 	/// Writes the given normalized 2D vector compressed to a single 1D polar angle value. Then the angle is quantized to the specified 
 	/// precision.

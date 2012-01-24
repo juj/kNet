@@ -51,20 +51,20 @@ public:
 
 	void Write(DataSerializer &dst)
 	{
-		std::cout << "Writing to elemOfs: " << dst.ByteOffset() << ", bitOfs: " << dst.BitOffset()
-			<< "(" << dst.BitsFilled() << "): ";
+//		std::cout << "Writing to elemOfs: " << dst.ByteOffset() << ", bitOfs: " << dst.BitOffset()
+//			<< "(" << dst.BitsFilled() << "): ";
 		int bitsFilled = dst.BitsFilled();
 		Serialize(dst);
-		std::cout << "Wrote " << (dst.BitsFilled() - bitsFilled) << " bits." << endl;
+//		std::cout << "Wrote " << (dst.BitsFilled() - bitsFilled) << " bits." << endl;
 	}
 
 	void Read(DataDeserializer &src)
 	{
-		std::cout << "Reading from elemOfs: " << src.BytePos() << ", bitOfs: " << src.BitPos()
-			<< "(" << src.BitsReadTotal() << "): ";
+//		std::cout << "Reading from elemOfs: " << src.BytePos() << ", bitOfs: " << src.BitPos()
+//			<< "(" << src.BitsReadTotal() << "): ";
 		int bitsRead = src.BitsReadTotal();
 		Deserialize(src);
-		std::cout << "Read " << (src.BitsReadTotal() - bitsRead) << " bits." << endl;
+//		std::cout << "Read " << (src.BitsReadTotal() - bitsRead) << " bits." << endl;
 	}
 };
 
@@ -104,12 +104,12 @@ public:
 	void Serialize(DataSerializer &dst)
 	{ 
 		dst.Add<T>(value);
-		cout << "Serialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << value << endl;
+//		cout << "Serialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << value << endl;
 	}
 	void Deserialize(DataDeserializer &src)
 	{ 
 		T deserialized = src.Read<T>(); 
-		cout << "Deserialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << deserialized << endl;
+//		cout << "Deserialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << deserialized << endl;
 		assert(deserialized == value);
 	}
 };
@@ -127,13 +127,13 @@ public:
 	void Serialize(DataSerializer &dst)
 	{
 		dst.Add<string>(value);
-		cout << "Serialized type string, value: " << value << endl;
+//		cout << "Serialized type string, value: " << value << endl;
 	}
 
 	void Deserialize(DataDeserializer &src)
 	{
 		string deserialized = src.Read<string>();
-		cout << "Deserialized type string, value: " << deserialized << endl;
+//		cout << "Deserialized type string, value: " << deserialized << endl;
 		assert(deserialized == value);
 	}
 };
@@ -153,13 +153,13 @@ public:
 	void Serialize(DataSerializer &dst)
 	{
 		dst.AddVLE<VLE8_16_32>(value);
-		cout << "Serialized type VLE8_16_32, value: " << value << endl;
+//		cout << "Serialized type VLE8_16_32, value: " << value << endl;
 	}
 
 	void Deserialize(DataDeserializer &src)
 	{
 		u32 deserialized = src.ReadVLE<VLE8_16_32>();
-		cout << "Deserialized type VLE8_16_32, value: " << deserialized << endl;
+//		cout << "Deserialized type VLE8_16_32, value: " << deserialized << endl;
 		assert(deserialized == value);
 	}
 };
@@ -179,13 +179,13 @@ public:
 	void Serialize(DataSerializer &dst)
 	{
 		dst.AddVLE<VLE8_16>(value);
-		cout << "Serialized type VLE8_16, value: " << value << endl;
+//		cout << "Serialized type VLE8_16, value: " << value << endl;
 	}
 
 	void Deserialize(DataDeserializer &src)
 	{
 		u16 deserialized = src.ReadVLE<VLE8_16>();
-		cout << "Deserialized type VLE8_16, value: " << deserialized << endl;
+//		cout << "Deserialized type VLE8_16, value: " << deserialized << endl;
 		assert(deserialized == value);
 	}
 };
@@ -205,20 +205,77 @@ public:
 	void Serialize(DataSerializer &dst)
 	{
 		dst.AddVLE<VLE16_32>(value);
-		cout << "Serialized type VLE16_32, value: " << value << endl;
+//		cout << "Serialized type VLE16_32, value: " << value << endl;
 	}
 
 	void Deserialize(DataDeserializer &src)
 	{
 		u32 deserialized = src.ReadVLE<VLE16_32>();
-		cout << "Deserialized type VLE16_32, value: " << deserialized << endl;
+//		cout << "Deserialized type VLE16_32, value: " << deserialized << endl;
 		assert(deserialized == value);
+	}
+};
+
+enum FloatCategory
+{
+	FloatZero,
+	FloatNumber,
+	FloatInf,
+	FloatNegInf,
+	FloatSignallingNan,
+	FloatQuietNan
+};
+
+FloatCategory CategorizeFloat(float val)
+{
+	u32 v = *(u32*)&val;
+	if ((v & 0x7FFFFFFF) == 0)
+		return FloatZero;
+	bool sign = (v & 0x80000000) != 0;
+	u32 biasedExponent = (v & 0x7F800000) >> 23;
+	u32 mantissa = v & 0x7FFFFF;
+	if (biasedExponent != 0xFF)
+		return FloatNumber;
+
+	if (mantissa == 0)
+		return sign ? FloatNegInf : FloatInf;
+
+	return ((mantissa & 0x400000) != 0) ? FloatQuietNan : FloatSignallingNan;
+}
+
+class MiniFloatAction : public Action
+{
+public:
+	float value;
+
+	MiniFloatAction()
+	{
+		u32 v = randu32();
+		value = *(float*)&v;
+	}
+
+	void Serialize(DataSerializer &dst)
+	{
+		dst.AddMiniFloat(true, 5, 10, 15, value);
+	}
+
+	void Deserialize(DataDeserializer &src)
+	{
+		float readValue = src.ReadMiniFloat(true, 5, 10, 15);
+		FloatCategory oldCategory = CategorizeFloat(value);
+		FloatCategory newCategory = CategorizeFloat(readValue);
+		if (oldCategory != newCategory && !(oldCategory == FloatNumber && abs(value) < 1e-3f && newCategory == FloatZero)
+			&& !(oldCategory == FloatNumber && value >= 65536.0f && newCategory == FloatInf)
+			&& !(oldCategory == FloatNumber && value <= -65536.0f && newCategory == FloatNegInf))
+		{
+			std::cout << "Error in Minifloat serialization! Old value: " << value << ", new value: " << readValue << std::endl;
+		}
 	}
 };
 
 Action *CreateRandomAction()
 {
-	switch(rand() % 15)
+	switch(rand() % 16)
 	{
 	case 0: return new BasicAction<bit>();
 	case 1: return new BasicAction<u8>();
@@ -235,6 +292,7 @@ Action *CreateRandomAction()
 	case 12: return new VLE8_16_Action();
 	case 13: return new VLE16_32_Action();
 	case 14: return new VLE8_16_32_Action();
+	case 15: return new MiniFloatAction();
 	default: assert(false); return 0;
 	}
 }
@@ -242,7 +300,7 @@ Action *CreateRandomAction()
 void RandomizedDataSerializerTest()
 {
 	std::list<Action*> actions;
-	for(int i = 0; i < 16; ++i)
+	for(int i = 0; i < 100; ++i)
 		actions.push_back(CreateRandomAction());
 
 	DataSerializer ds;
@@ -314,7 +372,9 @@ void ManualDataSerializerTest()
 
 void DataSerializerTest()
 {
-	for(int i = 0; i < 10; ++i)
+	std::cout << "Running randomized DataSerializerTest." << std::endl;
+	for(int i = 0; i < 100; ++i)
 		RandomizedDataSerializerTest();
+	std::cout << "Running manually written DataSerializerTest." << std::endl;
 	ManualDataSerializerTest();
 }

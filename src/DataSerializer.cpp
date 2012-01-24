@@ -187,6 +187,90 @@ u32 DataSerializer::AddQuantizedFloat(float minRange, float maxRange, int numBit
 	return outVal;
 }
 
+void DataSerializer::AddMiniFloat(bool signBit, int exponentBits, int mantissaBits, int exponentBias, float value)
+{
+	// Float structure:
+	// 1-bit sign
+	// 8-bit exponent
+	// 23-bit mantissa
+	// s eeeeeeee mmmmmmmmmmmmmmmmmmmmmmm
+	// Different float categories:
+	// 0 00000000 00000000000000000000000  +zero
+	// 1 00000000 00000000000000000000000  -zero
+	// s 00000000 mmmmmmmmmmmmmmmmmmmmmmm  A denormal number, mmmmm != 0, interpreted as (-1)^s * 2^-126 * 0.mmmmm
+	// s eeeeeeee xxxxxxxxxxxxxxxxxxxxxxx  A normal number, eeeee != 0, interpreted as (-1)^s * 2^(e-127) * 1.mmmmm
+	// 0 11111111 00000000000000000000000  +inf
+	// 1 11111111 00000000000000000000000  -inf
+	// y 11111111 1xxxxxxxxxxxxxxxxxxxxxx  Quiet NaN, y and xxxxx are arbitrary (custom) payload for the NaN.
+	// y 11111111 0xxxxxxxxxxxxxxxxxxxxxx  Signalling NaN, y and xxxxx != 0 is arbitrary payload for the NaN.
+
+	// When writing our custom low-precision minifloat, make sure that values in each of the above categories stays in
+	// the same category, if possible:
+	// +zero: Reducing bits does not affect the value.
+	// -zero: Reducing bits does not affect the value. If sending unsigned, -zero becomes +zero.
+	// denormals: Reducing bits from mantissa gracefully loses precision. Reducing exponent does not affect the value.
+	//            If sending unsigned, negative denormals flush to zero.
+	// normals: Reducing bits from exponent can cause the exponent to overflow or underflow.
+	//          If the exponent is too large to be encoded, +inf/-inf is sent instead.
+	//          If the exponent is too small to be encoded, the value is flushed to zero. \todo Could create a denormal!
+	// +inf: Reducing bits does not affect the value.
+	// -inf: Reducing bits from exponent or mantissa does not matter. If sending unsigned, -inf flushes to zero.
+	// QNaN/SNaN: Reducing bits loses data from the custom NaN payload field. If mantissaBits == 0, cannot differentiat
+	//            between QNaN and SNaN.
+
+	assert(sizeof(float) == 4);
+	assert(exponentBits > 0);
+	assert(exponentBits <= 8);
+	assert(mantissaBits > 0);
+	assert(mantissaBits <= 23);
+	u32 v = *(u32*)&value;
+	u32 biasedExponent = (v & 0x7F800000) >> 23;
+	u32 mantissa = v & 0x7FFFFF;
+	bool sign = (v & 0x80000000) != 0; // If true, the float is negative.
+
+	// Write the sign bit, if sending out a signed minifloat. Otherwise, clamp all negative numbers to +zero.
+	if (signBit)
+		Add<bit>(sign);
+	else if (sign && biasedExponent != 0)
+		biasedExponent = mantissa = 0; // If the number was not a NaN, write out +zero.
+
+	// The maximum biased exponent value in the reduced precision representation. This corresponds to NaNs and +/-Infs.
+	const u32 maxBiasedExponent = (1 << exponentBits) - 1;
+
+	int trueExponent = biasedExponent - 127; // The true exponent of the float, if this number is a normal number.
+	int newBiasedExponent;
+
+	// Compute the new biased exponent value to send.
+	if (biasedExponent != 0xFF && biasedExponent != 0) // Is this a normalized float?
+	{
+		newBiasedExponent = trueExponent + exponentBias;
+		
+		// Check if the new biased exponent is too large to be represented, and the float overflows to a +/-Inf.
+		if (newBiasedExponent >= (int)maxBiasedExponent)
+		{
+			newBiasedExponent = maxBiasedExponent;
+			mantissa = 0; // To specify that this is an Inf and not a NaN.
+		}
+		// Check if the new biased exponent underflowed. In that case flush to zero.
+		///\todo This is not absolutely correct with respect to denormalized numbers. Underflowing
+		/// the exponent should produce a denormalized number, but this directly makes it zero.
+		if (newBiasedExponent <= 0)
+			newBiasedExponent = mantissa = 0;
+	}
+	else
+		newBiasedExponent = biasedExponent; // either all zeroes (+/-zero or denormal) or all ones (nan or inf).
+
+	// Scrap the given number of precision from the mantissa.
+	u32 newMantissa = mantissa >> (23 - mantissaBits);
+
+	// If the float was a SNaN, make sure it stays a SNaN after some of the NaN payload was removed.
+	if (biasedExponent == 0xFF && mantissa != 0 && newMantissa == 0)
+		newMantissa = 1; // Set the mantissa to nonzero to denote a NaN (and don't set the MSB of mantissa, to treat it as SNaN)
+
+	AppendBits(newBiasedExponent, exponentBits);
+	AppendBits(newMantissa, mantissaBits);
+}
+
 #define PI ((float)3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679)
 
 void DataSerializer::AddNormalizedVector2D(float x, float y, int numBits)

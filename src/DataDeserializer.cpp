@@ -148,6 +148,33 @@ float DataDeserializer::ReadQuantizedFloat(float minRange, float maxRange, int n
 	return minRange + val * (maxRange-minRange) / (float)((1 << numBits) - 1);
 }
 
+float DataDeserializer::ReadMiniFloat(bool signBit, int exponentBits, int mantissaBits, int exponentBias)
+{
+	assert(sizeof(float) == 4);
+	assert(exponentBits > 0);
+	assert(exponentBits <= 8);
+	assert(mantissaBits > 0);
+	assert(mantissaBits <= 23);
+
+	bool sign = signBit ? Read<bit>() : false;
+	u32 exponent = ReadBits(exponentBits);
+	u32 mantissa = ReadBits(mantissaBits);
+
+	// Shift back the decoded mantissa to proper position.
+	mantissa <<= 23 - mantissaBits;
+
+	// Reconstruct the float exponent.
+	if (exponent == (u32)((1 << exponentBits) - 1)) // If the read exponent was all ones, reconstruct 11111111.
+		exponent = 0xFF;
+	else if (exponent != 0) // If the read exponent was not zero, it was a normal number.
+		exponent = exponent - exponentBias + 127;
+	// else exponent == 0, meaning a zero or a denormal.
+
+	u32 value = (sign ? 0x80000000 : 0) | (exponent << 23) | mantissa;
+
+	return *(float*)&value;
+}
+
 #define PI ((float)3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679)
 
 void DataDeserializer::ReadNormalizedVector2D(int numBits, float &x, float &y)
