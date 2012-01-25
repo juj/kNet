@@ -24,15 +24,13 @@
 namespace kNet
 {
 
-/// Performs modular arithmetic comparison to see if newID refers to a PacketID newer than oldID.
-/// @return True if newID is newer than oldID, false otherwise.
+/// Performs modular arithmetic comparison to see if newID refers to a PacketID that is *strictly* newer than oldID.
+/// @return True if newID is *strictly* newer than oldID, false otherwise.
 inline bool PacketIDIsNewerThan(packet_id_t newID, packet_id_t oldID)
 {
-	if (newID > oldID)
-		return true;
-	if (oldID - newID >= (1 << 21))
-		return true;
-	return false;
+    packet_id_t diff = (packet_id_t)(newID - oldID);
+    packet_id_t diff2 = (packet_id_t)(newID + 0x3FFFFF - oldID);
+    return diff < 0x1FFFFF || diff2 < 0x1FFFFF;
 }
 
 /// Computes the PacketID for the packet (id + increment).
