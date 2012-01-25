@@ -45,6 +45,8 @@ public:
 
 public slots:
 	void Update();
+
+	void OpenSendSimulationWindow();
 };
 
 } // ~kNet

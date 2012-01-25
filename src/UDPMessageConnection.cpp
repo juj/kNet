@@ -501,7 +501,16 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 
 	// Send the crafted packet out to the socket.
 	data->buffer.len = writer.BytesFilled();
-	bool success = socket->EndSend(data);
+	bool success;
+
+	if (!networkSendSimulator.enabled)
+		success = socket->EndSend(data); // Send the data out.
+	else
+	{
+		// We're running a network simulator. Pass the buffer to networkSendSimulator for delayed sending.
+		networkSendSimulator.SubmitSendBuffer(data);
+		success = true; // Act here as if we succeeded.
+	}
 
 	if (!success)
 	{

@@ -102,6 +102,7 @@ bytesInTotal(0), bytesOutTotal(0)
 #endif
 {
 	connectionState = startingState;
+	networkSendSimulator.owner = this;
 
 	eventMsgsOutAvailable = CreateNewEvent(EventWaitSignal);
 	assert(eventMsgsOutAvailable.IsValid());
@@ -361,6 +362,8 @@ void MessageConnection::FreeMessageData() // [main thread]
 	stats_->ping.clear();
 	stats_->recvPacketIDs.clear();
 	stats_->traffic.clear();
+
+	networkSendSimulator.Free();
 }
 
 void MessageConnection::DetectConnectionTimeOut()
@@ -429,6 +432,8 @@ void MessageConnection::UpdateConnection() // [Called from the worker thread]
 		return;
 
 	AcceptOutboundMessages();
+
+	networkSendSimulator.Process();
 
 	// MessageConnection needs to automatically manage the sending of ping messages in an unreliable channel.
 	if (connectionState == ConnectionOK && pingTimer.TriggeredOrNotRunning())

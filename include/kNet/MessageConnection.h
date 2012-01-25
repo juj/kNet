@@ -23,6 +23,7 @@
 
 #include "kNetBuildConfig.h"
 #include "WaitFreeQueue.h"
+#include "NetworkSimulator.h"
 #include "LockFreePoolAllocator.h"
 #include "Lockable.h"
 #include "Socket.h"
@@ -330,6 +331,9 @@ public:
 	/// Returns the total number of bytes (excluding IP and TCP/UDP headers) that have been sent from this connection.
 	u64 BytesOutTotal() const { return bytesOutTotal; } // [main and worker thread]
 
+	/// Returns the simulator object which can be used to apply network condition simulations to this connection.
+	NetworkSimulator &NetworkSendSimulator() { return networkSendSimulator; }
+
 	/// Stores all the statistics about the current connection. This data is periodically recomputed
 	/// by the network worker thread and shared to the client through a lock.
 	Lockable<ConnectionStatistics> statistics; // [main and worker thread]
@@ -510,6 +514,10 @@ protected:
 	float bytesOutPerSec; ///< The average number of bytes we are sending/second. This includes kNet headers. [main and worker thread]
 	u64 bytesInTotal;
 	u64 bytesOutTotal;
+
+	/// Stores the current settigns related to network conditions testing.
+	/// By default, the simulator is disabled.
+	NetworkSimulator networkSendSimulator;
 
 	/// A running number attached to each outbound message (not present in network stream) to 
 	/// break ties when deducing which message should come before which.

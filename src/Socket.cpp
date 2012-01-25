@@ -731,7 +731,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 		bool waitSuccess = WaitForSendReady(socketWriteTimeout);
 		if (!waitSuccess)
 		{
-			LOG(LogError, "Socket::EndSend: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer, and socket did not transition to write-ready in the timeout period. Closing connection.", 
+			LOG(LogError, "Socket::Send: Warning! Managed to only partially send out %d bytes out of %d bytes in the buffer, and socket did not transition to write-ready in the timeout period. Closing connection.", 
 				bytesSent, (int)numBytes);
 			Close();
 			return false;
@@ -747,7 +747,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 
 		if (error != KNET_EWOULDBLOCK)
 		{
-			LOG(LogError, "Socket::EndSend() failed! Error: %s.", Network::GetErrorString(error).c_str());
+			LOG(LogError, "Socket::Send() failed! Error: %s.", Network::GetErrorString(error).c_str());
 			if (type == ServerClientSocket && transport == SocketOverUDP)
 			{
 				// UDP client sockets are shared between each client (and by the server socket),

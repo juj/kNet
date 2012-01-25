@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>425</width>
-    <height>493</height>
+    <height>519</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -622,6 +622,19 @@
    </property>
    <property name="text">
     <string>Status:</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButtonSendSimulation">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>490</y>
+     <width>91</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Send Simulation</string>
    </property>
   </widget>
  </widget>
