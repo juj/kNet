@@ -20,7 +20,9 @@
 
 #include "kNetBuildConfig.h"
 
+#ifdef __MINGW32__
 #include <stdint.h>
+#endif
 
 // As a reminder: http://predef.sourceforge.net/prestd.html
 
