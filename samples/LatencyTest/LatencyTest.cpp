@@ -24,26 +24,70 @@
 using namespace std;
 using namespace kNet;
 
+const message_id_t customPingMessageId = 100;
+const message_id_t customPingReplyMessageId = 101;
+
 class NetworkApp : public IMessageHandler, public INetworkServerListener
 {
 	Network network;
 	NetworkServer *server;
+
+	tick_t pingSendTime;
+	u16 sentPingNumber;
 public:
+	NetworkApp()	
+	{
+		sentPingNumber = 0;
+	}
+
+	void SendPingMessage(MessageConnection *connection)
+	{
+		NetworkMessage *msg = connection->StartNewMessage(customPingMessageId, 2);
+		msg->priority = 100;
+		msg->reliable = false;
+		DataSerializer ds(msg->data, msg->Size());
+		++sentPingNumber;
+		ds.Add<u16>(sentPingNumber);
+		connection->EndAndQueueMessage(msg);
+		pingSendTime = Clock::Tick();
+		cout << "Sent PING_" << sentPingNumber << "." << endl;
+	}
+
+	void SendPingReplyMessage(MessageConnection *connection, const char *receivedPingData, size_t receivedPingDataNumBytes)
+	{
+		DataDeserializer dd(receivedPingData, receivedPingDataNumBytes);
+		NetworkMessage *msg = connection->StartNewMessage(customPingReplyMessageId, 2);
+		msg->priority = 100;
+		msg->reliable = false;
+		DataSerializer ds(msg->data, msg->Size());
+		u16 pingNumber = dd.Read<u16>();
+		ds.Add<u16>(pingNumber);
+		connection->EndAndQueueMessage(msg);
+		cout << "Received PING_" << pingNumber << ". Sent PONG_" << pingNumber << "." << endl;
+	}
+
+	void HandlePingReplyMessage(const char *receivedPingData, size_t receivedPingDataNumBytes)
+	{
+		DataDeserializer dd(receivedPingData, receivedPingDataNumBytes);
+		u16 receivedPingNumber = dd.Read<u16>();
+		if (receivedPingNumber == sentPingNumber)
+			cout << "Received PONG_" << receivedPingNumber << " in " << Clock::TimespanToMillisecondsF(pingSendTime, Clock::Tick()) << " msecs from sending PING_" << sentPingNumber << "." << std::endl;		
+		else
+			cout << "Received old PONG_" << receivedPingNumber << endl;
+	}
 
 	/// Called to notify the listener that a new connection has been established.
 	void NewConnectionEstablished(MessageConnection *connection)
 	{
 		connection->RegisterInboundMessageHandler(this);
-
-		NetworkMessage *msg = connection->StartNewMessage(100);
-		msg->priority = 100;
-		msg->reliable = true;
-		connection->EndAndQueueMessage(msg);
 	}
 
 	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
-		cout << "Received a message with ID 0x" << std::hex << messageId << "!" << endl;
+		if (messageId == customPingMessageId)
+			SendPingReplyMessage(source, data, numBytes);
+		else if (messageId == customPingReplyMessageId)
+			HandlePingReplyMessage(data, numBytes);
 	}
 
 	void RunServer(unsigned short port, SocketTransportLayer transport)
@@ -58,17 +102,23 @@ public:
 
 		cout << "Server waiting for connection in port " << port << "." << endl;
 
-		server->RunModalServer();
+		for(;;)
+		{
+			server->Process();
+			Clock::Sleep(1);
+		}
 	}
 
 	void RunClient(const char *address, unsigned short port, SocketTransportLayer transport)
 	{
-		MessageConnection *connection = network.Connect(address, port, transport, this);
+		Ptr(MessageConnection) connection = network.Connect(address, port, transport, this);
 		if (!connection)
 		{
 			cout << "Unable to connect to " << address << ":" << port << "." << endl;
 			return;
 		}
+
+		connection->RegisterInboundMessageHandler(this);
 
 		cout << "Waiting for connection.." << endl;
 		while(connection->GetConnectionState() == ConnectionPending)
@@ -87,22 +137,20 @@ public:
 
 	void RunLatencyTest(MessageConnection *connection)
 	{
-		PolledTimer disconnectTimer(30 * 1000.f);
+		PolledTimer pingSendTimer(2000.f);
 
 		float previousRTT = 0.f;
 
-		while(!disconnectTimer.Test())
+		for(;;)
 		{
 			connection->Process();
 
-			Clock::Sleep(10);
-
-			// Print latency statistics whenever it has changed.
-			if (fabs(previousRTT - connection->RoundTripTime()) > 1e-3f)
+			Clock::Sleep(1);
+			if (pingSendTimer.TriggeredOrNotRunning())
 			{
-				previousRTT = connection->RoundTripTime();
-
-				connection->DumpStatus();
+				cout << "kNet-estimated round trip time is " << connection->RoundTripTime() << " msecs." << std::endl; 
+				SendPingMessage(connection);
+				pingSendTimer.StartMSecs(2000.f);
 			}
 		}
 
