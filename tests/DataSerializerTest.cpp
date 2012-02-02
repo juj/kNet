@@ -19,6 +19,7 @@
 #include <sstream>
 #include <iostream>
 #include <list>
+#include <math.h>
 
 #include "kNet/DebugMemoryLeakCheck.h"
 #include "kNet/BitOps.h"
@@ -264,7 +265,7 @@ public:
 		float readValue = src.ReadMiniFloat(true, 5, 10, 15);
 		FloatCategory oldCategory = CategorizeFloat(value);
 		FloatCategory newCategory = CategorizeFloat(readValue);
-		if (oldCategory != newCategory && !(oldCategory == FloatNumber && abs(value) < 1e-3f && newCategory == FloatZero)
+		if (oldCategory != newCategory && !(oldCategory == FloatNumber && fabs(value) < 1e-3f && newCategory == FloatZero)
 			&& !(oldCategory == FloatNumber && value >= 65536.0f && newCategory == FloatInf)
 			&& !(oldCategory == FloatNumber && value <= -65536.0f && newCategory == FloatNegInf))
 		{
