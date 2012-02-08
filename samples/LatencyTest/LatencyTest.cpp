@@ -168,6 +168,14 @@ void PrintUsage()
 
 int main(int argc, char **argv)
 {
+	cout << "This sample measures the latency between two hosts." << endl;
+	cout << "kNet runs its own internal ping-pong messaging automatically, and " << endl;
+	cout << "allows you to query for the currently estimated RTT by calling " << endl;
+	cout << "MessageConnection::RoundTripTime()." << endl << endl;
+	cout << "As an example, this sample implements a manual client-side " << endl;
+	cout << "latency estimation mechanism. The functionality is very " << endl;
+	cout << "similar to how kNet works internally." << endl;
+
 	if (argc < 4)
 	{
 		PrintUsage();

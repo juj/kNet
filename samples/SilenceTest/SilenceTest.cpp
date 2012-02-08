@@ -94,6 +94,15 @@ void PrintUsage()
 
 int main(int argc, char **argv)
 {
+	cout << "kNet automatically drop the connection if the peer has not messaged " << endl;
+	cout << "anything within a timeout period (currently fixed at 15 seconds)." << endl;
+	cout << "This sample implements a client and a server which do not send any messages " << endl;
+	cout << "to each other. kNet sends ping-pong messages every 3.5 seconds. These messages " << endl;
+	cout << "are used to estimate the RTT, but also serve as keep-alive messages to know " << endl;
+	cout << "when a timeout has occurred." << endl << endl;
+	cout << "The purpose of this sample is to test that the kNet keep-alive mechanism works " << endl;
+	cout << "and the connection does not time out." << endl;
+
 	if (argc < 4)
 	{
 		PrintUsage();
@@ -103,7 +112,6 @@ int main(int argc, char **argv)
 	EnableMemoryLeakLoggingAtExit();
 
 	kNet::SetLogChannels((LogChannel)(-1) & ~LogObjectAlloc); // Enable all log channels.
-//	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
 	SocketTransportLayer transport = StringToSocketTransportLayer(argv[2]);
 	if (transport == InvalidTransportLayer)
