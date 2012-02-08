@@ -500,7 +500,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	}
 
 	// Send the crafted packet out to the socket.
-	data->buffer.len = writer.BytesFilled();
+	data->bytesContains = writer.BytesFilled();
 	bool success;
 
 	if (!networkSendSimulator.enabled)
@@ -508,7 +508,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	else
 	{
 		// We're running a network simulator. Pass the buffer to networkSendSimulator for delayed sending.
-		networkSendSimulator.SubmitSendBuffer(data);
+		networkSendSimulator.SubmitSendBuffer(data, socket);
 		success = true; // Act here as if we succeeded.
 	}
 
@@ -749,10 +749,11 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 	}
 
 	// Note that this check must be after the ack check (above), since we still need to ack the new packet as well (our
-	// previous ack might not have reached the sender or was delayed, which is why he's resending it).
+	// previous ack might not have reached the sender or was delayed, which is why the peer is resending it).
 	if (HaveReceivedPacketID(packetID))
 	{
 		ADDEVENT("duplicateReceived", (float)numBytes, "bytes");
+		LOG(LogVerbose, "Duplicate datagram with packet ID %d received!", (int)packetID);
 		return;
 	}
 	if (packetID != previousReceivedPacketID + 1)
@@ -824,53 +825,58 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 			throw NetException("Malformed UDP packet received! Message payload missing.");
 		}
 
-		// If we received the start of a new fragment, start tracking a new fragmented transfer.
-		if (fragmentStart)
+		if (!duplicateMessage)
 		{
-			if (numTotalFragments == DataDeserializer::VLEReadError || numTotalFragments <= 1)
+			// If we received the start of a new fragment, start tracking a new fragmented transfer.
+			if (fragmentStart)
 			{
-				LOG(LogError, "Malformed UDP packet! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
-				throw NetException("Malformed UDP packet received! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
-			}
+				if (numTotalFragments == DataDeserializer::VLEReadError || numTotalFragments <= 1)
+				{
+					LOG(LogError, "Malformed UDP packet! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
+					throw NetException("Malformed UDP packet received! This packet had fragmentStart bit on, but parsing numTotalFragments VLE failed!");
+				}
 
-			if (!duplicateMessage)
-			{
 				fragmentedReceives.NewFragmentStartReceived(fragmentTransferID, numTotalFragments, &data[reader.BytePos()], contentLength);
 				ADDEVENT("FragmentStartReceived", 1, "");
+
 			}
-
-		}
-		// If we received a fragment that is a part of an old fragmented transfer, pass it to the fragmented transfer manager
-		// so that it can reconstruct the final stream when the transfer finishes.
-		else if (fragment)
-		{
-			if (fragmentNumber == DataDeserializer::VLEReadError)
+			// If we received a fragment that is a part of an old fragmented transfer, pass it to the fragmented transfer manager
+			// so that it can reconstruct the final stream when the transfer finishes.
+			else if (fragment)
 			{
-				LOG(LogError, "Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
-				throw NetException("Malformed UDP packet received! This packet has fragment flag on, but parsing the fragment number failed!");
+				if (fragmentNumber == DataDeserializer::VLEReadError)
+				{
+					LOG(LogError, "Malformed UDP packet! This packet has fragment flag on, but parsing the fragment number failed!");
+					throw NetException("Malformed UDP packet received! This packet has fragment flag on, but parsing the fragment number failed!");
+				}
+
+				ADDEVENT("FragmentReceived", 1, "");
+
+				bool messageReady = fragmentedReceives.NewFragmentReceived(fragmentTransferID, fragmentNumber, &data[reader.BytePos()], contentLength);
+				if (messageReady)
+				{
+					// This was the last fragment of the whole message - reconstruct the message from the fragments and pass it on to
+					// the client to handle.
+					assembledData.clear();
+					fragmentedReceives.AssembleMessage(fragmentTransferID, assembledData);
+					assert(assembledData.size() > 0);
+					///\todo InOrder.
+					HandleInboundMessage(packetID, &assembledData[0], assembledData.size());
+					++numMessagesReceived;
+					fragmentedReceives.FreeMessage(fragmentTransferID);
+				}
 			}
-
-			ADDEVENT("FragmentReceived", 1, "");
-
-			bool messageReady = fragmentedReceives.NewFragmentReceived(fragmentTransferID, fragmentNumber, &data[reader.BytePos()], contentLength);
-			if (messageReady)
+			else
 			{
-				// This was the last fragment of the whole message - reconstruct the message from the fragments and pass it on to
-				// the client to handle.
-				assembledData.clear();
-				fragmentedReceives.AssembleMessage(fragmentTransferID, assembledData);
-				assert(assembledData.size() > 0);
-				///\todo InOrder.
-				HandleInboundMessage(packetID, &assembledData[0], assembledData.size());
+				// Not a fragment, so directly call the handling code.
+				HandleInboundMessage(packetID, &data[reader.BytePos()], contentLength);
 				++numMessagesReceived;
-				fragmentedReceives.FreeMessage(fragmentTransferID);
 			}
 		}
-		else if (!duplicateMessage)
+		else // this is a duplicate reliable message, ignore it.
 		{
-			// Not a fragment, so directly call the handling code.
-			HandleInboundMessage(packetID, &data[reader.BytePos()], contentLength);
-			++numMessagesReceived;
+			///\todo Can we remove this duplicate reliable message checking?
+			LOG(LogVerbose, "Received a duplicate reliable message with message number %d!", (int)reliableMessageNumber);
 		}
 
 		reader.SkipBytes(contentLength);
