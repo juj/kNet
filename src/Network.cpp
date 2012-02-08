@@ -783,14 +783,14 @@ void Network::SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage)
 	if (connectMessage)
 	{
 		///\todo Craft the proper connection attempt datagram.
-		sendData->buffer.len = std::min<int>(connectMessage->size, sendData->buffer.len);
+		sendData->bytesContains = std::min<int>(connectMessage->size, sendData->buffer.len);
 		memcpy(sendData->buffer.buf, connectMessage->data, sendData->buffer.len);
 		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending UDP connect message of size %d.", (int)sendData->buffer.len);
 	}
 	else
 	{
 		///\todo Craft the proper connection attempt datagram.
-		sendData->buffer.len = std::min<int>(8, sendData->buffer.len);
+		sendData->bytesContains = std::min<int>(8, sendData->buffer.len);
 		memset(sendData->buffer.buf, 0, sendData->buffer.len);
 		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending null UDP connect message of size %d.", (int)sendData->buffer.len);
 	}

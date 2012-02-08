@@ -180,6 +180,7 @@ OverlappedTransferBuffer *AllocateOverlappedTransferBuffer(int bytes)
 	memset(buffer, 0, sizeof(OverlappedTransferBuffer));
 	buffer->buffer.buf = new char[bytes];
 	buffer->buffer.len = bytes;
+	buffer->bytesContains = 0;
 #ifdef WIN32
 	buffer->overlapped.hEvent = WSACreateEvent();
 	if (buffer->overlapped.hEvent == WSA_INVALID_EVENT)
@@ -805,6 +806,8 @@ OverlappedTransferBuffer *Socket::BeginSend()
 	if (!writeOpen)
 		return 0;
 
+	// See if the oldest one of the previously submitted transfers has now finished,
+	// and reuse that buffer without allocating a new one, if so.
 #ifdef WIN32
 	if (queuedSendBuffers.Size() > 0)
 	{
@@ -817,6 +820,7 @@ OverlappedTransferBuffer *Socket::BeginSend()
 		{
 			queuedSendBuffers.PopFront();
 			sentData->buffer.len = maxSendSize; // This is the number of bytes that the client is allowed to fill.
+			sentData->bytesContains = 0; // No bytes currently in use.
 			return sentData;
 		}
 		if (ret == FALSE && error != WSA_IO_INCOMPLETE)
@@ -832,6 +836,7 @@ OverlappedTransferBuffer *Socket::BeginSend()
 		return 0;
 #endif
 
+	// No previous send buffer has finished from use (or not using overlapped transfers) - allocate a new buffer.
 	OverlappedTransferBuffer *transfer = AllocateOverlappedTransferBuffer(maxSendSize);
 	return transfer; ///\todo In debug mode - track this pointer.
 }
@@ -841,6 +846,10 @@ bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)
 	assert(sendBuffer);
 	if (!sendBuffer)
 		return false;
+
+	// For the purposes of this send, mark the allocated length of the send buffer equal to the 
+	// number of bytes the user had filled into the buffer.
+	sendBuffer->buffer.len = sendBuffer->bytesContains;
 
 #ifdef WIN32
 	// Clear the event flag so that the completion of WSASend can trigger this and signal us.

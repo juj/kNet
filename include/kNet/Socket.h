@@ -97,8 +97,9 @@ typedef WSABUF kNetBuffer;
 #else
 struct kNetBuffer
 {
-	/// Specifies the number of bytes allocated to buf. This is the maximum amount of bytes that can
-	/// be written to buf.
+	/// Stores the number of bytes allocated to buf.
+	/// When sending out a message, this field specifies the number of bytes the client
+	/// can write to buf, at maximum.
 	unsigned long len;
 
 	char *buf;
@@ -112,7 +113,8 @@ struct OverlappedTransferBuffer
 	WSAOVERLAPPED overlapped;
 #endif
 
-	/// Specifies the number of bytes buffer.buf actually contains.
+	/// Stores the number of bytes actually in use in buffer.buf. When sending out a message,
+	/// specify the actual number of bytes filled to buffer.buf here.
 	int bytesContains;
 
 	sockaddr_in from;

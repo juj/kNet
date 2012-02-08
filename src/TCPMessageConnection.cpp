@@ -235,7 +235,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	if (writer.BytesFilled() == 0 && outboundQueue.Size() > 0)
 		LOG(LogError, "Failed to send any messages to socket %s! (Probably next message was too big to fit in the buffer).", socket->ToString().c_str());
 
-	overlappedTransfer->buffer.len = writer.BytesFilled();
+	overlappedTransfer->bytesContains = writer.BytesFilled();
 	bool success = socket->EndSend(overlappedTransfer);
 
 	if (!success) // If we failed to send, put all the messages back into the outbound queue to wait for the next send round.
