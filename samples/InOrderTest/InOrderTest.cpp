@@ -30,6 +30,8 @@ class NetworkApp : public IMessageHandler, public INetworkServerListener
 	Network network;
 	NetworkServer *server;
 
+	int serverNumMessagesReceived;
+
 	/// For client, stores the most recently sent message number.
 	/// For server, stores the most recently received message number.
 	u32 lastMessageNumber;
@@ -37,6 +39,7 @@ public:
 	NetworkApp()
 	{
 		lastMessageNumber = 0;
+		serverNumMessagesReceived = 0;
 	}
 
 	void SendMessage(MessageConnection *connection)
@@ -69,14 +72,18 @@ public:
 	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
 	{
 		if (messageId != 191) // The magic number for our custom message type.
+		{
+			cout << "Received unknown message with ID " << messageId << "!" <<endl;
 			return;
+		}
 		DataDeserializer dd(data, numBytes);
 		u32 recvMessageNumber = dd.Read<u32>();
 		if (recvMessageNumber <= lastMessageNumber)
 			cout << "Message received out-of-order! Got " << recvMessageNumber << ", previously received was " << lastMessageNumber << endl;
-		else
-			cout << "Prev " << lastMessageNumber << ", now " << recvMessageNumber << endl;
 		lastMessageNumber = recvMessageNumber;
+		++serverNumMessagesReceived;
+		if (serverNumMessagesReceived % 200 == 0)
+			cout << serverNumMessagesReceived << " messages received." << endl;
 	}
 
 	void RunServer(unsigned short port, SocketTransportLayer transport)
@@ -118,16 +125,29 @@ public:
 		const int numMessagesToSend = 100000;
 
 		connection->NetworkSendSimulator().enabled = true;
-		connection->NetworkSendSimulator().constantPacketSendDelay = 50.f;
-		connection->NetworkSendSimulator().packetLossRate = 0.1f;
-		connection->NetworkSendSimulator().uniformRandomPacketSendDelay = 100.f;
+		connection->NetworkSendSimulator().packetDuplicationRate = 1.0;
+//		connection->NetworkSendSimulator().constantPacketSendDelay = 50.f;
+//		connection->NetworkSendSimulator().packetLossRate = 0.1f;
+//		connection->NetworkSendSimulator().uniformRandomPacketSendDelay = 100.f;
 
+		PolledTimer statsPrint(1000.f);
+
+		cout << "Sending messages to server..." << endl;
+		int numMessagesSent = 0;
 		for(int i = 0; i < numMessagesToSend; ++i)
 		{
 			connection->Process();
 			if (connection->NumOutboundMessagesPending() < 1000)
+			{
 				SendMessage(connection);
+				++numMessagesSent;
+			}
 			Clock::Sleep(1);
+			if (statsPrint.Test())
+			{
+				cout << "Sent " << numMessagesSent << " messages to server." << endl;
+				statsPrint.StartMSecs(1000.f);
+			}
 		}
 
 		connection->Disconnect();
@@ -151,6 +171,7 @@ int main(int argc, char **argv)
 
 	EnableMemoryLeakLoggingAtExit();
 
+	kNet::SetLogChannels(LogInfo | LogError);
 	SocketTransportLayer transport = StringToSocketTransportLayer(argv[2]);
 	if (transport == InvalidTransportLayer)
 	{
