@@ -1,5 +1,3 @@
-syntax: glob
-
 *.ncb
 *.suo
 *.user
@@ -14,6 +12,8 @@ syntax: glob
 *.ilk
 *.embed.manifest*
 
+*.sln
+*.vcxproj
 *.vcxproj.filters
 *.sdf
 *.opensdf
@@ -59,12 +59,11 @@ syntax: glob
 *.tar
 *.tar.gz
 
-syntax: regexp
-
 CMakeFiles
 
-/Debug/
-/Release/
+Debug/
+Release/
+RelWithDebInfo/
 
 BuildLog\.htm
 mt\.dep
@@ -75,19 +74,20 @@ UpgradeLog\.XML
 
 settings\.ini
 
-/docs/
-/doc/
 doc/html/
-/_UpgradeReport_Files/
-/CodeAnalyst/
-\.tbp\.dir/
+_UpgradeReport_Files/
+CodeAnalyst/
 
 # CMake stuff
 ALL_BUILD
 ZERO_CHECK
 CMakeCache.txt
+MakeFile
+include/kNetBuildConfig.h
 
 # Potentially unwanted excludes:
-syntax: glob
 *.asm
 *.mht
+
+
+*.a
