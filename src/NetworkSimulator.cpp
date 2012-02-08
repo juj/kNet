@@ -45,7 +45,7 @@ void NetworkSimulator::Free()
 	queuedBuffers.clear();
 }
 
-void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer)
+void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer, Socket *socket)
 {
 	if (rand01() < packetLossRate || packetLossRate >= 1.f)
 	{
@@ -54,6 +54,21 @@ void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer)
 		return; // Dropped this packet!
 	}
 
+	// Should we duplicate this packet?
+	if (rand01() < packetDuplicationRate || packetDuplicationRate >= 1.f)
+	{
+		QueuedBuffer b;
+		assert(socket);
+		b.buffer = socket->BeginSend();
+		if (b.buffer)
+		{
+			assert(b.buffer->buffer.len >= buffer->bytesContains);
+			memcpy(b.buffer->buffer.buf, buffer->buffer.buf, buffer->bytesContains);
+			b.buffer->bytesContains = buffer->bytesContains;
+			b.timeUntilTransfer.StartMSecs(constantPacketSendDelay + (float)rand() * uniformRandomPacketSendDelay / RAND_MAX);
+			queuedBuffers.push_back(b);
+		}
+	}
 	QueuedBuffer b;
 	b.buffer = buffer;
 	b.timeUntilTransfer.StartMSecs(constantPacketSendDelay + (float)rand() * uniformRandomPacketSendDelay / RAND_MAX);

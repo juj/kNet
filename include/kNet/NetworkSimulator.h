@@ -35,7 +35,7 @@ public:
 	/// By default, this is always false.
 	bool enabled;
 
-	/// Specifies the percentage of messages to drop. This is in the range [0.0, 1.0]. Default: 0.
+	/// Specifies the percentage of messages to drop. This is in the range [0.0, 1.0]. Default: 0 (disabled).
 	float packetLossRate;
 
 	/// Specifies a constant delay to add to each packet (msecs). Default: 0.
@@ -44,7 +44,10 @@ public:
 	/// Specifies an amount of uniformly random delay to add to each packet (msecs), [0, uniformRandomPacketSendDelay].  Default: 0.
 	float uniformRandomPacketSendDelay;
 
-	void SubmitSendBuffer(OverlappedTransferBuffer *buffer);
+	/// Specifies the percentage of messages to duplicate. This is in the range [0.0, 1.0]. Default: 0 (disabled). 
+	float packetDuplicationRate;
+
+	void SubmitSendBuffer(OverlappedTransferBuffer *buffer, Socket *socket);
 
 	/// Runs a polled update tick on the network simulator. Transfers all expired data.
 	void Process();
