@@ -496,7 +496,14 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		if (msg->transfer == 0 || msg->fragmentIndex == 0)
 			writer.AddVLE<VLE8_16_32>(msg->id); // Add the message ID number.
 		if (msg->dataSize > 0) // Add the actual message payload data.
+		{
+			if (networkSendSimulator.enabled && 
+				(networkSendSimulator.corruptionType == NetworkSimulator::CorruptPayload ||
+				(networkSendSimulator.corruptionType == NetworkSimulator::CorruptMessageType &&
+				 msg->id == networkSendSimulator.corruptMessageId)))
+				 networkSendSimulator.MaybeCorruptBufferToggleBits(msg->data, msg->dataSize);
 			writer.AddAlignedByteArray(msg->data, msg->dataSize);
+		}
 	}
 
 	// Send the crafted packet out to the socket.

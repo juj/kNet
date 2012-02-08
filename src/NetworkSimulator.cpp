@@ -23,7 +23,12 @@ NetworkSimulator::NetworkSimulator()
 packetLossRate(0),
 constantPacketSendDelay(0),
 uniformRandomPacketSendDelay(0),
-owner(0)
+owner(0),
+corruptMessageId(0),
+corruptToggleBitsRate(0),
+corruptionType(CorruptDatagram),
+corruptMinBits(0),
+corruptMaxBits(0)
 {
 }
 
@@ -33,7 +38,7 @@ NetworkSimulator::~NetworkSimulator()
 		LOG(LogError, "NetworkSimulator: Leaked %d buffers with improper NetworkSimulator teardown!", (int)queuedBuffers.size());
 }
 
-static float rand01() { return (float)rand() / RAND_MAX; }
+static float rand01() { return (float)rand() / (RAND_MAX+1); }
 
 void NetworkSimulator::Free()
 {
@@ -47,7 +52,7 @@ void NetworkSimulator::Free()
 
 void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer, Socket *socket)
 {
-	if (rand01() < packetLossRate || packetLossRate >= 1.f)
+	if (rand01() < packetLossRate)
 	{
 		if (owner && owner->GetSocket())
 			owner->GetSocket()->AbortSend(buffer);
@@ -55,7 +60,7 @@ void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer, 
 	}
 
 	// Should we duplicate this packet?
-	if (rand01() < packetDuplicationRate || packetDuplicationRate >= 1.f)
+	if (rand01() < packetDuplicationRate)
 	{
 		QueuedBuffer b;
 		assert(socket);
@@ -65,10 +70,20 @@ void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer, 
 			assert(b.buffer->buffer.len >= buffer->bytesContains);
 			memcpy(b.buffer->buffer.buf, buffer->buffer.buf, buffer->bytesContains);
 			b.buffer->bytesContains = buffer->bytesContains;
+
+			// Should we corrupt the newly created copy?
+			if (corruptionType == CorruptDatagram)
+				MaybeCorruptBufferToggleBits(b.buffer->buffer.buf, b.buffer->bytesContains);
+
 			b.timeUntilTransfer.StartMSecs(constantPacketSendDelay + (float)rand() * uniformRandomPacketSendDelay / RAND_MAX);
 			queuedBuffers.push_back(b);
 		}
 	}
+
+	// Should we corrupt this packet?
+	if (corruptionType == CorruptDatagram)
+		MaybeCorruptBufferToggleBits(buffer->buffer.buf, buffer->bytesContains);
+
 	QueuedBuffer b;
 	b.buffer = buffer;
 	b.timeUntilTransfer.StartMSecs(constantPacketSendDelay + (float)rand() * uniformRandomPacketSendDelay / RAND_MAX);
@@ -85,6 +100,22 @@ void NetworkSimulator::Process()
 			queuedBuffers.erase(queuedBuffers.begin() + i);
 			--i;
 		}
+}
+
+void NetworkSimulator::MaybeCorruptBufferToggleBits(void *buffer, size_t numBytes) const
+{
+	// Should corrupt this data?
+	if (rand01() < corruptToggleBitsRate)
+	{
+		int numBitsToCorrupt = corruptMinBits + rand() * (corruptMaxBits - corruptMinBits + 1) / (RAND_MAX+1);
+		for(int i = 0; i < numBitsToCorrupt; ++i)
+		{
+			int byteIndex = rand() * numBytes / (RAND_MAX+1);
+			int bitIndex = rand() % 8;
+			int bitMask = (1 << bitIndex);
+			((char*)buffer)[byteIndex] ^= bitMask;
+		}
+	}
 }
 
 } // ~kNet
