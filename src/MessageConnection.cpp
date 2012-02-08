@@ -1064,7 +1064,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	LOG(LogData, "Received message with ID %d and size %d from peer %s.", (int)packetID, (int)numBytes, socket->ToString().c_str());
 
 	char str[256];
-	sprintf(str, "messageIn.%u", messageID);
+	sprintf(str, "messageIn.%u", (unsigned int)messageID);
 	ADDEVENT(str, (float)reader.BytesLeft(), "bytes");
 
 	// Pass the message to TCP/UDP -specific message handler.
