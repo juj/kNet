@@ -20,3 +20,6 @@ file(GLOB SourceFiles ./*.cpp)
 add_executable(${PROJECT_NAME} ${SourceFiles} ${HeaderFiles})
 
 target_link_libraries(${PROJECT_NAME} kNet)
+
+# Output the EXE to kNet's lib/ directory.
+set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${KNET_OUT_DIR})
