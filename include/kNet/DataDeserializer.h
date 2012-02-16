@@ -126,10 +126,10 @@ public:
 	const char *CurrentData() const { return data + BytePos(); }
 
 	/// Advances the read pointer with the given amount of bits. Can only be used in nontemplate read mode.
-	void SkipBits(size_t numBits);
+	void SkipBits(int numBits);
 
 	/// Advances the read pointer with the given amount of bytes. Can only be used in nontemplate read mode.
-	void SkipBytes(size_t numBytes) { SkipBits(numBytes * 8); }
+	void SkipBytes(int numBytes) { SkipBits(numBytes * 8); }
 
 private:
 	/// The data pointer to read from.

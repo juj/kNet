@@ -25,6 +25,8 @@
 using namespace std;
 using namespace kNet;
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
     try

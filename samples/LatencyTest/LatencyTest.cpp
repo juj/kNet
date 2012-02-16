@@ -166,6 +166,8 @@ void PrintUsage()
 	cout << "       client tcp|udp hostname port" << endl;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	cout << "This sample measures the latency between two hosts." << endl;

@@ -92,6 +92,8 @@ void PrintUsage()
 	cout << "       client tcp|udp <hostname> <port> <msecsToWait>" << endl;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	cout << "kNet automatically drop the connection if the peer has not messaged " << endl;

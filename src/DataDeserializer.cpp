@@ -284,7 +284,7 @@ void DataDeserializer::ReadArithmeticEncoded(int numBits, int &val1, int max1, i
 	val1 = val / max2;
 }
 
-void DataDeserializer::SkipBits(size_t numBits)
+void DataDeserializer::SkipBits(int numBits)
 {
 	assert(!iter);
 

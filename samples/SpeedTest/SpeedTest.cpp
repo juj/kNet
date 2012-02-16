@@ -169,6 +169,8 @@ void PrintUsage()
 	cout << "       client udp <hostname> <port> <numMessages> <messageSize> <reliable> [flowRate]" << endl;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	if (argc < 4)

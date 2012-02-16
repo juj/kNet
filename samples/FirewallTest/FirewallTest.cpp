@@ -169,6 +169,8 @@ std::vector<std::pair<unsigned short, SocketTransportLayer> >
 	return ports;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	EnableMemoryLeakLoggingAtExit();

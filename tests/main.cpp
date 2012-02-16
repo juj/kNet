@@ -15,15 +15,15 @@
 /** @file main.cpp
 	@brief */
 
-#include "kNetBuildConfig.h"
-#include "kNet/DebugMemoryLeakCheck.h"
-#include "kNet/NetworkLogging.h"
+#include "kNet.h"
 
 void VLETest();
 void DataSerializerTest();
 void MaxHeapTest();
 void EventTest();
 void LockFreePoolAllocatorTest();
+
+BottomMemoryAllocator bma;
 
 int main()
 {

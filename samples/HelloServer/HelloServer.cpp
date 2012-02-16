@@ -49,6 +49,8 @@ public:
 	}
 };
 
+BottomMemoryAllocator bma;
+
 int main()
 {
 	EnableMemoryLeakLoggingAtExit();

@@ -73,6 +73,8 @@ void PrintUsage()
 	cout << "       tcp|udp <hostname> <port> <numMessages> <messageSize>" << endl;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	if (argc < 6)

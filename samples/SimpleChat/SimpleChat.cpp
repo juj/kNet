@@ -259,6 +259,8 @@ void PrintUsage()
 	cout << "       tcp|udp client hostname port" << endl;
 }
 
+BottomMemoryAllocator bma;
+
 int main(int argc, char **argv)
 {
 	if (argc < 4)

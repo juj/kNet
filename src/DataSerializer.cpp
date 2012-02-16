@@ -419,7 +419,7 @@ void DataSerializer::AddString(const char *str)
 {
 	size_t len = strlen(str);
 	if (iter)
-		SetVaryingElemSize(len);
+		SetVaryingElemSize((u32)len);
 	else
 		Add<u8>(len);
 
