@@ -210,3 +210,7 @@ add_subdirectory(samples/SpeedTest)
 add_subdirectory(samples/TrashTalk)
 
 add_subdirectory(tests)
+
+set_target_properties(kNet PROPERTIES 
+	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
+	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
