@@ -15,8 +15,12 @@
 *.sln
 *.vcxproj
 *.vcxproj.filters
+*.vcproj
 *.sdf
 *.opensdf
+
+moc_*.cxx*
+ui_*.h
 
 *.o
 
