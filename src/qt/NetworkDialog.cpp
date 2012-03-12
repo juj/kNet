@@ -303,7 +303,9 @@ void NetworkDialog::PopulateStatsTree()
 		}
 		else
 		{
-			iter = graphs.erase(iter);
+         GraphMap::iterator next = iter;
+			graphs.erase(iter);
+         iter = next;
 		}
 	}
 }
