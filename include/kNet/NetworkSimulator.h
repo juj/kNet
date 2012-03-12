@@ -20,6 +20,8 @@
 #include "PolledTimer.h"
 #include <vector>
 
+#include <cstring>
+
 namespace kNet
 {
 
