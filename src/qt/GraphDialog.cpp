@@ -22,6 +22,7 @@
 #include <QTreeWidget>
 #include <QPainter>
 #include <sstream>
+#include <algorithm>
 
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>
@@ -77,7 +78,7 @@ void GraphDialog::Update(StatsEventHierarchyNode &node, int timeMSecs)
 		{
 			StatsEvent *e = node.events.ItemAt(i);
 			if (Clock::IsNewer(e->time, leftX) && Clock::IsNewer(rightX, e->time))
-				maxY = max(maxY, e->value);
+				maxY = std::max(maxY, e->value);
 		}
 
 		painter.setPen(QPen(QColor(0,0,0)));
