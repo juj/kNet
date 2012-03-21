@@ -57,7 +57,7 @@ AddCompilationDefine(KNET_ENABLE_WINXP_SUPPORT)
 
 # If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.
 # (This can considerably slow down kNet performance)
-AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
+#AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
 
 # Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
 # extra performance by avoiding all logging-related string operations.
