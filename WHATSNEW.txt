@@ -1,3 +1,12 @@
+Version 2.7, 2012-03-23
+-----------
+- Added new InOrderTest sample.
+- Added support for duplicating datagrams in NetworkSimulator.
+- Fixed a bug in duplicated message receive handling.
+- Added support for corrupting datagrams in NetworkSimulator.
+- Added support for 64-bit memory pointer to 32-bit splicing issue detecting for Windows.
+- Removed KNET_THREAD_CHECKING_ENABLED from being enabled if USE_BOOST is enabled. This is to avoid a bug with boost::thread_id() not working across dynamic library boundaries. (KNET_THREAD_CHECKING_ENABLED and USE_BOOST are now mutually exclusive)
+
 Version 2.6, 2012-01-25
 -----------
 - Implement a NetworkSimulator middle layer for adding delays and packet loss to outbound messaging (UDP only).
