@@ -55,9 +55,11 @@ set(TINYXML_ROOT "src/tinyxml")
 # Affects only Boost threads. When native Win32 threads are used, the id is stored on creation.
 AddCompilationDefine(KNET_ENABLE_WINXP_SUPPORT)
 
-# If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.
-# (This can considerably slow down kNet performance)
-#AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
+if (NOT USE_BOOST) # USE_BOOST and KNET_THREAD_CHECKING_ENABLED are mutually exclusive, because boost::thread_id() does not work across .dll boundaries.
+   # If set, extra code is inserted in debug mode to assert that certain thread race conditions don't occur.
+   # (This can considerably slow down kNet performance)
+   AddCompilationDefine(KNET_THREAD_CHECKING_ENABLED)
+endif()
 
 # Enable internal LOG messaging if this flag is enabled. Comment this out to squeeze the last bit of 
 # extra performance by avoiding all logging-related string operations.
