@@ -199,19 +199,19 @@ target_link_libraries(kNet ${kNetLinkLibraries})
 
 set(KNET_OUT_DIR ${CMAKE_SOURCE_DIR}/lib)
 
-add_subdirectory(samples/ConnectFlood)
+#add_subdirectory(samples/ConnectFlood)
 #add_subdirectory(samples/FileTransfer)
-add_subdirectory(samples/FirewallTest)
-add_subdirectory(samples/HelloClient)
-add_subdirectory(samples/HelloServer)
-add_subdirectory(samples/LatencyTest)
-add_subdirectory(samples/MessageCompiler)
-add_subdirectory(samples/SilenceTest)
-add_subdirectory(samples/SimpleChat)
-add_subdirectory(samples/SpeedTest)
-add_subdirectory(samples/TrashTalk)
+#add_subdirectory(samples/FirewallTest)
+#add_subdirectory(samples/HelloClient)
+#add_subdirectory(samples/HelloServer)
+#add_subdirectory(samples/LatencyTest)
+#add_subdirectory(samples/MessageCompiler)
+#add_subdirectory(samples/SilenceTest)
+#add_subdirectory(samples/SimpleChat)
+#add_subdirectory(samples/SpeedTest)
+#add_subdirectory(samples/TrashTalk)
 
-add_subdirectory(tests)
+#add_subdirectory(tests)
 
 set_target_properties(kNet PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
