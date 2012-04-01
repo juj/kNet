@@ -43,7 +43,7 @@
 namespace kNet
 {
 
-const int cMaxTCPSendSize = 256 * 1024;
+const int cMaxTCPSendSize = 25 * 1024 * 1024; // For TCP sockets, there is no specific limit to send(), specify something.
 const int cMaxUDPSendSize = 1400;
 
 std::string Network::GetErrorString(int error)

@@ -36,7 +36,7 @@ namespace kNet
 
 /// The maximum size for a TCP message we will allow to be received. If we receive a message larger than this, we consider
 /// it as a protocol violation and kill the connection.
-static const u32 cMaxReceivableTCPMessageSize = 1024 * 1024;
+static const u32 cMaxReceivableTCPMessageSize = 10 * 1024 * 1024; ///\todo Make this configurable for the connection.
 
 TCPMessageConnection::TCPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState)
 :MessageConnection(owner, ownerServer, socket, startingState),
