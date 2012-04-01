@@ -42,9 +42,23 @@ public:
 		serverNumMessagesReceived = 0;
 	}
 
+	static const int extraBytes = 80000;
+
+	static int NumBitsSet(u8 val)
+	{
+		int numBitsSet = 0;
+		while(val)
+		{
+			val = val & (val-1);
+			++numBitsSet;
+		}
+		return numBitsSet;
+	}
+
 	void SendMessage(MessageConnection *connection)
 	{
-		NetworkMessage *msg = connection->StartNewMessage(191 /*A custom message number*/, 4 /*size of this message in bytes*/);
+		NetworkMessage *msg = connection->StartNewMessage(191 /*A custom message number*/, 
+		                                                  4 + extraBytes + 4 /*size of this message in bytes*/);
 		msg->priority = 100;
 		msg->reliable = true;
 		msg->inOrder = true;
@@ -52,6 +66,18 @@ public:
 		DataSerializer ds(msg->data, msg->Size());
 		++lastMessageNumber;
 		ds.Add<u32>(lastMessageNumber);
+
+		u32 checksum = 0;
+		for(int i = 0; i < extraBytes; ++i)
+		{
+			u8 byte = (u8)rand();
+			ds.Add<u8>(byte);
+
+			// Just run some bit-twiddling algorithm over all the bits to generate a checksum.
+			checksum ^= byte;
+			checksum <<= NumBitsSet(byte);
+		}
+		ds.Add<u32>(checksum);
 		connection->EndAndQueueMessage(msg);
 	}
 
@@ -76,12 +102,31 @@ public:
 			cout << "Received unknown message with ID " << messageId << "!" <<endl;
 			return;
 		}
+		if (numBytes != 4 + extraBytes + 4)
+		{
+			cout << "Error: Received message was of size " << numBytes << " bytes, but expected " << (4 + extraBytes + 4) << " bytes!" << endl;
+			return;
+		}
 		DataDeserializer dd(data, numBytes);
 		u32 recvMessageNumber = dd.Read<u32>();
 		if (recvMessageNumber <= lastMessageNumber)
 			cout << "Message received out-of-order! Got " << recvMessageNumber << ", previously received was " << lastMessageNumber << endl;
 		lastMessageNumber = recvMessageNumber;
 		++serverNumMessagesReceived;
+
+		// Compute the checksum for the message, and test we got the message intact.
+		u32 checksum = 0;
+		for(int i = 0; i < extraBytes; ++i)
+		{
+			u8 byte = dd.Read<u8>();
+
+			checksum ^= byte;
+			checksum <<= NumBitsSet(byte);
+		}
+		u32 messageChecksum = dd.Read<u32>();
+		if (checksum != messageChecksum)
+			cout << "Error: Message checksum does not match: Received " << messageChecksum << ", computed " << checksum << std::endl;
+
 		if (serverNumMessagesReceived % 200 == 0)
 			cout << serverNumMessagesReceived << " messages received." << endl;
 	}
