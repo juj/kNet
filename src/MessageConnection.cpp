@@ -675,7 +675,7 @@ void MessageConnection::EndAndQueueMessage(NetworkMessage *msg, size_t numBytes,
 	///\todo We can optimize here by doing the splitting at datagram creation time to create optimally sized datagrams, but
 	/// it is quite more complicated, so left for later. 
 	const size_t sendHeaderUpperBound = 32; // Reserve some bytes for the packet and message headers. (an approximate upper bound)
-	if (msg->dataSize + sendHeaderUpperBound > socket->MaxSendSize())
+	if (msg->dataSize + sendHeaderUpperBound > socket->MaxSendSize() && socket->TransportLayer() == SocketOverUDP)
 	{
 		const size_t maxFragmentSize = socket->MaxSendSize() / 4 - sendHeaderUpperBound; ///\todo Check this is ok.
 		assert(maxFragmentSize > 0 && maxFragmentSize < socket->MaxSendSize());
