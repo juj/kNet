@@ -181,6 +181,7 @@ OverlappedTransferBuffer *AllocateOverlappedTransferBuffer(int bytes)
 	buffer->buffer.buf = new char[bytes];
 	buffer->buffer.len = bytes;
 	buffer->bytesContains = 0;
+    buffer->bytesAllocated = bytes;
 #ifdef WIN32
 	buffer->overlapped.hEvent = WSACreateEvent();
 	if (buffer->overlapped.hEvent == WSA_INVALID_EVENT)
@@ -801,7 +802,7 @@ bool Socket::IsOverlappedSendReady()
 #endif
 }
 
-OverlappedTransferBuffer *Socket::BeginSend()
+OverlappedTransferBuffer *Socket::BeginSend(int maxBytesToSend)
 {
 	if (!writeOpen)
 		return 0;
@@ -819,9 +820,21 @@ OverlappedTransferBuffer *Socket::BeginSend()
 		if (ret == TRUE)
 		{
 			queuedSendBuffers.PopFront();
-			sentData->buffer.len = maxSendSize; // This is the number of bytes that the client is allowed to fill.
-			sentData->bytesContains = 0; // No bytes currently in use.
-			return sentData;
+
+            // If the buffer we pulled off was too small, free it and allocate a new one which is of the desired size.
+            if (sentData->bytesAllocated < maxBytesToSend)
+            {
+                DeleteOverlappedTransferBuffer(sentData);
+	            return AllocateOverlappedTransferBuffer(maxBytesToSend); ///\todo In debug mode - track this pointer.
+            }
+            else
+            {
+                // The existing transfer buffer is large enough. Prepare it for reuse and pass back to caller.
+			    sentData->buffer.len = sentData->bytesAllocated; // This is the number of bytes that the client is allowed to fill.
+			    sentData->bytesContains = 0; // No bytes currently in use.
+
+			    return sentData;
+            }
 		}
 		if (ret == FALSE && error != WSA_IO_INCOMPLETE)
 		{
@@ -837,8 +850,7 @@ OverlappedTransferBuffer *Socket::BeginSend()
 #endif
 
 	// No previous send buffer has finished from use (or not using overlapped transfers) - allocate a new buffer.
-	OverlappedTransferBuffer *transfer = AllocateOverlappedTransferBuffer(maxSendSize);
-	return transfer; ///\todo In debug mode - track this pointer.
+	return AllocateOverlappedTransferBuffer(maxBytesToSend);
 }
 
 bool Socket::EndSend(OverlappedTransferBuffer *sendBuffer)

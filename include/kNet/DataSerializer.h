@@ -218,7 +218,7 @@ public:
 	/// @return The number of bits filled so far total.
 	size_t BitsFilled() const { return elemOfs * 8 + bitOfs; }
 
-	/// @return The total capacity of the buffer we are filling into.
+	/// @return The total capacity of the buffer we are filling into, in bytes.
 	size_t Capacity() const { return maxBytes; }
 
 	/// Returns the current byte offset the DataSerializer is writing to.
@@ -226,6 +226,13 @@ public:
 
 	/// Returns the current bit offset in the current byte this DataSerializer is writing to, [0, 7].
 	size_t BitOffset() const { return bitOfs; }
+
+    /// Returns the total number of bits that can still be serialized into this DataSerializer object before overflowing (which throws an exception).
+    size_t BitsLeft() const { return Capacity()*8 - BitsFilled(); }
+
+    /// Returns the total number of full bytes that can still be serialized into this DataSerializer object before overflowing (which throws an exception).
+    /// @return floor(BitsLeft()/8).
+    size_t BytesLeft() const { return BitsLeft() / 8; }
 
 	/// Returns the bit serialized at the given bit index of this buffer.
 	bool DebugReadBit(int bitIndex) const;

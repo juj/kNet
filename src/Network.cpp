@@ -774,23 +774,23 @@ Socket *Network::StoreSocket(const Socket &cp)
 
 void Network::SendUDPConnectDatagram(Socket &socket, Datagram *connectMessage)
 {
-	OverlappedTransferBuffer *sendData = socket.BeginSend();
+    const int connectMessageSize = connectMessage ? connectMessage->size : 8;
+	OverlappedTransferBuffer *sendData = socket.BeginSend(connectMessageSize);
 	if (!sendData)
 	{
 		LOG(LogError, "Network::SendUDPConnectDatagram: socket.BeginSend failed! Cannot send UDP connection datagram!");
 		return;
 	}
+	sendData->bytesContains = connectMessageSize;
 	if (connectMessage)
 	{
 		///\todo Craft the proper connection attempt datagram.
-		sendData->bytesContains = std::min<int>(connectMessage->size, sendData->buffer.len);
 		memcpy(sendData->buffer.buf, connectMessage->data, sendData->buffer.len);
 		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending UDP connect message of size %d.", (int)sendData->buffer.len);
 	}
 	else
 	{
 		///\todo Craft the proper connection attempt datagram.
-		sendData->bytesContains = std::min<int>(8, sendData->buffer.len);
 		memset(sendData->buffer.buf, 0, sendData->buffer.len);
 		LOG(LogVerbose, "Network::SendUDPConnectDatagram: Sending null UDP connect message of size %d.", (int)sendData->buffer.len);
 	}

@@ -290,7 +290,7 @@ void UDPMessageConnection::HandleFlowControl()
 	}
 
 	// Do a fixed flow control for testing.
-	datagramSendRate = 100; ///\todo Remove.
+	datagramSendRate = 1000; ///\todo Remove.
 }
 
 void UDPMessageConnection::SendOutPackets()
@@ -335,7 +335,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	if (!CanSendOutNewDatagram())
 		return PacketSendThrottled;
 
-	OverlappedTransferBuffer *data = socket->BeginSend();
+    OverlappedTransferBuffer *data = socket->BeginSend(socket->MaxSendSize());
 	if (!data)
 		return PacketSendThrottled;
 

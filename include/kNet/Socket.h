@@ -117,6 +117,9 @@ struct OverlappedTransferBuffer
 	/// specify the actual number of bytes filled to buffer.buf here.
 	int bytesContains;
 
+    /// Stores the total number of bytes allocated to the buffer in the overlapped structure.
+    int bytesAllocated;
+
 	sockaddr_in from;
 	socklen_t fromLen;
 };
@@ -188,9 +191,12 @@ public:
 	/// Starts the sending of new data. After having filled the data to send to the OverlappedTransferBuffer that is
 	/// returned here, commit the send by calling EndSend. If you have called BeginSend, but decide not to send any data,
 	/// call AbortSend instead (otherwise memory will leak).
+    /// @param maxBytesToSend Specifies the size of the buffer that must be returned. Specify the size (or at least an 
+    ///         upper limit) of the message you are sending here. Specify the actual number of bytes filled in the resulting
+    ///         structure.
 	/// @return A transfer buffer where the data to send is to be filled in. If no new data can be sent at this time,
 	///         this function returns 0.
-	OverlappedTransferBuffer *BeginSend();
+	OverlappedTransferBuffer *BeginSend(int maxBytesToSend);
 	/// Finishes and queues up the given transfer that was created with a call to BeginSend.
 	/// @return True if send succeeded, false otherwise. In either case, the ownership of the passed buffer send
 	///         is taken by this Socket and may not be accessed anymore. Discard the pointer after calling this function.

@@ -64,7 +64,7 @@ void NetworkSimulator::SubmitSendBuffer(kNet::OverlappedTransferBuffer *buffer, 
 	{
 		QueuedBuffer b;
 		assert(socket);
-		b.buffer = socket->BeginSend();
+        b.buffer = socket->BeginSend(buffer->bytesContains);
 		if (b.buffer)
 		{
 			assert(b.buffer->buffer.len >= buffer->bytesContains);

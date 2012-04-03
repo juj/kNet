@@ -174,25 +174,22 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 		return PacketSendSocketClosed;
 	}
 
+    // 'serializedMessages' is a temporary data structure used only by this member function.
+    // It caches a list of all the messages we are pushing out during this call.
+	serializedMessages.clear();
+
 	// In the following, we start coalescing multiple messages into a single socket send() calls.
 	// Get the maximum number of bytes we can coalesce for the send() call. This is only a soft limit
 	// in the sense that if we encounter a single message that is larger than this limit, then we try
 	// to send that through in one send() call.
-	const size_t maxSendSize = socket->MaxSendSize();
+//	const size_t maxSendSize = socket->MaxSendSize();
 
 	// Push out all the pending data to the socket.
-//	assert(ContainerUniqueAndNoNullElements(serializedMessages));
-//	assert(ContainerUniqueAndNoNullElements(outboundQueue));
-	serializedMessages.clear(); // 'serializedMessages' is a temporary data structure used only by this member function.
-	OverlappedTransferBuffer *overlappedTransfer = socket->BeginSend();
-	if (!overlappedTransfer)
-	{
-		LOG(LogError, "TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
-		return PacketSendSocketClosed;
-	}
+	OverlappedTransferBuffer *overlappedTransfer = 0;
 
 	int numMessagesPacked = 0;
-	DataSerializer writer(overlappedTransfer->buffer.buf, overlappedTransfer->buffer.len);
+	DataSerializer writer;
+//	assert(ContainerUniqueAndNoNullElements(outboundQueue)); // This precondition should always hold (but very heavy to test, uncomment to debug)
 	while(outboundQueue.Size() > 0)
 	{
 #ifdef KNET_NO_MAXHEAP
@@ -208,12 +205,26 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 			outboundQueue.PopFront();
 			continue;
 		}
+
 		const int encodedMsgIdLength = VLE8_16_32::GetEncodedBitLength(msg->id) / 8;
 		const size_t messageContentSize = msg->dataSize + encodedMsgIdLength; // 1 byte: Message ID. X bytes: Content.
 		const int encodedMsgSizeLength = VLE8_16_32::GetEncodedBitLength(messageContentSize) / 8;
 		const size_t totalMessageSize = messageContentSize + encodedMsgSizeLength; // 2 bytes: Content length. X bytes: Content.
-		// If this message won't fit into the buffer, send out all previously gathered messages (except if there were none, then try to get the big message through).
-		if (writer.BytesFilled() + totalMessageSize >= maxSendSize && numMessagesPacked > 0)
+
+        if (!overlappedTransfer)
+        {
+            overlappedTransfer = socket->BeginSend(std::max<size_t>(socket->MaxSendSize(), totalMessageSize));
+	        if (!overlappedTransfer)
+	        {
+		        LOG(LogError, "TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
+                assert(serializedMessages.size() == 0);
+		        return PacketSendSocketClosed;
+	        }
+            writer = DataSerializer(overlappedTransfer->buffer.buf, overlappedTransfer->buffer.len);
+        }
+
+		// If this message won't fit into the buffer, send out all previously gathered messages.
+        if (writer.BytesLeft() < totalMessageSize)
 			break;
 
 		writer.AddVLE<VLE8_16_32>(messageContentSize);
@@ -230,7 +241,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 #endif
 		outboundQueue.PopFront();
 	}
-//	assert(ContainerUniqueAndNoNullElements(serializedMessages));
+//	assert(ContainerUniqueAndNoNullElements(serializedMessages)); // This precondition should always hold (but very heavy to test, uncomment to debug)
 
 	if (writer.BytesFilled() == 0 && outboundQueue.Size() > 0)
 		LOG(LogError, "Failed to send any messages to socket %s! (Probably next message was too big to fit in the buffer).", socket->ToString().c_str());
