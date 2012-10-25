@@ -16,8 +16,12 @@
 /** @file INetworkServerListener.h
 	@brief The \ref kNet::INetworkServerListener INetworkServerListener interface. Implementable by the client application. */
 
+#include "kNet/Types.h"
+
 namespace kNet
 {
+
+struct EndPoint;
 
 /// An interface implementable by the owner of a network server to receive notifications about connection-related events.
 /// @note Do not call NetworkServer::Process from any of these methods. This might cause infinite recursion.
@@ -29,6 +33,9 @@ public:
 	///       If it returns false, the connection attempt will be ignored.
 	virtual bool NewConnectionAttempt(const EndPoint &endPoint, const char *data, size_t numBytes)
 	{
+		UNUSED(endPoint)
+		UNUSED(data)
+		UNUSED(numBytes)
 		/// @note The default implementation of this method is to accept the connection. Be sure to override this if
 		///       custom access control is needed.
 		return true;
@@ -41,6 +48,7 @@ public:
 	/// Called to notify the listener that the given client has disconnected.
 	virtual void ClientDisconnected(MessageConnection *connection)
 	{
+		UNUSED(connection)
 		/// The default action is to not do anything.
 	}
 };
