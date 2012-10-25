@@ -31,7 +31,7 @@ public:
 	/// Called to query whether the new connection should be accepted or not, but only if the server operates in UDP mode.
 	/// @return If the implementor of this listener decides the connection should be accepted, it should return true.
 	///       If it returns false, the connection attempt will be ignored.
-	virtual bool NewConnectionAttempt(const EndPoint &endPoint, const char * data, size_t numBytes)
+	virtual bool NewConnectionAttempt(const EndPoint &endPoint, const char *data, size_t numBytes)
 	{
 		UNUSED(endPoint)
 		UNUSED(data)
@@ -46,7 +46,7 @@ public:
 	virtual void NewConnectionEstablished(MessageConnection *connection) = 0;
 
 	/// Called to notify the listener that the given client has disconnected.
-	virtual void ClientDisconnected(MessageConnection * connection)
+	virtual void ClientDisconnected(MessageConnection *connection)
 	{
 		UNUSED(connection)
 		/// The default action is to not do anything.
