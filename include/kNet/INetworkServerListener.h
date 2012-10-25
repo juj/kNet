@@ -29,6 +29,10 @@ public:
 	///       If it returns false, the connection attempt will be ignored.
 	virtual bool NewConnectionAttempt(const EndPoint &endPoint, const char *data, size_t numBytes)
 	{
+		// Suppress C4100 warnings on MSVC
+		(void)endPoint;
+		(void)data;
+		(void)numBytes;
 		/// @note The default implementation of this method is to accept the connection. Be sure to override this if
 		///       custom access control is needed.
 		return true;
@@ -41,6 +45,8 @@ public:
 	/// Called to notify the listener that the given client has disconnected.
 	virtual void ClientDisconnected(MessageConnection *connection)
 	{
+		// Suppress C4100 warnings on MSVC
+		(void)connection;
 		/// The default action is to not do anything.
 	}
 };
