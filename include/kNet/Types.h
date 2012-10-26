@@ -16,6 +16,15 @@
 /** @file Types.h
 	@brief Provides platform-independent fixed size types. */
 
+// Preprocessor macro for suppressing unused formal parameter warnings.
+#if defined(DOXYGEN)
+#define UNUSED(x) x
+#elif defined(__GNUC__)
+#define UNUSED(x) x __attribute__((unused))
+#else
+#define UNUSED(x)
+#endif
+
 #ifndef KNET_NO_FIXEDWIDTH_TYPES
 
 #include "kNetBuildConfig.h"

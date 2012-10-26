@@ -952,7 +952,7 @@ void UDPMessageConnection::SendDisconnectAckMessage()
 	LOG(LogInfo, "UDPMessageConnection::SendDisconnectAckMessage: Sent DisconnectAck.");
 }
 
-void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, size_t numBytes)
+void UDPMessageConnection::HandleFlowControlRequestMessage(const char *UNUSED(data), size_t UNUSED(numBytes))
 {
 	AssertInWorkerThreadContext();
 	/*
@@ -1291,7 +1291,7 @@ void AppendU16ToVector(std::vector<char> &data, unsigned long value)
 	data.insert(data.end(), (const char *)&value, (const char *)&value + 2);
 }
 
-void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int newDatagramReceiveRate, bool internalCall)
+void UDPMessageConnection::SetDatagramInFlowRatePerSecond(int /*newDatagramReceiveRate*/, bool /*internalCall*/)
 {/*
 	if (newDatagramReceiveRate == datagramInRatePerSecond) // No need to set it multiple times.
 		return;
