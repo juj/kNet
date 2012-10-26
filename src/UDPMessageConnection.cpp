@@ -952,7 +952,7 @@ void UDPMessageConnection::SendDisconnectAckMessage()
 	LOG(LogInfo, "UDPMessageConnection::SendDisconnectAckMessage: Sent DisconnectAck.");
 }
 
-void UDPMessageConnection::HandleFlowControlRequestMessage(const char *data, size_t numBytes)
+void UDPMessageConnection::HandleFlowControlRequestMessage(const char *UNUSED(data), size_t UNUSED(numBytes))
 {
 	AssertInWorkerThreadContext();
 	/*
