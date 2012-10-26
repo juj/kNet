@@ -19,7 +19,7 @@
 // Preprocessor macro for suppressing unused formal parameter warnings.
 #if defined(DOXYGEN)
 #define UNUSED(x) x
-#else if defined(__GNUC__)
+#elif defined(__GNUC__)
 #define UNUSED(x) x __attribute__((unused))
 #else
 #define UNUSED(x)
