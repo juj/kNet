@@ -16,8 +16,8 @@
 /** @file Types.h
 	@brief Provides platform-independent fixed size types. */
 
-// Preprocessor macro for suppressing unused formal parameter warnings while keeping Doxygen documentation clean.
-#if defined(DOXYGEN) // DOXYGEN is a special define used when Doxygen is ran.
+// Preprocessor macro for suppressing unused formal parameter warnings while still showing the variable name in Doxygen documentation.
+#if defined(DOXYGEN) // DOXYGEN is a special define used when Doxygen is run.
 #define UNUSED(x) x
 #else
 #define UNUSED(x)
