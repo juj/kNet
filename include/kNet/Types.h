@@ -16,11 +16,9 @@
 /** @file Types.h
 	@brief Provides platform-independent fixed size types. */
 
-// Preprocessor macro for suppressing unused formal parameter warnings.
-#if defined(DOXYGEN)
+// Preprocessor macro for suppressing unused formal parameter warnings while keeping Doxygen documentation clean.
+#if defined(DOXYGEN) // DOXYGEN is a special define used when Doxygen is ran.
 #define UNUSED(x) x
-#elif defined(__GNUC__)
-#define UNUSED(x) x __attribute__((unused))
 #else
 #define UNUSED(x)
 #endif
