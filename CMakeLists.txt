@@ -35,18 +35,18 @@ macro(AddCompilationDefine define)
    file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define ${define}\n#endif\n\n")
 endmacro()
 
-option(USE_BOOST TRUE)
+option(USE_BOOST "Specifies whether Boost is used." TRUE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
 # TinyXML is embedded to the repository, so you can safely keep this true.
 # However, it is not required for core kNet use, but only for the MessageCompiler tool, in which
 # case you can disable it here by setting USE_TINYXML to FALSE, and excluding MessageCompiler from the build.
-option(USE_TINYXML TRUE)
+option(USE_TINYXML  "Specifies whether TinyXML, of which the MessageCompiler tool dependends on, is included in the build." TRUE)
 set(TINYXML_ROOT "src/tinyxml")
 
 # If you want to enable the use of visual debugging/profiling windows, uncomment the following line (must
 # have Qt installed and set up)
-option(USE_QT FALSE)
+option(USE_QT "Specifies whether Qt is used to enable visual debugging/profiling windows." FALSE)
 
 # To enable specific flags only in debug mode, use the following syntax.
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
