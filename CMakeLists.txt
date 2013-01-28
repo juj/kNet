@@ -41,7 +41,7 @@ option(USE_BOOST "Specifies whether Boost is used." TRUE)
 # TinyXML is embedded to the repository, so you can safely keep this true.
 # However, it is not required for core kNet use, but only for the MessageCompiler tool, in which
 # case you can disable it here by setting USE_TINYXML to FALSE, and excluding MessageCompiler from the build.
-option(USE_TINYXML  "Specifies whether TinyXML, of which the MessageCompiler tool dependends on, is included in the build." TRUE)
+option(USE_TINYXML  "Specifies whether TinyXML, of which the MessageCompiler tool depends on, is included in the build." TRUE)
 set(TINYXML_ROOT "src/tinyxml")
 
 # If you want to enable the use of visual debugging/profiling windows, uncomment the following line (must
