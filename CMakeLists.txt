@@ -35,6 +35,10 @@ macro(AddCompilationDefine define)
    file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define ${define}\n#endif\n\n")
 endmacro()
 
+option(BUILD_SAMPLES "Specifies whether kNet sample applications are built." FALSE)
+
+option(BUILD_TESTS "Specifies whether kNet test applications are built." FALSE)
+
 option(USE_BOOST "Specifies whether Boost is used." TRUE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
@@ -199,20 +203,24 @@ target_link_libraries(kNet ${kNetLinkLibraries})
 
 set(KNET_OUT_DIR ${CMAKE_SOURCE_DIR}/lib)
 
-#add_subdirectory(samples/ConnectFlood)
-#add_subdirectory(samples/FileTransfer)
-#add_subdirectory(samples/FirewallTest)
-#add_subdirectory(samples/HelloClient)
-#add_subdirectory(samples/HelloServer)
-#add_subdirectory(samples/LatencyTest)
-#add_subdirectory(samples/MessageCompiler)
-#add_subdirectory(samples/SilenceTest)
-#add_subdirectory(samples/SimpleChat)
-#add_subdirectory(samples/SpeedTest)
-#add_subdirectory(samples/TrashTalk)
+if (BUILD_SAMPLES)
+    add_subdirectory(samples/ConnectFlood)
+    add_subdirectory(samples/FileTransfer)
+    add_subdirectory(samples/FirewallTest)
+    add_subdirectory(samples/HelloClient)
+    add_subdirectory(samples/HelloServer)
+    add_subdirectory(samples/LatencyTest)
+    add_subdirectory(samples/MessageCompiler)
+    add_subdirectory(samples/SilenceTest)
+    add_subdirectory(samples/SimpleChat)
+    add_subdirectory(samples/SpeedTest)
+    add_subdirectory(samples/TrashTalk)
+endif()
 
-#add_subdirectory(tests)
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 
 set_target_properties(kNet PROPERTIES 
-	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
-	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
