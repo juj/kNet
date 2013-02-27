@@ -55,7 +55,7 @@ public:
 			while((int)data.size() < messageSize)
 				data.push_back(rand() & 0xFF);
 
-			socket->Send(&data[0], data.size());
+			socket->Send(data.size() > 0 ? &data[0] : 0, data.size());
 
 			Clock::Sleep((rand() % 100) + 1);
 		}
