@@ -526,11 +526,16 @@ OverlappedTransferBuffer *Socket::BeginReceive()
 		if (receivedData->bytesContains == 0)
 		{
 			DeleteOverlappedTransferBuffer(receivedData);
-			if (readOpen)
-				LOG(LogInfo, "Socket::BeginReceive: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
-			readOpen = false;
-			if (IsUDPServerSocket())
-				LOG(LogError, "Socket::BeginReceive: UDP server socket transitioned to readOpen==false!");
+			if (!IsUDPServerSocket())
+			{
+				if (readOpen)
+				{
+					LOG(LogInfo, "Socket::BeginReceive: Received 0 bytes from the network. Read connection closed in socket %s.", ToString().c_str());
+					readOpen = false;
+				}
+			}
+			else
+				LOG(LogVerbose, "Socket::BeginReceive: Server received a UDP datagram of 0 bytes from a client! This is a malformed kNet UDP datagram!");
 			return 0;
 		}
 
