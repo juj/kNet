@@ -31,7 +31,7 @@ struct Foo : public PoolAllocatable<Foo>
     int bar;
 };
 
-volatile bool wait = true;
+volatile bool waitEvent = true;
 
 const int numThreads = 20;
 LockFreePoolAllocator<Foo> pool;
@@ -39,7 +39,7 @@ std::vector<Foo*> foos[numThreads];
 
 void PoolThreadMain(Thread *me, int threadIndex)
 {
-    while(wait)
+    while(waitEvent)
     {
         if (me->ShouldQuit())
             return;
@@ -92,13 +92,13 @@ void LockFreePoolAllocatorTest()
     cout << "Starting LockFreePoolAllocatorTest.";
 
     Thread testThreads[numThreads];
-    wait = true;
+    waitEvent = true;
 
     // Fire up all threads.
     for(int i = 0; i < numThreads; ++i)
         testThreads[i].RunFunc(PoolThreadMain, &testThreads[i], i);
 
-    wait = false;
+    waitEvent = false;
     Thread::Sleep(100);
 
     for(int i = 0; i < numThreads; ++i)
