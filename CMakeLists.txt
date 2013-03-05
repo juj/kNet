@@ -1,4 +1,4 @@
-# Copyright 2010 Jukka Jylï¿½nki
+# Copyright 2010 Jukka Jylänki
 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -54,6 +54,19 @@ option(USE_QT "Specifies whether Qt is used to enable visual debugging/profiling
 
 # To enable specific flags only in debug mode, use the following syntax.
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DKNET_LOGGING_SUPPORT_ENABLED")
+
+# Always compile with maximum warning level
+if(MSVC)
+  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+  endif()
+elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_C_COMPILER MATCHES ".*(gcc|clang|emcc).*")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-variadic-macros")
+else()
+  message(WARNING "Unknown compiler '${CMAKE_C_COMPILER}' used! Cannot set up max warning level.")
+endif()
 
 # If set, the function GetThreadId is not used, which was introduced to Kernel32.dll only in Windows Vista.
 # Affects only Boost threads. When native Win32 threads are used, the id is stored on creation.
