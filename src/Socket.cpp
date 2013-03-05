@@ -39,6 +39,7 @@ using namespace std;
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <unistd.h>
 #endif
 
 #ifdef WIN32

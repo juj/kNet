@@ -18,7 +18,9 @@
 #ifdef KNET_USE_BOOST
 #include <boost/thread/thread.hpp>
 #endif
-
+#ifdef UNIX
+#include <unistd.h>
+#endif
 #include "kNet/DebugMemoryLeakCheck.h"
 
 #include "kNet/Network.h"
