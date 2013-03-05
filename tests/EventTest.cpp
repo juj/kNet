@@ -43,7 +43,7 @@ void EventTest()
 	e.Set();
 	assert(e.Test());
 
-	for(int i = 0; i < 70000; ++i)
+	for(int i = 0; i < 1000; ++i)
 	{
 		e.Reset();
 		assert(!e.Test());

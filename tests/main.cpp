@@ -33,6 +33,5 @@ int main()
 	MaxHeapTest();
 	VLETest();
 	EventTest();
-	for(int i = 0; i < 100; ++i)
-		LockFreePoolAllocatorTest();
+	LockFreePoolAllocatorTest();
 }

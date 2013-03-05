@@ -89,39 +89,42 @@ bool VectorsIntersect(const std::vector<T> &a, const std::vector<T> &b)
 
 void LockFreePoolAllocatorTest()
 {
-    cout << "Starting LockFreePoolAllocatorTest.";
+	TEST("LockFreePoolAllocator")
+	for(int x = 0; x < 20; ++x)
+	{
+		Thread testThreads[numThreads];
+		waitEvent = true;
 
-    Thread testThreads[numThreads];
-    waitEvent = true;
+		// Fire up all threads.
+		for(int i = 0; i < numThreads; ++i)
+			testThreads[i].RunFunc(PoolThreadMain, &testThreads[i], i);
 
-    // Fire up all threads.
-    for(int i = 0; i < numThreads; ++i)
-        testThreads[i].RunFunc(PoolThreadMain, &testThreads[i], i);
+		waitEvent = false;
+		Thread::Sleep(100);
 
-    waitEvent = false;
-    Thread::Sleep(100);
+		for(int i = 0; i < numThreads; ++i)
+			testThreads[i].Stop();
 
-    for(int i = 0; i < numThreads; ++i)
-        testThreads[i].Stop();
+		for(int i = 0; i < numThreads; ++i)
+			std::sort(foos[i].begin(), foos[i].end());
 
-    for(int i = 0; i < numThreads; ++i)
-        std::sort(foos[i].begin(), foos[i].end());
+		for(int i = 0; i < numThreads; ++i)
+			for(int j = i+1; j < numThreads; ++j)
+				if (VectorsIntersect(foos[i], foos[j]))
+				{
+					cout << "!!";
+					i = numThreads;
+					j = numThreads;
+					break;
+				}    
 
-    for(int i = 0; i < numThreads; ++i)
-        for(int j = i+1; j < numThreads; ++j)
-            if (VectorsIntersect(foos[i], foos[j]))
-            {
-                cout << "!!";
-                i = numThreads;
-                j = numThreads;
-                break;
-            }    
-
-    for(int i = 0; i < numThreads; ++i)
-    {
-        for(size_t j = 0; j < foos[i].size(); ++j)
-            delete foos[i][j];
-        foos[i].clear();
-    }
-    pool.UnsafeClearAll();
+		for(int i = 0; i < numThreads; ++i)
+		{
+			for(size_t j = 0; j < foos[i].size(); ++j)
+				delete foos[i][j];
+			foos[i].clear();
+		}
+		pool.UnsafeClearAll();
+	}
+	ENDTEST()
 }
