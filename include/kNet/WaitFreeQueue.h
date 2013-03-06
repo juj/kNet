@@ -144,9 +144,14 @@ public:
 		if (!success)
 		{
 			DoubleCapacity();
-			success = Insert(value);
+#ifdef _DEBUG
+			success = 
+#endif
+				Insert(value);
 		}
+#ifdef _DEBUG
 		assert(success);
+#endif
 	}
 
 	/// Re-allocates the queue to the new maximum size. All old elements are copied over.
