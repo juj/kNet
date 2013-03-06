@@ -56,14 +56,25 @@ static const u32 cMaxUDPMessageFragmentSize = 470;
 
 UDPMessageConnection::UDPMessageConnection(Network *owner, NetworkServer *ownerServer, Socket *socket, ConnectionState startingState)
 :MessageConnection(owner, ownerServer, socket, startingState),
-retransmissionTimeout(3.f), numAcksLastFrame(0), numLossesLastFrame(0), smoothedRTT(3.f), rttVariation(0.f), rttCleared(true), // Set RTT initial values as per RFC 2988.
 lastReceivedInOrderPacketID(0), 
-lastSentInOrderPacketID(0), datagramPacketIDCounter(1),
-packetLossRate(0.f), packetLossCount(0.f), datagramOutRatePerSecond(initialDatagramRatePerSecond), 
-datagramInRatePerSecond(initialDatagramRatePerSecond),
+lastSentInOrderPacketID(0), 
+datagramPacketIDCounter(1),
+retransmissionTimeout(3.f), 
+numAcksLastFrame(0), 
+numLossesLastFrame(0), 
 datagramSendRate(70),
-receivedPacketIDs(64 * 1024), outboundPacketAckTrack(1024),
-previousReceivedPacketID(0), queuedInboundDatagrams(128)
+lowestDatagramSendRateOnPacketLoss(70.f),
+rttCleared(true), // Set RTT initial values as per RFC 2988.
+smoothedRTT(3.f), 
+rttVariation(0.f), 
+packetLossRate(0.f), 
+packetLossCount(0.f), 
+outboundPacketAckTrack(1024),
+queuedInboundDatagrams(128),
+datagramOutRatePerSecond(initialDatagramRatePerSecond), 
+datagramInRatePerSecond(initialDatagramRatePerSecond),
+receivedPacketIDs(64 * 1024), 
+previousReceivedPacketID(0)
 {
 	LOG(LogObjectAlloc, "Allocated UDPMessageConnection %p.", this);
 
