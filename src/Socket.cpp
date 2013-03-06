@@ -685,13 +685,16 @@ void Socket::SetBlocking(bool isBlocking)
 	if (connectSocket == INVALID_SOCKET)
 		return;
 
-	u_long nonBlocking = (isBlocking == false) ? 1 : 0;
 #ifdef WIN32
+	u_long nonBlocking = (isBlocking == false) ? 1 : 0;
 	if (ioctlsocket(connectSocket, FIONBIO, &nonBlocking))
 		LOG(LogError, "Socket::SetBlocking: ioctlsocket failed with error %s!", Network::GetLastErrorString().c_str());
 #else
 	int flags = fcntl(connectSocket, F_GETFL, 0);
-	fcntl(connectSocket, F_SETFL, flags | O_NONBLOCK);
+	if (!isBlocking)
+		fcntl(connectSocket, F_SETFL, flags | O_NONBLOCK);
+	else
+		fcntl(connectSocket, F_SETFL, flags & ~O_NONBLOCK);
 #endif
 }
 
