@@ -186,10 +186,12 @@ endif()
 
 #AddCompilationUnitNameDefines(kNetSourceFiles)
 #TODO: To clean up, move the lines of code below into a macro, like shown above. Disabled for now since passing a list to a CMake macro was problematic.
-foreach(srcFile ${kNetSourceFiles})
-   get_filename_component(baseName ${srcFile} NAME)
-   set_source_files_properties(${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
-endforeach()
+if (NOT "${CMAKE_GENERATOR}" STREQUAL "Xcode") #Xcode has issue parsing the DEBUG_CPP_NAME macro.
+   foreach(srcFile ${kNetSourceFiles})
+      get_filename_component(baseName ${srcFile} NAME)
+      set_source_files_properties(${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
+   endforeach()
+endif()
 
 add_library(kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
 
