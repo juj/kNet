@@ -35,7 +35,7 @@ namespace
 {
 	///\note See BasicSerializedDataTypes.h:31: The order of these elements matches that of the BasicSerializedDataType enum.
 	const char *data[] = { "", "bit", "u8", "s8", "u16", "s16", "u32", "s32", "u64", "s64", "float", "double", "string", "struct" };
-	const size_t typeSizes[] = { -1, -1, 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, -1, -1 }; ///< -1 here denotes 'does not apply'.
+	const size_t typeSizes[] = { 0xFFFFFFFF, 0xFFFFFFFF, 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, -1, -1 }; // 0xFFFFFFFF here denotes 'does not apply'.
 }
 
 namespace kNet
