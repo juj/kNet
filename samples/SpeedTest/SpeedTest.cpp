@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 	NetworkApp app;
 	if (!_stricmp(argv[1], "server"))
 	{
-		unsigned short port = atoi(argv[3]);
+		unsigned short port = (unsigned short)atoi(argv[3]);
 
 		size_t flowRate = (transport == SocketOverUDP && argc >= 5) ? atoi(argv[4]) : 0;
 
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 		}
 
 		const char *hostname = argv[3];
-		unsigned short port = atoi(argv[4]);
+		unsigned short port = (unsigned short)atoi(argv[4]);
 		size_t numMessages = atoi(argv[5]);
 		size_t messageSize = atoi(argv[6]);
 		bool reliable = true;

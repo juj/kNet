@@ -59,7 +59,7 @@ public:
 		connection->RegisterInboundMessageHandler(this);
 	}
 
-	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection *source, packet_id_t /*packetId*/, message_id_t messageId, const char *data, size_t numBytes)
 	{
 		if (messageId == cChatMessageID)
 			OnChatMessageReceived(source, data, numBytes);
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 	NetworkApp app;
 	if (!_stricmp(argv[2], "server"))
 	{
-		unsigned short port = atoi(argv[3]);
+		unsigned short port = (unsigned short)atoi(argv[3]);
 
 		app.RunServer(port, transport);
 	}
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		unsigned short port = atoi(argv[4]);
+		unsigned short port = (unsigned short)atoi(argv[4]);
 		app.RunClient(argv[3], port, transport);
 	}
 	else

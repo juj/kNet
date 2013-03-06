@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	NetworkApp app;
 
 	const char *hostname = argv[2];
-	unsigned short port = atoi(argv[3]);
+	unsigned short port = (unsigned short)atoi(argv[3]);
 	int numConcurrentConnections = atoi(argv[4]);
 	int numTotalConnections = atoi(argv[5]);
 

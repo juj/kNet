@@ -977,7 +977,7 @@ void UDPMessageConnection::HandleFlowControlRequestMessage(const char *UNUSED(da
 	datagramOutRatePerSecond = newOutboundRate;*/
 }
 
-int UDPMessageConnection::BiasedBinarySearchFindPacketIndex(PacketAckTrackQueue &queue, int packetID)
+int UDPMessageConnection::BiasedBinarySearchFindPacketIndex(PacketAckTrackQueue &queue, packet_id_t packetID)
 {
 	///\bug Make this all packetID wrap-around -aware.
 

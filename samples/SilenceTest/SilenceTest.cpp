@@ -124,13 +124,13 @@ int main(int argc, char **argv)
 
 	if (!_stricmp(argv[1], "server"))
 	{
-		unsigned short port = atoi(argv[3]);
+		unsigned short port = (unsigned short)atoi(argv[3]);
 
 		RunServer(port, transport);
 	}
 	else if (!_stricmp(argv[1], "client"))
 	{
-		unsigned short port = atoi(argv[4]);
+		unsigned short port = (unsigned short)atoi(argv[4]);
 		int msecsToWait = atoi(argv[5]);
 		RunClient(argv[3], port, transport, (float)msecsToWait);
 	}
