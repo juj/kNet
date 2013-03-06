@@ -122,7 +122,7 @@ void NetworkApp::HandleMessage(MessageConnection *source, packet_id_t packetId, 
 		break;
 	}
 	default:
-		cout << "Received an unknown message with ID 0x" << std::hex << id << "!" << endl;
+		cout << "Received an unknown message with ID 0x" << std::hex << messageId << "!" << endl;
 		break;
 	}
 }

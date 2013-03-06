@@ -15,6 +15,7 @@
 /** @file GraphDialog.cpp
 	@brief */
 
+#define NOMINMAX
 #include <QUiLoader>
 #include <QFile>
 #include <QVBoxLayout>
