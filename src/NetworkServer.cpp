@@ -39,11 +39,15 @@ namespace kNet
 {
 
 NetworkServer::NetworkServer(Network *owner_, std::vector<Socket *> listenSockets_)
-:owner(owner_), listenSockets(listenSockets_), acceptNewConnections(true), networkServerListener(0),
-udpConnectionAttempts(64), workerThread(0)
+:listenSockets(listenSockets_), 
+owner(owner_), 
+workerThread(0), 
 #ifdef KNET_THREAD_CHECKING_ENABLED
-,workerThreadId(Thread::NullThreadId())
+workerThreadId(Thread::NullThreadId()),
 #endif
+acceptNewConnections(true), 
+networkServerListener(0),
+udpConnectionAttempts(64)
 {
 	assert(owner);
 	assert(listenSockets.size() > 0);
@@ -119,6 +123,8 @@ Socket *NetworkServer::AcceptConnections(Socket *listenSocket)
 	sockaddr_in localSockAddr;
 	socklen_t namelen = sizeof(localSockAddr);
 	int sockRet = getsockname(acceptSocket, (sockaddr*)&localSockAddr, &namelen); // Note: This works only if family==INETv4
+	if (sockRet != 0)
+		LOG(LogError, "getsockname failed!");
 	localEndPoint = EndPoint::FromSockAddrIn(localSockAddr);
 	std::string localHostName = owner->LocalAddress();
 

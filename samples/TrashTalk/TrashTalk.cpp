@@ -29,7 +29,7 @@ class NetworkApp : public IMessageHandler
 {
 	Network network;
 public:
-	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection * /*source*/, packet_id_t /*packetId*/, message_id_t /*messageId*/, const char * /*data*/, size_t /*numBytes*/)
 	{
 	}
 
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 	NetworkApp app;
 
 	const char *hostname = argv[2];
-	unsigned short port = atoi(argv[3]);
+	unsigned short port = (unsigned short)atoi(argv[3]);
 	int numMessages = atoi(argv[4]);
 	int messageSize = atoi(argv[5]);
 

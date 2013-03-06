@@ -46,7 +46,7 @@ public:
 		connection->EndAndQueueMessage(msg);
 	}
 
-	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection * /*source*/, packet_id_t /*packetId*/, message_id_t messageId, const char * /*data*/, size_t numBytes)
 	{
 		switch(messageId)
 		{

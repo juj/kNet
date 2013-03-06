@@ -541,7 +541,6 @@ void Network::NewMessageConnectionCreated(MessageConnection *connection)
 Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer transport, bool allowAddressReuse)
 {
 	addrinfo *result = NULL;
-	addrinfo *ptr = NULL;
 	addrinfo hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -633,7 +632,6 @@ Socket *Network::OpenListenSocket(unsigned short port, SocketTransportLayer tran
 Socket *Network::ConnectSocket(const char *address, unsigned short port, SocketTransportLayer transport)
 {
 	addrinfo *result = NULL;
-	addrinfo *ptr = NULL;
 	addrinfo hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;

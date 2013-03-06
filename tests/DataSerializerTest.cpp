@@ -54,7 +54,7 @@ public:
 	{
 //		std::cout << "Writing to elemOfs: " << dst.ByteOffset() << ", bitOfs: " << dst.BitOffset()
 //			<< "(" << dst.BitsFilled() << "): ";
-		int bitsFilled = dst.BitsFilled();
+//		int bitsFilled = dst.BitsFilled();
 		Serialize(dst);
 //		std::cout << "Wrote " << (dst.BitsFilled() - bitsFilled) << " bits." << endl;
 	}
@@ -63,7 +63,7 @@ public:
 	{
 //		std::cout << "Reading from elemOfs: " << src.BytePos() << ", bitOfs: " << src.BitPos()
 //			<< "(" << src.BitsReadTotal() << "): ";
-		int bitsRead = src.BitsReadTotal();
+//		int bitsRead = src.BitsReadTotal();
 		Deserialize(src);
 //		std::cout << "Read " << (src.BitsReadTotal() - bitsRead) << " bits." << endl;
 	}

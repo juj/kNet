@@ -51,10 +51,12 @@ int main(int argc, char **argv)
 		    const SerializedElementDesc &elem = *iter;
     		
 		    if (elem.type == SerialStruct)
+			{
 			    if (elem.name.length() == 0)
 				    cout << "<unnamed struct>" << endl;
 			    else
 				    cout << elem.name << endl;
+			}
 	    }
 
 	    const std::list<SerializedMessageDesc> &messages = msg.GetMessages();

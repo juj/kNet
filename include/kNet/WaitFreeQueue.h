@@ -49,7 +49,7 @@ public:
 
 	/// Warning: This is not thread-safe.
 	WaitFreeQueue(const WaitFreeQueue &rhs)
-	:head(rhs.head), tail(rhs.tail), maxElementsMask(rhs.maxElementsMask)
+	:maxElementsMask(rhs.maxElementsMask), head(rhs.head), tail(rhs.tail)
 	{
 		size_t maxElements = rhs.maxElementsMask+1;
 		data = new T[maxElements];

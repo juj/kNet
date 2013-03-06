@@ -80,8 +80,6 @@ void SerializationStructCompiler::WriteStructMembers(const SerializedElementDesc
 {
 	assert(&elem && elem.type == SerialStruct);
 
-	int childStructIndex = 1;
-
 	for(size_t i = 0; i < elem.elements.size(); ++i)
 	{
 		SerializedElementDesc &e = *elem.elements[i];

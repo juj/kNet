@@ -23,12 +23,13 @@ NetworkSimulator::NetworkSimulator()
 packetLossRate(0),
 constantPacketSendDelay(0),
 uniformRandomPacketSendDelay(0),
-owner(0),
+packetDuplicationRate(0.f),
+corruptionType(CorruptDatagram),
 corruptMessageId(0),
 corruptToggleBitsRate(0),
-corruptionType(CorruptDatagram),
 corruptMinBits(0),
-corruptMaxBits(0)
+corruptMaxBits(0),
+owner(0)
 {
 }
 

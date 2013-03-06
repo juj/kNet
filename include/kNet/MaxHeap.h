@@ -32,7 +32,11 @@ public:
 	/// Called whenever an element in the MaxHeap is moved around.
 	/// @param element The element that was moved around.
 	/// @param newIndex The new index of the element.
-	void IndexUpdated(const T &element, int newIndex) {}
+	void IndexUpdated(const T &element, int newIndex)
+	{
+		MARK_UNUSED(element);
+		MARK_UNUSED(newIndex);
+	}
 };
 
 /** Implements a max heap data structure, see http://en.wikipedia.org/wiki/Binary_heap.

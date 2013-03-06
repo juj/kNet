@@ -339,7 +339,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 	if (!data)
 		return PacketSendThrottled;
 
-	const size_t minSendSize = 1;
+//	const size_t minSendSize = 1;
 	const size_t maxSendSize = socket->MaxSendSize();
 
 	// Push out all the pending data to the socket.

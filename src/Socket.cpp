@@ -95,10 +95,11 @@ std::string SocketTypeToString(SocketType type)
 
 Socket::Socket()
 :connectSocket(INVALID_SOCKET),
-writeOpen(false),
-readOpen(false),
 transport(InvalidTransportLayer),
-type(InvalidSocketType)
+type(InvalidSocketType),
+maxSendSize(0),
+writeOpen(false),
+readOpen(false)
 #ifdef WIN32
 ,queuedReceiveBuffers(numConcurrentReceiveBuffers)
 ,queuedSendBuffers(numConcurrentSendBuffers)
@@ -723,7 +724,7 @@ bool Socket::Send(const char *data, size_t numBytes)
 	else
 		bytesSent = send(connectSocket, data, numBytes, 0);
 
-	if (bytesSent == numBytes)
+	if (bytesSent == (int)numBytes)
 	{
 		LOG(LogData, "Socket::EndSend: Sent out %d bytes to socket %s.", bytesSent, ToString().c_str());
 		return true;

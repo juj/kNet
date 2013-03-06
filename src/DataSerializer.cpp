@@ -290,7 +290,7 @@ int DataSerializer::AddVector2D(float x, float y, int magnitudeIntegerBits, int 
 	{
 		// Call atan2() to get the aimed angle of the 2D vector in the range [-PI, PI], then quantize the 1D result to the desired precision.
 		float angle = atan2(y, x);
-		AddQuantizedFloat(-PI, PI, directionBits, atan2(y, x));
+		AddQuantizedFloat(-PI, PI, directionBits, angle);
 		return magnitudeIntegerBits + magnitudeDecimalBits + directionBits;
 	}
 	else
@@ -421,7 +421,7 @@ void DataSerializer::AddString(const char *str)
 	if (iter)
 		SetVaryingElemSize((u32)len);
 	else
-		Add<u8>(len);
+		Add<u8>(len); ///\todo VLE.
 
 	AddArray<s8>((const s8*)str, len);
 }

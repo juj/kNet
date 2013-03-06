@@ -86,20 +86,24 @@ std::string ConnectionStateToString(ConnectionState state)
 }
 
 MessageConnection::MessageConnection(Network *owner_, NetworkServer *ownerServer_, Socket *socket_, ConnectionState startingState)
-:owner(owner_), ownerServer(ownerServer_), inboundMessageHandler(0), socket(socket_), 
-bOutboundSendsPaused(false),
+:owner(owner_), ownerServer(ownerServer_), workerThread(0), 
+#ifdef KNET_THREAD_CHECKING_ENABLED
+workerThreadId(Thread::NullThreadId()),
+#endif
 outboundAcceptQueue(16*1024), inboundMessageQueue(16*1024), 
-rtt(0.f), packetsInPerSec(0), packetsOutPerSec(0), 
-msgsInPerSec(0), msgsOutPerSec(0), bytesInPerSec(0), bytesOutPerSec(0),
-lastHeardTime(Clock::Tick()), outboundMessageNumberCounter(0), outboundReliableMessageNumberCounter(0),
 #ifdef KNET_NO_MAXHEAP
 outboundQueue(16 * 1024), 
 #endif
-workerThread(0),
-bytesInTotal(0), bytesOutTotal(0)
-#ifdef KNET_THREAD_CHECKING_ENABLED
-,workerThreadId(Thread::NullThreadId())
-#endif
+inboundMessageHandler(0), socket(socket_), 
+bOutboundSendsPaused(false), 
+rtt(0.f), 
+lastHeardTime(Clock::Tick()), 
+packetsInPerSec(0), packetsOutPerSec(0), 
+msgsInPerSec(0), msgsOutPerSec(0),
+bytesInPerSec(0), bytesOutPerSec(0), 
+bytesInTotal(0), bytesOutTotal(0),
+outboundMessageNumberCounter(0),
+outboundReliableMessageNumberCounter(0)
 {
 	connectionState = startingState;
 	networkSendSimulator.owner = this;
@@ -1102,7 +1106,7 @@ void MessageConnection::HandleInboundMessage(packet_id_t packetID, const char *d
 	}
 }
 
-void MessageConnection::SetMaximumDataSendRate(int numBytesPerSec, int numDatagramsPerSec)
+void MessageConnection::SetMaximumDataSendRate(int /*numBytesPerSec*/, int /*numDatagramsPerSec*/)
 {
 }
 

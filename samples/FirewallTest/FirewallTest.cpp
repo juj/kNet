@@ -46,7 +46,7 @@ public:
 		connection->RegisterInboundMessageHandler(this);
 	}
 
-	void HandleMessage(MessageConnection *source, packet_id_t packetId, message_id_t messageId, const char *data, size_t numBytes)
+	void HandleMessage(MessageConnection *source, packet_id_t /*packetId*/, message_id_t messageId, const char * /*data*/, size_t numBytes)
 	{
 		cout << "Received a message with ID " << messageId << " and size " << numBytes << "." << endl;
 		switch(messageId)
