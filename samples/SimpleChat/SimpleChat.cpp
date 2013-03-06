@@ -46,7 +46,7 @@ public:
 	}
 
 	// The server must implement this message.
-	bool NewConnectionAttempt(const EndPoint &/*endPoint*/, Datagram &/*datagram*/)
+	bool NewConnectionAttempt(const EndPoint & UNUSED(endPoint), const char * UNUSED(data), size_t UNUSED(numBytes))
 	{
 		// Allow the client to connect.
 		return true;
