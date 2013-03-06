@@ -108,10 +108,15 @@ public:
 //		cout << "Serialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << value << endl;
 	}
 	void Deserialize(DataDeserializer &src)
-	{ 
-		T deserialized = src.Read<T>(); 
+	{
+#ifdef _DEBUG
+		T deserialized = 
+#endif
+			src.Read<T>(); 
 //		cout << "Deserialized type " << SerialTypeToReadableString(SerializedDataTypeTraits<T>::type) << ", value: " << deserialized << endl;
+#ifdef _DEBUG
 		assert(deserialized == value);
+#endif
 	}
 };
 
