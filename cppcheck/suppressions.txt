@@ -5,3 +5,4 @@ useInitializationList:tinyxml/tinyxml.cpp
 unusedVariable:tinyxml/tinyxmlparser.cpp
 variableScope:tinyxml/tinyxmlparser.cpp
 nullPointer:tinyxml/tinyxmlparser.cpp
+unusedStructMember:Thread.cpp

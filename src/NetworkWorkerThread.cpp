@@ -306,7 +306,7 @@ void NetworkWorkerThread::MainLoop()
 			else // A UDP server received a message.
 			{
 				int socketIndex = index - connectionList.size() * 2;
-				if (serverList.size() > 0)
+				if (!serverList.empty())
 				{
 					NetworkServer &server = *serverList[0]; ///\bug In case of multiple servers, this is not correct!
 					std::vector<Socket *> &listenSockets = server.ListenSockets();

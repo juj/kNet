@@ -141,9 +141,7 @@ UDPMessageConnection::SocketReadResult UDPMessageConnection::ReadSocket(size_t &
 
 	assert(!socket || socket->TransportLayer() == SocketOverUDP);
 
-	SocketReadResult readResult = SocketReadOK;
-		
-	readResult = UDPReadSocket(bytesRead);
+	SocketReadResult readResult = UDPReadSocket(bytesRead);
 
 	///\todo Replace with ConnectSyn,ConnectSynAck and ConnectAck.
 	if (bytesRead > 0 && connectionState == ConnectionPending)
@@ -265,10 +263,6 @@ void UDPMessageConnection::HandleFlowControl()
 {
 	AssertInWorkerThreadContext();
 
-	// In packets/second.
-	const float totalEstimatedBandwidth = 50; ///\todo Make this estimation dynamic as in UDT or similar.
-	const float additiveIncreaseAggressiveness = 5e-2f;
-
 	const tick_t frameLength = Clock::TicksPerSec() / 100; // in ticks
 	// Additively increase the outbound send rate.
 	unsigned long numFrames = (unsigned long)(Clock::TicksInBetween(Clock::Tick(), lastFrameTime) / frameLength);
@@ -286,6 +280,10 @@ void UDPMessageConnection::HandleFlowControl()
 		}
 		else // Additive increases.
 		{
+			// In packets/second.
+			const float totalEstimatedBandwidth = 50; ///\todo Make this estimation dynamic as in UDT or similar.
+			const float additiveIncreaseAggressiveness = 5e-2f;
+
 			float increment = min((float)numFrames * additiveIncreaseAggressiveness * (totalEstimatedBandwidth - datagramSendRate), 1.f);
 			datagramSendRate += increment;
 			datagramSendRate = min(datagramSendRate, totalEstimatedBandwidth);
@@ -1071,9 +1069,6 @@ void UDPMessageConnection::UpdateRTOCounterOnPacketAck(float rtt)
 
 	using namespace std;
 
-	const float alpha = 1.f / 8.f;
-	const float beta = 1.f / 4.f;
-
 	if (rttCleared)
 	{
 		rttCleared = false;
@@ -1082,6 +1077,9 @@ void UDPMessageConnection::UpdateRTOCounterOnPacketAck(float rtt)
 	}
 	else
 	{
+		const float alpha = 1.f / 8.f;
+		const float beta = 1.f / 4.f;
+
 		rttVariation = (1.f - beta) * rttVariation + beta * fabs(smoothedRTT - rtt);
 		smoothedRTT = (1.f - alpha) * smoothedRTT + alpha * rtt;
 	}

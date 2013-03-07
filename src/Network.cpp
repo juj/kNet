@@ -420,7 +420,7 @@ NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, 
 			listenSockets.push_back(listenSock);
 	}
 
-	if (listenSockets.size() == 0)
+	if (listenSockets.empty())
 	{
 		LOG(LogError, "Failed to start server. No ports to listen to!");
 		return 0;
