@@ -1,0 +1,7 @@
+arrayIndexThenCheck:tinyxml/tinyxml.h
+operatorEq:tinyxml/tinyxml.h
+useInitializationList:tinyxml/tinyxml.h
+useInitializationList:tinyxml/tinyxml.cpp
+unusedVariable:tinyxml/tinyxmlparser.cpp
+variableScope:tinyxml/tinyxmlparser.cpp
+nullPointer:tinyxml/tinyxmlparser.cpp
