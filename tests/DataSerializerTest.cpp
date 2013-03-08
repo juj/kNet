@@ -164,9 +164,14 @@ public:
 
 	void Deserialize(DataDeserializer &src)
 	{
-		u32 deserialized = src.ReadVLE<VLE8_16_32>();
+#ifdef _DEBUG
+		u32 deserialized = 
+#endif
+			src.ReadVLE<VLE8_16_32>();
 //		cout << "Deserialized type VLE8_16_32, value: " << deserialized << endl;
+#ifdef _DEBUG
 		assert(deserialized == value);
+#endif
 	}
 };
 
@@ -190,9 +195,14 @@ public:
 
 	void Deserialize(DataDeserializer &src)
 	{
-		u16 deserialized = src.ReadVLE<VLE8_16>();
+#ifdef _DEBUG
+		u16 deserialized = 
+#endif
+			src.ReadVLE<VLE8_16>();
 //		cout << "Deserialized type VLE8_16, value: " << deserialized << endl;
+#ifdef _DEBUG
 		assert(deserialized == value);
+#endif
 	}
 };
 
@@ -216,9 +226,14 @@ public:
 
 	void Deserialize(DataDeserializer &src)
 	{
-		u32 deserialized = src.ReadVLE<VLE16_32>();
+#ifdef _DEBUG
+		u32 deserialized = 
+#endif
+			src.ReadVLE<VLE16_32>();
 //		cout << "Deserialized type VLE16_32, value: " << deserialized << endl;
+#ifdef _DEBUG
 		assert(deserialized == value);
+#endif
 	}
 };
 

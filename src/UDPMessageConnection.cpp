@@ -999,7 +999,7 @@ int UDPMessageConnection::BiasedBinarySearchFindPacketIndex(PacketAckTrackQueue 
 	if (tailItem->packetID == packetID)
 		return tailIdx;
 	assert(headItem->packetID < tailItem->packetID);
-	if ((int)headItem->packetID > packetID || (int)tailItem->packetID < packetID)
+	if (headItem->packetID > packetID || tailItem->packetID < packetID)
 		return -1;
 	while(headIdx < tailIdx)
 	{
@@ -1008,7 +1008,7 @@ int UDPMessageConnection::BiasedBinarySearchFindPacketIndex(PacketAckTrackQueue 
 		PacketAckTrack *newItem = queue.ItemAt(newIdx);
 		if (newItem->packetID == packetID)
 			return newIdx;
-		else if ((int)newItem->packetID < packetID)
+		else if (newItem->packetID < packetID)
 		{
 			headIdx = newIdx;
 			headItem = newItem;

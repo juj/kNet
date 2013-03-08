@@ -35,7 +35,7 @@ namespace
 {
 	///\note See BasicSerializedDataTypes.h:31: The order of these elements matches that of the BasicSerializedDataType enum.
 	const char *data[] = { "", "bit", "u8", "s8", "u16", "s16", "u32", "s32", "u64", "s64", "float", "double", "string", "struct" };
-	const size_t typeSizes[] = { 0xFFFFFFFF, 0xFFFFFFFF, 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, -1, -1 }; // 0xFFFFFFFF here denotes 'does not apply'.
+	const size_t typeSizes[] = { 0xFFFFFFFF, 0xFFFFFFFF, 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0xFFFFFFFF, 0xFFFFFFFF }; // 0xFFFFFFFF here denotes 'does not apply'.
 }
 
 namespace kNet
@@ -46,7 +46,7 @@ BasicSerializedDataType StringToSerialType(const char *type)
 	if (!strcmp(type, "string") || !strcmp(type, "std::string"))
 		return SerialString;
 	assert(NumSerialTypes-2 == NUMELEMS(data));
-	for(int i = 0; i < NUMELEMS(data); ++i)
+	for(size_t i = 0; i < NUMELEMS(data); ++i)
 		if (!strcmp(type, data[i]))
 			return (BasicSerializedDataType)i;
 
