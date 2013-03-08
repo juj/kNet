@@ -50,7 +50,7 @@ networkServerListener(0),
 udpConnectionAttempts(64)
 {
 	assert(owner);
-	assert(listenSockets.size() > 0);
+	assert(!listenSockets.empty());
 }
 
 NetworkServer::~NetworkServer()

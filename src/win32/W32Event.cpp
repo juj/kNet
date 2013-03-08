@@ -14,6 +14,7 @@
 
 /** @file W32Event.cpp
 	@brief */
+#ifdef WIN32
 
 #include <cassert>
 
@@ -26,7 +27,7 @@ namespace kNet
 {
 
 Event::Event()
-:wsaEvent(NULL)
+:wsaEvent(NULL), type(EventWaitInvalid)
 {
 }
 
@@ -101,3 +102,5 @@ bool Event::IsValid() const
 }
 
 } // ~kNet
+
+#endif // ~WIN32

@@ -278,7 +278,7 @@ void MessageConnection::Close(int maxMSecsToWait) // [main thread]
 	if (fragmentedSends.UnsafeGetValue().transfers.size() > 0)
 		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedSends.transfers list!", (int)fragmentedSends.UnsafeGetValue().transfers.size());
 
-	if (fragmentedReceives.transfers.size() > 0)
+	if (!fragmentedReceives.transfers.empty())
 		LOG(LogVerbose, "MessageConnection::Close(): Had %d messages in fragmentedReceives.transfers list!", (int)fragmentedReceives.transfers.size());
 
 	FreeMessageData();
@@ -1128,7 +1128,7 @@ void MessageConnection::SendPingRequestMessage(bool internalQueue)
 
 	ConnectionStatistics &cs = statistics.LockGet();
 	
-	u8 pingID = (u8)((cs.ping.size() == 0) ? 1 : (cs.ping.back().pingID + 1));
+	u8 pingID = (u8)((cs.ping.empty()) ? 1 : (cs.ping.back().pingID + 1));
 	cs.ping.push_back(ConnectionStatistics::PingTrack());
 	ConnectionStatistics::PingTrack &pingTrack = cs.ping.back();
 	pingTrack.replyReceived = false;

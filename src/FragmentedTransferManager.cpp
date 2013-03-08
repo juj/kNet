@@ -126,7 +126,7 @@ bool FragmentedSendManager::AllocateFragmentedTransferID(FragmentedTransfer &tra
 
 void FragmentedSendManager::FreeAllTransfers()
 {
-	while(transfers.size() > 0)
+	while(!transfers.empty())
 		FreeFragmentedTransfer(&transfers.front());
 }
 

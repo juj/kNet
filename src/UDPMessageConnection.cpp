@@ -164,7 +164,7 @@ void UDPMessageConnection::PerformPacketAckSends()
 	AssertInWorkerThreadContext();
 
 	tick_t now = Clock::Tick();
-	while(inboundPacketAckTrack.size() > 0)
+	while(!inboundPacketAckTrack.empty())
 	{
 		if (Clock::TimespanToMillisecondsF(inboundPacketAckTrack.begin()->second.sentTick, now) < maxAckDelay &&
 			inboundPacketAckTrack.size() < 33)
@@ -408,7 +408,7 @@ MessageConnection::PacketSendResult UDPMessageConnection::SendOutPacket()
 		int totalMessageSize = msg->GetTotalDatagramPackedSize();// + ((msg->inOrder && !inOrder) ? cBytesForInOrderDeltaCounter : 0);
 
 		// If this message won't fit into the buffer, send out all the previously gathered messages (there must at least be one previously submitted message).		
-		if (datagramSerializedMessages.size() > 0 && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
+		if (!datagramSerializedMessages.empty() && (size_t)packetSizeInBytes + totalMessageSize >= maxSendSize)
 			break;
 
 		if (totalMessageSize > (int)maxSendSize)
@@ -875,7 +875,7 @@ void UDPMessageConnection::ExtractMessages(const char *data, size_t numBytes)
 					// the client to handle.
 					assembledData.clear();
 					fragmentedReceives.AssembleMessage(fragmentTransferID, assembledData);
-					assert(assembledData.size() > 0);
+					assert(!assembledData.empty());
 					///\todo InOrder.
 					HandleInboundMessage(packetID, &assembledData[0], assembledData.size());
 					++numMessagesReceived;
@@ -1124,7 +1124,7 @@ void UDPMessageConnection::SendPacketAckMessage()
 {
 	AssertInWorkerThreadContext();
 
-	while(inboundPacketAckTrack.size() > 0)
+	while(!inboundPacketAckTrack.empty())
 	{
 		packet_id_t packetID = inboundPacketAckTrack.begin()->first;
 		u32 sequence = 0;

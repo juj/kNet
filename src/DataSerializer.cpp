@@ -73,7 +73,7 @@ DataSerializer::DataSerializer(std::vector<char> &data_, size_t maxBytes_)
 {
 	if (data_.size() < maxBytes_)
 		data_.resize(maxBytes_);
-	if (data_.size() == 0 || maxBytes_ == 0)
+	if (data_.empty() || maxBytes_ == 0)
 		throw NetException("Cannot instantiate a DataSerializer object to a zero-sized std::vector-based buffer!");
 	data = &data_[0];
 	maxBytes = maxBytes_;
@@ -85,7 +85,7 @@ DataSerializer::DataSerializer(std::vector<char> &data_, size_t maxBytes_, const
 {
 	if (data_.size() < maxBytes_)
 		data_.resize(maxBytes_);
-	if (data_.size() == 0 || maxBytes_ == 0)
+	if (data_.empty() || maxBytes_ == 0)
 		throw NetException("Cannot instantiate a DataSerializer object to a zero-sized std::vector-based buffer!");
 	data = &data_[0];
 	maxBytes = maxBytes_;

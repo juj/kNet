@@ -162,7 +162,7 @@ void SerializationStructCompiler::WriteStructSizeMemberFunction(const Serialized
 		}
 	}
 
-	if (elem.elements.size() == 0)
+	if (elem.elements.empty())
 		out << "0";
 
 	out << ";" << endl

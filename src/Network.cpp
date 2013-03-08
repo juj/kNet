@@ -243,18 +243,18 @@ void Network::PrintHostNameInfo(const char *hostname, const char *port)
 	unsigned long dwRetval = (unsigned long)getaddrinfo(hostname, port, &hints, &result);
 	if (dwRetval != 0)
 	{
-		LOG(LogError, "getaddrinfo failed with error: %d\n", (int)dwRetval);
+		LOG(LogError, "getaddrinfo failed with error: %d", (int)dwRetval);
 		return;
 	}
 
-	LOG(LogInfo, "getaddrinfo returned success\n");
+	LOG(LogInfo, "getaddrinfo returned success");
 
 	int i = 1;
 
 	// Retrieve each address and print out the hex bytes
-	for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next)
+	for(addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next)
 	{
-		LOG(LogInfo, "getaddrinfo response %d\n", i++);
+		LOG(LogInfo, "getaddrinfo response %d", i++);
 		PrintAddrInfo(ptr);
 	}
 
@@ -405,7 +405,7 @@ NetworkServer *Network::StartServer(unsigned short port, SocketTransportLayer tr
 NetworkServer *Network::StartServer(const std::vector<std::pair<unsigned short, SocketTransportLayer> > &listenPorts, 
 	INetworkServerListener *serverListener, bool allowAddressReuse)
 {
-	if (listenPorts.size() == 0)
+	if (listenPorts.empty())
 	{
 		LOG(LogError, "Failed to start server, since you did not provide a list of ports to listen to in Network::StartServer()!");
 		return 0;
@@ -505,7 +505,7 @@ void Network::DeInit()
 	PolledTimer timer;
 
 	// Kill all connections.
-	while(connections.size() > 0)
+	while(!connections.empty())
 	{
 		MessageConnection *connection = *connections.begin();
 		CloseConnection(connection); // CloseConnection erases connection from the connections list, so this loop terminates.
@@ -515,11 +515,11 @@ void Network::DeInit()
 	StopServer();
 
 	// Kill all worker threads.
-	while(workerThreads.size() > 0)
+	while(!workerThreads.empty())
 		CloseWorkerThread(workerThreads.front()); // Erases the item from workerThreads, so this loop terminates.
 
 	// Clean up any sockets that might be remaining.
-	while(sockets.size() > 0)
+	while(!sockets.empty())
 	{
 		sockets.front().Close();
 		sockets.pop_front();

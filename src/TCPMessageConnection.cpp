@@ -217,7 +217,7 @@ MessageConnection::PacketSendResult TCPMessageConnection::SendOutPacket()
 	        if (!overlappedTransfer)
 	        {
 		        LOG(LogError, "TCPMessageConnection::SendOutPacket: Starting an overlapped send failed!");
-                assert(serializedMessages.size() == 0);
+                assert(serializedMessages.empty());
 		        return PacketSendSocketClosed;
 	        }
             writer = DataSerializer(overlappedTransfer->buffer.buf, overlappedTransfer->buffer.len);

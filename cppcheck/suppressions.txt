@@ -6,3 +6,7 @@ unusedVariable:tinyxml/tinyxmlparser.cpp
 variableScope:tinyxml/tinyxmlparser.cpp
 nullPointer:tinyxml/tinyxmlparser.cpp
 unusedStructMember:Thread.cpp
+uninitMemberVar:../include/kNet/UDPMessageConnection.h
+uninitMemberVar:../include/kNet/PolledTimer.h
+uninitMemberVar:unix/UnixThread.cpp
+

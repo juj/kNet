@@ -214,7 +214,7 @@ void PopulateStatsTreeNode(QTreeWidgetItem *parent, StatsEventHierarchyNode &sta
 			child->setText(0, iter->first.c_str());
 		}
 		StatsEventHierarchyNode &node = iter->second;
-		bool hasChildren = node.children.size() > 0;
+		bool hasChildren = !node.children.empty();
 
 		int totalCountThisLevel = hasChildren ? node.AccumulateTotalCountThisLevel() : 0;
 		int totalCountHierarchy = node.AccumulateTotalCountHierarchy();
