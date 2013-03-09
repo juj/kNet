@@ -16,6 +16,23 @@
 /** @file NetworkLogging.h
 	@brief The LOG and LOGUSER macros. Provides an unified mechanism for logging. */
 
+// From http://cnicholson.net/2009/03/stupid-c-tricks-dowhile0-and-c4127/
+#ifdef _MSC_VER
+#define MULTI_LINE_MACRO_BEGIN do { \
+	__pragma(warning(push)) \
+	__pragma(warning(disable:4127))
+
+#define MULTI_LINE_MACRO_END \
+	} while(0) \
+	__pragma(warning(pop))
+
+#else
+
+#define MULTI_LINE_MACRO_BEGIN do {
+#define MULTI_LINE_MACRO_END } while(0)
+
+#endif
+
 namespace kNet
 {
 
@@ -66,12 +83,20 @@ void EnableMemoryLeakLoggingAtExit();
 } // ~kNet
 
 /// Prints out a variadic message to the log channel User.
-#define LOGUSER(msg, ...) ( kNet::IsLogChannelActive(LogUser) && (kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__), true) )
+#define LOGUSER(msg, ...) \
+	MULTI_LINE_MACRO_BEGIN \
+		if (kNet::IsLogChannelActive(LogUser)) \
+			kNet::TimeOutputDebugStringVariadic(LogUser, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
+	MULTI_LINE_MACRO_END
 
 #ifdef KNET_LOGGING_SUPPORT_ENABLED
 
 /// Prints out a variadic message to the given log channel.
-#define LOG(channel, msg, ...)  ( kNet::IsLogChannelActive(channel) && (kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__), true) )
+#define LOG(channel, msg, ...) \
+	MULTI_LINE_MACRO_BEGIN \
+		if (kNet::IsLogChannelActive(channel)) \
+			kNet::TimeOutputDebugStringVariadic(channel, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
+	MULTI_LINE_MACRO_END
 
 #else
 

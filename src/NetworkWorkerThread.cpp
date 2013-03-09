@@ -83,9 +83,8 @@ void NetworkWorkerThread::RemoveServer(NetworkServer *server)
 
 	PolledTimer timer;
 	Lockable<std::vector<NetworkServer *> >::LockType lock = servers.Acquire();
-	float lockWait = timer.MSecsElapsed();
 	LOG(LogWaits, "NetworkWorkerThread::RemoveServer: Waited %f msecs to lock servers list.",
-		lockWait);
+		timer.MSecsElapsed());
 
 	for(size_t i = 0; i < lock->size(); ++i)
 		if ((*lock)[i] == server)
