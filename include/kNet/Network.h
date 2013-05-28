@@ -90,7 +90,7 @@ public:
 	static int GetLastError();
 
 	/// Returns the amount of currently executing background network worker threads.
-	int NumWorkerThreads() const { return workerThreads.size(); }
+	int NumWorkerThreads() const { return (int)workerThreads.size(); }
 
 	/// Returns the NetworkServer object, or null if no server has been started.
 	Ptr(NetworkServer) GetServer() { return server; }

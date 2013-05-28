@@ -44,7 +44,7 @@ public:
 		maxElements = (size_t)RoundUpToNextPow2((u32)maxElements); // but avoid any silliness in release anyways.
 
 		data = new T[maxElements];
-		maxElementsMask = maxElements - 1;
+		maxElementsMask = (unsigned long)maxElements - 1;
 	}
 
 	/// Warning: This is not thread-safe.
@@ -170,7 +170,7 @@ public:
 		data = newData;
 		head = 0;
 		tail = newTail;
-		maxElementsMask = newSize - 1;
+		maxElementsMask = (unsigned long)newSize - 1;
 	}
 
 	/// Resizes this queue to hold twice the amount of maximum elements.
@@ -287,7 +287,7 @@ public:
 		if (head == tail)
 			return;
 		size_t head_ = (head + 1) & maxElementsMask;
-		head = head_;
+		head = (unsigned long)head_;
 	}
 
 private:
