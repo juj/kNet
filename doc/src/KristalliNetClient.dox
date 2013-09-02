@@ -62,7 +62,7 @@ int main(int argc, char **argv)
    Network network;
    MessageListener listener;
    const unsigned short cServerPort = 1234;
-   MessageConnection *connection = network.Connect(argv[1], cServerPort, SocketOverUDP, &listener);
+   Ptr(MessageConnection) connection = network.Connect(argv[1], cServerPort, SocketOverUDP, &listener);
 
    // Run the main client loop.
    connection->RunModalClient();
