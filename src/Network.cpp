@@ -90,6 +90,8 @@ std::string FormatBytes(u64 numBytes)
 std::string FormatBytes(double numBytes)
 {
 	char str[256];
+	if (numBytes >= 1000.0 * 1000.0 * 1000.0 * 1000.0)
+		sprintf(str, "%.3f TB", (float)(numBytes / (1024.0 * 1024.0 * 1024.0 * 1024.0)));
 	if (numBytes >= 1000.0 * 1000.0 * 1000.0)
 		sprintf(str, "%.3f GB", (float)(numBytes / (1024.0 * 1024.0 * 1024.0)));
 	else if (numBytes >= 1000.0 * 1000.0)
