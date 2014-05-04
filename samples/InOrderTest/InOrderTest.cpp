@@ -20,7 +20,7 @@
 #include <cmath>
 
 #include "kNet.h"
-#include "kNet\UDPMessageConnection.h"
+#include "kNet/UDPMessageConnection.h"
 
 using namespace std;
 using namespace kNet;
