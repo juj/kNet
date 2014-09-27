@@ -39,7 +39,7 @@ option(BUILD_SAMPLES "Specifies whether kNet sample applications are built." FAL
 
 option(BUILD_TESTS "Specifies whether kNet test applications are built." FALSE)
 
-option(USE_BOOST "Specifies whether Boost is used." TRUE)
+option(USE_BOOST "Specifies whether Boost is used." FALSE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
 
 # TinyXML is embedded to the repository, so you can safely keep this true.
