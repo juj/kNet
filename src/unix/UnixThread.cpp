@@ -15,7 +15,7 @@
 /** @file UnixThread.cpp
 	@brief */
 
-#ifdef UNIX
+#ifdef KNET_UNIX
 
 #include <cassert>
 #include <exception>
@@ -166,4 +166,4 @@ ThreadId Thread::NullThreadId()
 
 } // ~kNet
 
-#endif // ~UNIX
+#endif // ~KNET_UNIX

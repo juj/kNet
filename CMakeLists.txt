@@ -181,7 +181,7 @@ elseif (UNIX)
    set(kNetSourceFiles ${kNetSourceFiles} ${kNetUnixSourceFiles})
    set(kNetHeaderFiles ${kNetHeaderFiles} ${kNetUnixHeaderFiles})
 
-   add_definitions(-DUNIX)
+   AddCompilationDefine(KNET_UNIX)
 endif()
 
 #AddCompilationUnitNameDefines(kNetSourceFiles)
