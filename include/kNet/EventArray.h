@@ -18,6 +18,10 @@
 
 #include <vector>
 
+#if defined(KNET_UNIX) || defined(ANDROID)
+#include <sys/select.h>
+#endif
+
 #include "Event.h"
 
 namespace kNet
