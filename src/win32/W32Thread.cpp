@@ -103,7 +103,7 @@ void Thread::Stop()
 
 	if (threadHandle != NULL)
 	{
-		TerminateThread(threadHandle, -1);
+		TerminateThread(threadHandle, (DWORD)-1);
 //		CloseHandle(threadHandle);
 		LOG(LogError, "Warning: Had to forcibly terminate thread!");
 	}
@@ -129,7 +129,7 @@ DWORD WINAPI ThreadEntryPoint(LPVOID lpParameter)
 	if (!thread)
 	{
 		LOG(LogError, "Invalid thread start parameter 0!");
-		return -1;
+		return (DWORD)-1;
 	}
 	thread->_ThreadRun();
 
