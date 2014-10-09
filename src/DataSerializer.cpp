@@ -421,7 +421,7 @@ void DataSerializer::AddString(const char *str)
 	if (iter)
 		SetVaryingElemSize((u32)len);
 	else
-		Add<u8>(len); ///\todo VLE.
+		AddVLE<VLE8_16_32>(len);
 
 	AddArray<s8>((const s8*)str, len);
 }
