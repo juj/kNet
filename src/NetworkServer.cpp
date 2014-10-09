@@ -56,6 +56,7 @@ udpConnectionAttempts(64)
 NetworkServer::~NetworkServer()
 {
 	LOG(LogObjectAlloc, "Deleting NetworkServer %p.", this);
+	CloseSockets();
 }
 
 void NetworkServer::RegisterServerListener(INetworkServerListener *listener)
@@ -76,17 +77,15 @@ void NetworkServer::SetWorkerThread(NetworkWorkerThread *thread) // [main thread
 #endif
 }
 
-void NetworkServer::CloseListenSockets()
+void NetworkServer::CloseSockets()
 {
+	LOG(LogInfo, "NetworkServer::CloseSockets(): Network server is terminated. (%p)", this);
 	assert(owner);
 
+	acceptNewConnections = false;
+
 	for(size_t i = 0; i < listenSockets.size(); ++i)
-	{
-		if (listenSockets[i]->TransportLayer() == SocketOverUDP)
-			acceptNewConnections = false; ///\todo At this point, if in UDP mode, we should have destroyed all connections that use this socket!
-		else
-			owner->DeleteSocket(listenSockets[i]); 
-	}
+		owner->DeleteSocket(listenSockets[i]); 
 
 	// Now forget all sockets - not getting them back in any way.
 	listenSockets.clear();

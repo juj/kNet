@@ -152,10 +152,9 @@ private:
 
 	void RegisterServerListener(INetworkServerListener *listener);
 
-	/// Stops listening for new connections, but all already established connections are maintained.
-	/// \todo As a limitation of this library, you cannot reopen the sockets after closing them.
-	/// You must create a new NetworkServer instance to do that, but this means you'll lose the old active connections.
-	void CloseListenSockets();
+	/// Shuts down all listen sockets used by this server.
+	/// This function is to be called only at destruction time when no network communication is being performed anymore.
+	void CloseSockets();
 
 	void CleanupDeadConnections();
 
