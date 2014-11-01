@@ -35,9 +35,9 @@ macro(AddCompilationDefine define)
    file(APPEND ${BUILD_CONFIG_FILE} "#ifndef ${define}\n#define ${define}\n#endif\n\n")
 endmacro()
 
-option(BUILD_SAMPLES "Specifies whether kNet sample applications are built." FALSE)
+option(BUILD_SAMPLES "Specifies whether kNet sample applications are built." TRUE)
 
-option(BUILD_TESTS "Specifies whether kNet test applications are built." FALSE)
+option(BUILD_TESTS "Specifies whether kNet test applications are built." TRUE)
 
 option(USE_BOOST "Specifies whether Boost is used." FALSE)
 #set(BOOST_ROOT "TODO_SpecifyYourBoostRootHereIfCMakeAutoSearchFails")
@@ -241,3 +241,8 @@ endif()
 set_target_properties(kNet PROPERTIES 
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+
+# Set compiler warning levels.
+if (MSVC)
+    add_definitions(/W4)
+endif()

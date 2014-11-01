@@ -36,7 +36,7 @@ owner(0)
 NetworkSimulator::~NetworkSimulator()
 {
 	if (queuedBuffers.size() > 0)
-		LOG(LogError, "NetworkSimulator: Leaked %d buffers with improper NetworkSimulator teardown!", (int)queuedBuffers.size());
+		KNET_LOG(LogError, "NetworkSimulator: Leaked %d buffers with improper NetworkSimulator teardown!", (int)queuedBuffers.size());
 }
 
 /// Generates a float in half-open interval [0, 1[.

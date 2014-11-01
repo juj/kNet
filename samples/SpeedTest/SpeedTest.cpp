@@ -51,10 +51,10 @@ public:
 		switch(messageId)
 		{
 		case cDataMessage:
-			LOG(LogVerbose, "Received a message of size %d bytes and ID %d.", numBytes, messageId);
+			KNET_LOG(LogVerbose, "Received a message of size %d bytes and ID %d.", numBytes, messageId);
 			break;
 		default:
-			LOG(LogUser, "Received an unknown message with ID 0x%X!", messageId);
+			KNET_LOG(LogUser, "Received an unknown message with ID 0x%X!", messageId);
 			break;
 		}
 	}
