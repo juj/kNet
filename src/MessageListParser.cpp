@@ -97,7 +97,7 @@ SerializedElementDesc *SerializedMessageList::ParseNode(TiXmlElement *node, Seri
 	{
 		// Cannot have both static count and dynamic count!
 		if (node->Attribute("count") && node->Attribute("varyingCount"))
-			LOG(LogError, "Warning: An XML node contains both 'count' and 'varyingCount' attributes! 'varyingCount' takes precedence.");
+			KNET_LOG(LogError, "Warning: An XML node contains both 'count' and 'varyingCount' attributes! 'varyingCount' takes precedence.");
 
 		if (node->Attribute("dynamicCount"))
 		{
@@ -165,7 +165,7 @@ void SerializedMessageList::ParseMessages(TiXmlElement *root)
 		int success = node->QueryIntAttribute("id", (int*)&desc.id);
 		if (success == TIXML_NO_ATTRIBUTE)
 		{
-			LOG(LogError, "Error parsing message attribute 'id' as int!");
+			KNET_LOG(LogError, "Error parsing message attribute 'id' as int!");
 			node = node->NextSiblingElement("message");
 			continue; 
 		}
@@ -211,7 +211,7 @@ void SerializedMessageList::LoadMessagesFromFile(const char *filename)
 	bool success = doc.LoadFile();
 	if (!success)
 	{
-		LOG(LogError, "TiXmlDocument open failed on filename %s!", filename);
+		KNET_LOG(LogError, "TiXmlDocument open failed on filename %s!", filename);
 		return;
 	}
 

@@ -186,7 +186,7 @@ void NetworkServer::BroadcastStruct(const SerializableData &data, unsigned long 
 	Lockable<ConnectionMap>::LockType clientsLock = clients.Acquire();
 	if (timer.MSecsElapsed() >= 50.f)
 	{
-		LOG(LogWaits, "NetworkServer::BroadcastMessage: Accessing the connection list took %f msecs.",
+		KNET_LOG(LogWaits, "NetworkServer::BroadcastMessage: Accessing the connection list took %f msecs.",
 			timer.MSecsElapsed());
 	}
 

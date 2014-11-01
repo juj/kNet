@@ -44,7 +44,7 @@ public:
 				Ptr(MessageConnection) connection = network.Connect(address, port, transport, this);
 				if (connection && connection->GetSocket())
 				{
-					LOG(LogUser, "Connecting from local port %d. Connection 0x%p", (int)connection->GetSocket()->LocalPort(), connection.ptr());
+					KNET_LOG(LogUser, "Connecting from local port %d. Connection 0x%p", (int)connection->GetSocket()->LocalPort(), connection.ptr());
 					connections.push_back(connection);
 				}
 				else
@@ -57,7 +57,7 @@ public:
 				if (connections[i]->GetConnectionState() == ConnectionOK ||
 					connections[i]->GetConnectionState() == ConnectionClosed)
 				{
-					LOG(LogUser, "Closing connection 0x%p.", connections[i].ptr());
+					KNET_LOG(LogUser, "Closing connection 0x%p.", connections[i].ptr());
 					connections[i]->Close(0);
 					connections.erase(connections.begin() + i);
 					--i;

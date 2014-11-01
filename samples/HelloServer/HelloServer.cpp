@@ -40,7 +40,7 @@ public:
 		ds.AddString(std::string("Hello! You are connecting from ") + connection->RemoteEndPoint().ToString());
 		// Push the message out to the client.
 		connection->EndAndQueueMessage(msg, ds.BytesFilled());
-		LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
+		KNET_LOG(LogUser, "Client connected from %s.", connection->ToString().c_str());
 	}
 
 	void ClientDisconnected(MessageConnection *connection)
@@ -60,14 +60,14 @@ int main()
 
 	kNet::SetLogChannels(LogUser | LogInfo | LogError);
 
-	LOG(LogUser, "Starting server.");
+	KNET_LOG(LogUser, "Starting server.");
 	// Start listening on a port.
 	const unsigned short cServerPort = 1234;
 	NetworkServer *server = network.StartServer(cServerPort, SocketOverUDP, &listener, true);
 
 	if (server)
 	{
-		LOG(LogUser, "Waiting for incoming connections.");
+		KNET_LOG(LogUser, "Waiting for incoming connections.");
 		// Run the main server loop.
 		// This never returns since we don't call NetworkServer::Stop(), but for this example, it doesn't matter.  
 		server->RunModalServer();

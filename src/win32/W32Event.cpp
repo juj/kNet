@@ -64,7 +64,7 @@ bool Event::IsNull() const
 void Event::Reset()
 {
 	if (wsaEvent == NULL)
-		LOG(LogError, "Event::Reset called on a null event!");
+		KNET_LOG(LogError, "Event::Reset called on a null event!");
 	else
 		WSAResetEvent(wsaEvent);
 }
@@ -72,7 +72,7 @@ void Event::Reset()
 void Event::Set()
 {
 	if (wsaEvent == NULL)
-		LOG(LogError, "Event::Set called on a null event!");
+		KNET_LOG(LogError, "Event::Set called on a null event!");
 	else
 		WSASetEvent(wsaEvent);
 }

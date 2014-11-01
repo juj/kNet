@@ -34,7 +34,7 @@ void RunServer(short int port, SocketTransportLayer transport)
 	NetworkServer *server = network.StartServer(port, transport, 0, true);
 	if (!server)
 	{
-		LOG(LogUser, "Unable to start server!");
+		KNET_LOG(LogUser, "Unable to start server!");
 	}
 
 	int connections = 0;
@@ -51,7 +51,7 @@ void RunServer(short int port, SocketTransportLayer transport)
 			if (!iter->second->IsPending() && !iter->second->IsReadOpen() && iter->second->IsWriteOpen())
 				iter->second->Disconnect();
 	}
-	LOG(LogUser, "Closing down server.");
+	KNET_LOG(LogUser, "Closing down server.");
 	server->Close(2000);
 }
 
@@ -61,13 +61,13 @@ void RunClient(const char *address, unsigned short port, SocketTransportLayer tr
 	Ptr(MessageConnection) connection = network.Connect(address, port, transport, 0);
 	if (!connection)
 	{
-		LOG(LogUser, "Network::Connect failed!");
+		KNET_LOG(LogUser, "Network::Connect failed!");
 		return;
 	}
 	connection->WaitToEstablishConnection();
 	if (!connection->Connected())
 	{
-		LOG(LogUser, "Connection failed, server did not respond!");
+		KNET_LOG(LogUser, "Connection failed, server did not respond!");
 		return;
 	}
 
