@@ -47,6 +47,10 @@ public:
 	/// The ContentID of the message is used to determine if a message replaces another.
 	virtual u32 ComputeContentID(message_id_t UNUSED(messageId), const char * UNUSED(data), size_t UNUSED(numBytes))
 	{
+		// Suppress C4100 warnings on MSVC
+		(void)messageId;
+		(void)data;
+		(void)numBytes;
 		// The default behavior is to not have a content ID on any message.
 		return 0;
 	}
