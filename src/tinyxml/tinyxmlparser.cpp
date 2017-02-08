@@ -847,21 +847,21 @@ TiXmlNode* TiXmlNode::Identify( const char* p, TiXmlEncoding encoding )
 	if ( StringEqual( p, xmlHeader, true, encoding ) )
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing Declaration\n" );
+			TIXML_KNET_LOG( "XML parsing Declaration\n" );
 		#endif
 		returnNode = new TiXmlDeclaration();
 	}
 	else if ( StringEqual( p, commentHeader, false, encoding ) )
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing Comment\n" );
+			TIXML_KNET_LOG( "XML parsing Comment\n" );
 		#endif
 		returnNode = new TiXmlComment();
 	}
 	else if ( StringEqual( p, cdataHeader, false, encoding ) )
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing CDATA\n" );
+			TIXML_KNET_LOG( "XML parsing CDATA\n" );
 		#endif
 		TiXmlText* text = new TiXmlText( "" );
 		text->SetCDATA( true );
@@ -870,7 +870,7 @@ TiXmlNode* TiXmlNode::Identify( const char* p, TiXmlEncoding encoding )
 	else if ( StringEqual( p, dtdHeader, false, encoding ) )
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing Unknown(1)\n" );
+			TIXML_KNET_LOG( "XML parsing Unknown(1)\n" );
 		#endif
 		returnNode = new TiXmlUnknown();
 	}
@@ -878,14 +878,14 @@ TiXmlNode* TiXmlNode::Identify( const char* p, TiXmlEncoding encoding )
 			  || *(p+1) == '_' )
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing Element\n" );
+			TIXML_KNET_LOG( "XML parsing Element\n" );
 		#endif
 		returnNode = new TiXmlElement( "" );
 	}
 	else
 	{
 		#ifdef DEBUG_PARSER
-			TIXML_LOG( "XML parsing Unknown(2)\n" );
+			TIXML_KNET_LOG( "XML parsing Unknown(2)\n" );
 		#endif
 		returnNode = new TiXmlUnknown();
 	}
