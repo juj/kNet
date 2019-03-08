@@ -269,6 +269,13 @@ public:
 	/// Registers a new listener object for the events of this connection.
 	void RegisterInboundMessageHandler(IMessageHandler *handler); // [main thread]
 
+	void SetUserContext(void* ctx);
+
+	void* GetUserContext() const;
+
+	template <typename T>
+	T *GetUserContext() const;
+
 	/// Fetches all newly received messages waiting in the inbound queue, and passes each of these
 	/// to the message handler registered using RegisterInboundMessageHandler.
 	/// Call this function periodically to receive new data from the network if you are using the Observer pattern.
@@ -486,6 +493,8 @@ protected:
 	/// The object that receives notifications of all received data.
 	IMessageHandler *inboundMessageHandler; // [main thread]
 
+	void *userContext;
+
 	/// The underlying socket on top of which this connection operates.
 	Socket *socket; // [set by main thread before the worker thread is running. Read-only when worker thread is running. Read by main and worker thread]
 
@@ -601,6 +610,12 @@ template<typename SerializableMessage>
 void MessageConnection::Send(const SerializableMessage &data, unsigned long contentID)
 {
 	SendStruct(data, SerializableMessage::messageID, data.inOrder, data.reliable, data.priority, contentID);
+}
+
+template <typename T>
+T *MessageConnection::GetUserContext() const
+{
+    return reinterpret_cast<T*>(userContext);
 }
 
 } // ~kNet

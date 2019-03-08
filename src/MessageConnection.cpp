@@ -94,7 +94,7 @@ outboundAcceptQueue(16*1024), inboundMessageQueue(16*1024),
 #ifdef KNET_NO_MAXHEAP
 outboundQueue(16 * 1024), 
 #endif
-inboundMessageHandler(0), socket(socket_), 
+inboundMessageHandler(0), userContext(0), socket(socket_),
 bOutboundSendsPaused(false), 
 rtt(0.f), 
 lastHeardTime(Clock::Tick()), 
@@ -1115,6 +1115,18 @@ void MessageConnection::RegisterInboundMessageHandler(IMessageHandler *handler)
 	AssertInMainThreadContext();
 
 	inboundMessageHandler = handler;
+}
+
+void MessageConnection::SetUserContext(void *ctx)
+{
+	AssertInMainThreadContext();
+
+	userContext = ctx;
+}
+
+void* MessageConnection::GetUserContext() const
+{
+	return userContext;
 }
 
 void MessageConnection::SendPingRequestMessage(bool internalQueue)
