@@ -22,13 +22,68 @@ using namespace kNet;
 
 // Define a MessageID for our a custom message.
 const message_id_t cHelloMessageID = 10;
+const message_id_t cRegisterMessageID = 11;
+const message_id_t cGeneralMessageID = 12;
 
-// This object gets called for notifications on new network connection events.
-class ServerListener : public INetworkServerListener
+class UserContext
 {
 public:
+	explicit UserContext(MessageConnection* conn): messageConnection(conn)
+	{
+	}
+
+	~UserContext()
+	{
+		KNET_LOG(LogUser, "Client '%s' is being destroyed" , userName.c_str());
+	}
+
+	void OnPeerData(packet_id_t pid, message_id_t mid, const char* data, size_t len)
+	{
+		MessageConnection* conn = messageConnection;
+		if (mid == cRegisterMessageID)
+		{
+            DataDeserializer dd(data, len);
+
+			userName = dd.ReadString();
+			KNET_LOG(LogUser, "Client '%s' connected from %s.", userName.c_str(), conn->ToString().c_str());
+
+			const int maxBytesCount = 256;
+			NetworkMessage* msg = conn->StartNewMessage(cGeneralMessageID, maxBytesCount);
+			msg->reliable = true;
+			DataSerializer ds(msg->data, maxBytesCount);
+			ds.AddString("Hello, " + userName + "! What can I do for you?");
+			conn->EndAndQueueMessage(msg, ds.BytesFilled());
+		}
+		else
+        {
+            DataDeserializer dd(data, len);
+			KNET_LOG(LogUser, "Get message from %s: %s.", userName.c_str(), dd.ReadString().c_str());
+		}
+	}
+
+private:
+	MessageConnection* messageConnection;
+	std::string userName;
+};
+
+
+// This object gets called for notifications on new network connection events.
+class ServerListener : public INetworkServerListener, public IMessageHandler
+{
+public:
+	void HandleMessage(MessageConnection* source, packet_id_t packetId, message_id_t messageId, const char* data,
+					   size_t numBytes)
+	{
+		UserContext* uc = source->GetUserContext<UserContext>();
+		uc->OnPeerData(packetId, messageId, data, numBytes);
+	}
+
 	void NewConnectionEstablished(MessageConnection *connection)
 	{
+		UserContext* uc = new UserContext(connection);
+		connection->SetUserContext(uc);
+		connection->RegisterInboundMessageHandler(this);
+
 		const int maxMsgBytes = 256;
 		// Start building a new message.
 		NetworkMessage *msg = connection->StartNewMessage(cHelloMessageID, maxMsgBytes);
@@ -46,6 +101,8 @@ public:
 	void ClientDisconnected(MessageConnection *connection)
 	{
 		connection->Disconnect();
+		UserContext* uc = connection->GetUserContext<UserContext>();
+		delete uc;
 	}
 };
 
